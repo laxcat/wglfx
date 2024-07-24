@@ -1,5 +1,5 @@
 import Time from "/Time.js"
-import {LiveProgramConfig, LiveProgram} from "/LiveProgram.js"
+import {LiveProgram} from "/LiveProgram.js"
 import * as util from "/util.js"
 
 export default class GL {
@@ -11,6 +11,13 @@ export default class GL {
     prog = null;
 
     constructor() {
+        const vertEditor = ace.edit("vertEditor");
+        vertEditor.setTheme("ace/theme/solarized_dark");
+        vertEditor.session.setMode("ace/mode/glsl");
+        const fragEditor = ace.edit("fragEditor");
+        fragEditor.setTheme("ace/theme/solarized_dark");
+        fragEditor.session.setMode("ace/mode/glsl");
+
         // setup context
         const canvas = document.getElementsByTagName("canvas")[0];
         canvas.width = window.innerWidth;
@@ -29,14 +36,8 @@ export default class GL {
 
         this.prog = new LiveProgram(
             this.gl,
-            {
-                initPath: "/vert.glsl",
-                id: "vert",
-            },
-            {
-                initPath: "/frag.glsl",
-                id: "frag",
-            }
+            { initPath: "/vert.glsl", editor: vertEditor, },
+            { initPath: "/frag.glsl", editor: fragEditor, },
         );
 
         window.addEventListener("keydown", (e) => {
@@ -48,8 +49,8 @@ export default class GL {
                 this.canDraw = this.prog.compile();
                 e.preventDefault();
             }
-            // cmd+d, toggle ui
-            else if (e.key === "d" && (e.metaKey || e.ctrlkey)) {
+            // cmd+e, toggle ui
+            else if (e.key === "e" && (e.metaKey || e.ctrlkey)) {
                 this.toggleUI();
                 e.preventDefault();
             }
@@ -79,9 +80,12 @@ export default class GL {
         this.loop(0);
     }
 
+    get uiShowing() {
+        return (document.getElementById("ui").classList.contains("hidden") === false);
+    }
+
     toggleUI() {
-        const ui = document.getElementById("ui");
-        ui.style.display = (ui.style.display === "none") ? "block" : "none";
+        document.getElementById("ui").classList.toggle("hidden");
     }
 
     toggleRun() {

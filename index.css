@@ -15,32 +15,37 @@ canvas {
     z-index: 0;
 }
 
+.hidden {
+    display: none !important;
+}
+
+.ace-error {
+    background-color: #800;
+    position: absolute;
+}
+
 #ui {
     position: absolute;
+    overflow: scroll;
     z-index: 1;
+    width: 100%;
 }
 
 #ui label {
-    font-family: 'Helvetica';
+    font-family: 'Menlo', monospace;
     font-weight: bold;
+    font-size: 15px;
+    padding: 0;
+    margin: 15px 0 0 0;
     color: #fff;
     display: block;
-    width: 50%;
-    height: 5%;
     position: relative;
 }
 
-#ui label span {
-    position: absolute;
-    bottom: 0;
-}
-
-#ui textarea {
-    font-family: 'Menlo', monospace;
-    font-size: 13px;
-    color: #ccc;
-    display: block;
-    width: 50%;
-    height: 45%;
-    background-color: rgba(255, 255, 255, 0.1);
+#vertEditor, #fragEditor {
+    margin: 0;
+    position: relative;
+    width: 60%;
+    height: 500px;
+    background: rgba(1.0, 1.0, 1.0, 0.5) !important;
 }

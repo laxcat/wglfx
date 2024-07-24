@@ -5,16 +5,21 @@
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
+
     <canvas></canvas>
+
     <div id="ui">
-        <label   for="vert"><span>Vert</span></label>
-        <textarea id="vert"></textarea>
-        <label   for="frag"><span>Frag</span></label>
-        <textarea id="frag"></textarea>
+        <label for="vertEditor"><span>Vert</span></label>
+        <pre id="vertEditor"></pre>
+        <label for="fragEditor"><span>Frag</span></label>
+        <pre id="fragEditor"></pre>
     </div>
+
+    <script src="/lib/ace/ace.js" type="text/javascript" charset="utf-8"></script>
     <script type="module">
         import GL from "/GL.js";
         new GL();
     </script>
+
 </body>
 </html>

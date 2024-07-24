@@ -1,52 +1,47 @@
-export class LiveProgramConfig {
+export class Shader {
     initPath = "";      // if set, loads from path
     initSource = "";    // if path not set, set source directly
-    id = null;          // if set, sets el with getElementById
-    el = null;          // can be set directly by user. set from id if null.
-    lastValid = "";     // last source that was successfully compiled
+    editor = null;      // instance of ace.editor
+    errors = [];
+    glObj = null;
+    glType = null;
 }
 
 export class LiveProgram {
     gl = null;
-    vert = new LiveProgramConfig();
-    frag = new LiveProgramConfig();
+    vert = new Shader();
+    frag = new Shader();
     program = null;
 
-    constructor(gl, vertConfig, fragConfig) {
+    constructor(gl, vertSetup, fragSetup) {
         this.gl = gl;
-        this.vert = {...this.vert, ...vertConfig};
-        this.frag = {...this.frag, ...fragConfig};
+        this.vert = {...this.vert, ...vertSetup, glType: gl.VERTEX_SHADER  };
+        this.frag = {...this.frag, ...fragSetup, glType: gl.FRAGMENT_SHADER};
 
         this.initShader(this.vert);
         this.initShader(this.frag);
         this.compile();
-
-        console.log(this);
-    }
-
-    get dirty() {
-
     }
 
     get programValid() {
         return (program !== null);
     }
 
-    initShader(config) {
-        if (config.el === null && config.id) {
-            config.el = document.getElementById(config.id);
+    initShader(shader) {
+        if (shader.editor === null) {
+            console.log(`Could not init shader, must be editor. shader: ${shader}`);
         }
 
-        if (config.el === null) {
-            console.log(`Could not init shader, element or id must be set. config: ${config}`);
+        if (shader.initPath) {
+            shader.editor.setValue(this.loadFileSync(shader.initPath), -1);
+        }
+        else if (shader.initSource) {
+            shader.editor.setValue(shader.initSource, -1);
         }
 
-        if (config.initPath) {
-            config.el.value = this.loadFileSync(config.initPath);
-        }
-        else if (config.initSource) {
-            config.el.value = config.initSource;
-        }
+        shader.editor.addEventListener("change", () => {
+            this.clearErrors(shader);
+        })
     }
 
     loadFileSync(path) {
@@ -60,57 +55,123 @@ export class LiveProgram {
     }
 
     compile() {
+        this.gl.deleteProgram(this.program);
         this.program = null;
+        this.clearErrors();
 
-        const vertShader = this.createShader(this.vert.el.value, this.gl.VERTEX_SHADER);
-        const fragShader = this.createShader(this.frag.el.value, this.gl.FRAGMENT_SHADER);
-        this.program = this.createProgram(this.gl, vertShader, fragShader);
-        this.gl.useProgram(this.program);
+        this.createShader(this.vert);
+        this.createShader(this.frag);
+        this.createProgram();
 
-        if (this.program) {
-            console.log("compile successful");
-            return true;
+        if (!this.program) {
+            this.showErrors(this.vert);
+            this.showErrors(this.frag);
+            return false;
         }
-        return false;
+
+        this.gl.useProgram(this.program);
+        console.log(`Program compiled/linked successfully.`);
+        return true;
     }
 
-    createShader(sourceCode, type) {
-        if (this.vert.el.value === "") {
-            console.log(`Could not compile, ${this.shaderTypeStr(type)} source not set`);
-        }
-
-        const shader = this.gl.createShader(type);
-        this.gl.shaderSource(shader, sourceCode);
-        this.gl.compileShader(shader);
-
-        if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-            const info = this.gl.getShaderInfoLog(shader);
-            console.log(`Could not compile ${this.shaderTypeStr(type)} shader. \n\n${info}`);
+    createShader(shader) {
+        if (shader.editor.getValue() === "") {
+            console.log(`Will not attempt to compile, ${this.shaderTypeStr(type)} source not set`);
             return null;
         }
-        return shader;
+
+        shader.glObj = this.gl.createShader(shader.type);
+        this.gl.shaderSource(shader.glObj, shader.editor.getValue());
+        this.gl.compileShader(shader.glObj);
+
+        if (!this.gl.getShaderParameter(shader.glObj, this.gl.COMPILE_STATUS)) {
+            console.log(`Could not compile ${this.shaderTypeStr(type)} shader.glObj.`);
+            this.parseErrors(shader);
+            return null;
+        }
+        return shader.glObj;
     }
 
-    createProgram(gl, vertShader, fragShader) {
-        if (!vertShader || !fragShader) {
-            console.log(`Could not compile WebGL program.`);
+    createProgram() {
+        if (!this.vert.glObj || !this.frag.glObj) {
+            console.log(`Will not attempt to link shader program. Missing shader.`);
             return null;
         }
 
         const program = gl.createProgram();
 
-        gl.attachShader(program, vertShader);
-        gl.attachShader(program, fragShader);
+        gl.attachShader(program, this.vert.glObj);
+        gl.attachShader(program, this.frag.glObj);
 
         gl.linkProgram(program);
 
+        gl.detachShader(program, this.vert.glObj);
+        gl.detachShader(program, this.frag.glObj);
+
+        gl.deleteShader(this.vert.glObj);
+        gl.deleteShader(this.frag.glObj);
+
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
             const info = gl.getProgramInfoLog(program);
-            console.log(`Could not compile WebGL program. \n\n${info}`);
-            return null;
+            console.log(`Error linking shader program. \n\n${info}`);
+            gl.deleteProgram(program);
+            program = null;
         }
 
-        return program;
+        this.program = program;
+    }
+
+    parseErrors(shader) {
+        const Range = ace.require("ace/range").Range;
+
+        // get the whole error string
+        const info = this.gl.getShaderInfoLog(shader.glObj);
+        // split on lines
+        const errors = info.split("\n");
+        // for each line, construct an error object
+        errors.forEach((item) => {
+            const parts = item.split(":");
+            if (parts[0] === "ERROR") {
+                const line = parseInt(parts[2]) - 1; // ace wants 0-index lines/cols
+                const part = parts[3].trim().replaceAll("'", "");
+                const partStart = shader.editor.session.getLine(line).indexOf(part);
+                const error = {
+                    line: line,
+                    partStart: partStart,
+                    partEnd: partStart + part.length,
+                    error: parts[4].trim(),
+                    marker: null,
+                };
+                shader.errors.push(error);
+            }
+        });
+    }
+
+    showErrors(params) {
+        const Range = ace.require("ace/range").Range;
+
+        let annotations = [];
+        params.errors.forEach((item) => {
+            const r = new Range(item.line, item.partStart, item.line, item.partEnd);
+            item.marker = params.editor.session.addMarker(r, "ace-error", "text");
+            annotations.push({
+                column: item.partStart,
+                row: item.line,
+                text: item.error,
+                type: "error",
+            })
+        });
+        params.editor.session.setAnnotations(annotations);
+    }
+
+    clearErrors(params) {
+        // [this.vert, this.frag].forEach((params) => {
+            params.errors.forEach((item) => {
+                params.editor.session.removeMarker(item.marker);
+            });
+            params.editor.session.setAnnotations();
+            params.errors = [];
+        // });
     }
 
     shaderTypeStr(type) {
