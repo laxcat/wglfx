@@ -57,7 +57,8 @@ export class LiveProgram {
     compile() {
         this.gl.deleteProgram(this.program);
         this.program = null;
-        this.clearErrors();
+        this.clearErrors(this.vert);
+        this.clearErrors(this.frag);
 
         this.createShader(this.vert);
         this.createShader(this.frag);
@@ -76,16 +77,16 @@ export class LiveProgram {
 
     createShader(shader) {
         if (shader.editor.getValue() === "") {
-            console.log(`Will not attempt to compile, ${this.shaderTypeStr(type)} source not set`);
+            console.log(`Will not attempt to compile, ${this.shaderTypeStr(shader.glType)} source not set`);
             return null;
         }
 
-        shader.glObj = this.gl.createShader(shader.type);
+        shader.glObj = this.gl.createShader(shader.glType);
         this.gl.shaderSource(shader.glObj, shader.editor.getValue());
         this.gl.compileShader(shader.glObj);
 
         if (!this.gl.getShaderParameter(shader.glObj, this.gl.COMPILE_STATUS)) {
-            console.log(`Could not compile ${this.shaderTypeStr(type)} shader.glObj.`);
+            console.log(`Could not compile ${this.shaderTypeStr(shader.glType)} shader.glObj.`);
             this.parseErrors(shader);
             return null;
         }
@@ -98,27 +99,25 @@ export class LiveProgram {
             return null;
         }
 
-        const program = gl.createProgram();
+        this.program = this.gl.createProgram();
 
-        gl.attachShader(program, this.vert.glObj);
-        gl.attachShader(program, this.frag.glObj);
+        this.gl.attachShader(this.program, this.vert.glObj);
+        this.gl.attachShader(this.program, this.frag.glObj);
 
-        gl.linkProgram(program);
+        this.gl.linkProgram(this.program);
 
-        gl.detachShader(program, this.vert.glObj);
-        gl.detachShader(program, this.frag.glObj);
+        this.gl.detachShader(this.program, this.vert.glObj);
+        this.gl.detachShader(this.program, this.frag.glObj);
 
-        gl.deleteShader(this.vert.glObj);
-        gl.deleteShader(this.frag.glObj);
+        this.gl.deleteShader(this.vert.glObj);
+        this.gl.deleteShader(this.frag.glObj);
 
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            const info = gl.getProgramInfoLog(program);
+        if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+            const info = this.gl.getProgramInfoLog(this.program);
             console.log(`Error linking shader program. \n\n${info}`);
-            gl.deleteProgram(program);
-            program = null;
+            this.gl.deleteProgram(this.program);
+            this.program = null;
         }
-
-        this.program = program;
     }
 
     parseErrors(shader) {
@@ -147,13 +146,13 @@ export class LiveProgram {
         });
     }
 
-    showErrors(params) {
+    showErrors(shader) {
         const Range = ace.require("ace/range").Range;
 
         let annotations = [];
-        params.errors.forEach((item) => {
+        shader.errors.forEach((item) => {
             const r = new Range(item.line, item.partStart, item.line, item.partEnd);
-            item.marker = params.editor.session.addMarker(r, "ace-error", "text");
+            item.marker = shader.editor.session.addMarker(r, "ace-error", "text");
             annotations.push({
                 column: item.partStart,
                 row: item.line,
@@ -161,16 +160,16 @@ export class LiveProgram {
                 type: "error",
             })
         });
-        params.editor.session.setAnnotations(annotations);
+        shader.editor.session.setAnnotations(annotations);
     }
 
-    clearErrors(params) {
-        // [this.vert, this.frag].forEach((params) => {
-            params.errors.forEach((item) => {
-                params.editor.session.removeMarker(item.marker);
+    clearErrors(shader) {
+        // [this.vert, this.frag].forEach((shader) => {
+            shader.errors.forEach((item) => {
+                shader.editor.session.removeMarker(item.marker);
             });
-            params.editor.session.setAnnotations();
-            params.errors = [];
+            shader.editor.session.setAnnotations();
+            shader.errors = [];
         // });
     }
 
