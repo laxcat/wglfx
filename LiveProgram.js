@@ -60,7 +60,7 @@ export default class LiveProgram {
 
         if (!this.gl.getProgramParameter(this.glObj, this.gl.LINK_STATUS)) {
             const info = this.gl.getProgramInfoLog(this.glObj);
-            console.log(`Error linking shader program. \n\n${info}`);
+            console.log(`Error linking shader program. \n${info}`);
             this.gl.deleteProgram(this.glObj);
             this.glObj = null;
         }

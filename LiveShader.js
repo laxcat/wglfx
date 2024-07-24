@@ -67,6 +67,7 @@ export default class LiveShader {
     showErrors() {
         const Range = ace.require("ace/range").Range;
 
+        let errorMsg = "";
         let annotations = [];
         this.errors.forEach((item) => {
             const r = new Range(item.line, item.partStart, item.line, item.partEnd);
@@ -76,9 +77,14 @@ export default class LiveShader {
                 row: item.line,
                 text: item.error,
                 type: "error",
-            })
+            });
+            errorMsg += `${item.line+1}:${item.partStart+1}: ${item.error}\n`;
         });
         this.editor.session.setAnnotations(annotations);
+
+        if (errorMsg) {
+            console.log(`Errors in ${this.glTypeStr} shader:\n%c${errorMsg}`, "color:red;");
+        }
     }
 
     clearErrors() {
