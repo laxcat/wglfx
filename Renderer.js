@@ -1,4 +1,4 @@
-import {LiveProgram} from "/LiveProgram.js"
+import LiveProgram from "/LiveProgram.js"
 import * as util from "/util.js"
 
 export default class Renderer {
@@ -20,11 +20,7 @@ export default class Renderer {
 
         this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
-        this.prog = new LiveProgram(
-            this.gl,
-            { initPath: "/vert.glsl", editor: vertEditor, },
-            { initPath: "/frag.glsl", editor: fragEditor, },
-        );
+        this.prog = new LiveProgram(this.gl, vertEditor, fragEditor);
 
         const quadData = new Float32Array([
             0.0, 0.0, 0.0,
@@ -40,11 +36,10 @@ export default class Renderer {
         this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 0, 0);
         this.gl.enableVertexAttribArray(0);
 
-        if (this.prog.program && this.gl.getError() === 0) {
+        if (this.prog.valid && this.gl.getError() === 0) {
             this.canDraw = true;
         }
 
-        // util.checkError(this.gl);
     }
 
     compile() {

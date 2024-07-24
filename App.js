@@ -1,5 +1,6 @@
 import Time from "/Time.js"
 import Renderer from "/Renderer.js"
+import * as util from "/util.js"
 
 export default class App {
     renderer = null; // delay initialization
@@ -13,6 +14,9 @@ export default class App {
         fragEditor.setTheme("ace/theme/solarized_dark");
         fragEditor.session.setMode("ace/mode/glsl");
 
+        this.loadShader("/vert.glsl", vertEditor);
+        this.loadShader("/frag.glsl", fragEditor);
+
         this.renderer = new Renderer(vertEditor, fragEditor);
 
         window.addEventListener("keydown", (e) => {
@@ -21,7 +25,7 @@ export default class App {
             }
             // cmd+s, save/recompile
             else if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
-                this.renderer.compile();
+                this.save();
                 e.preventDefault();
             }
             // cmd+e, toggle ui
@@ -68,5 +72,14 @@ export default class App {
         }
         // console.log("global", this.time.global, this.time.dt);
         // console.log("now", this.time.now);
+    }
+
+    loadShader(path, editor) {
+        editor.setValue(util.loadFileSync(path), -1);
+    }
+
+    save() {
+        this.renderer.compile();
+        // todo save to cookie
     }
 }
