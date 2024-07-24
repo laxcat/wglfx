@@ -2,7 +2,7 @@ import Time from "/Time.js"
 import {LiveProgram} from "/LiveProgram.js"
 import * as util from "/util.js"
 
-export default class GL {
+export default class App {
     gl = null;
     time = new Time();
     canDraw = false;
