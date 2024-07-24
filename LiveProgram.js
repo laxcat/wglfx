@@ -2,21 +2,21 @@ export class Shader {
     initPath = "";      // if set, loads from path
     initSource = "";    // if path not set, set source directly
     editor = null;      // instance of ace.editor
-    errors = [];
-    glObj = null;
-    glType = null;
+    errors = [];        // array of error objects, see parseErrors
+    glObj = null;       // the webgl shader object
+    glType = null;      // the webgl shader type
 }
 
 export class LiveProgram {
     gl = null;
-    vert = new Shader();
-    frag = new Shader();
+    vert = null;
+    frag = null;
     program = null;
 
     constructor(gl, vertSetup, fragSetup) {
         this.gl = gl;
-        this.vert = {...this.vert, ...vertSetup, glType: gl.VERTEX_SHADER  };
-        this.frag = {...this.frag, ...fragSetup, glType: gl.FRAGMENT_SHADER};
+        this.vert = {...new Shader(), ...vertSetup, glType: gl.VERTEX_SHADER  };
+        this.frag = {...new Shader(), ...fragSetup, glType: gl.FRAGMENT_SHADER};
 
         this.initShader(this.vert);
         this.initShader(this.frag);
@@ -164,13 +164,11 @@ export class LiveProgram {
     }
 
     clearErrors(shader) {
-        // [this.vert, this.frag].forEach((shader) => {
-            shader.errors.forEach((item) => {
-                shader.editor.session.removeMarker(item.marker);
-            });
-            shader.editor.session.setAnnotations();
-            shader.errors = [];
-        // });
+        shader.errors.forEach((item) => {
+            shader.editor.session.removeMarker(item.marker);
+        });
+        shader.editor.session.setAnnotations();
+        shader.errors = [];
     }
 
     shaderTypeStr(type) {
