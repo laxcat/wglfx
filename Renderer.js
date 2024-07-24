@@ -7,7 +7,7 @@ export default class Renderer {
     vertPosBuffer = null;
     prog = null;
 
-    constructor(vertEditor, fragEditor) {
+    constructor() {
         // setup context
         const canvas = document.getElementsByTagName("canvas")[0];
         canvas.width = window.innerWidth;
@@ -18,9 +18,9 @@ export default class Renderer {
             return;
         }
 
-        this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        this.prog = new LiveProgram(this.gl);
 
-        this.prog = new LiveProgram(this.gl, vertEditor, fragEditor);
+        this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
         const quadData = new Float32Array([
             0.0, 0.0, 0.0,

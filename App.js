@@ -3,22 +3,10 @@ import Renderer from "/Renderer.js"
 import * as util from "/util.js"
 
 export default class App {
-    renderer = null; // delay initialization
+    renderer = new Renderer();
     time = new Time();
 
     constructor() {
-        const vertEditor = ace.edit("vertEditor");
-        vertEditor.setTheme("ace/theme/solarized_dark");
-        vertEditor.session.setMode("ace/mode/glsl");
-        const fragEditor = ace.edit("fragEditor");
-        fragEditor.setTheme("ace/theme/solarized_dark");
-        fragEditor.session.setMode("ace/mode/glsl");
-
-        this.loadShader("/vert.glsl", vertEditor);
-        this.loadShader("/frag.glsl", fragEditor);
-
-        this.renderer = new Renderer(vertEditor, fragEditor);
-
         window.addEventListener("keydown", (e) => {
             if (e.shiftKey || e.altKey) {
                 return;
@@ -74,12 +62,9 @@ export default class App {
         // console.log("now", this.time.now);
     }
 
-    loadShader(path, editor) {
-        editor.setValue(util.loadFileSync(path), -1);
-    }
-
     save() {
         this.renderer.compile();
-        // todo save to cookie
+        this.renderer.prog.vert.save();
+        this.renderer.prog.frag.save();
     }
 }

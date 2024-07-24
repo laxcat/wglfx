@@ -3,31 +3,41 @@ export default class LiveShader {
     editor = null;          // instance of ace.editor
     errors = [];            // array of error objects, see parseErrors
     glObj = null;           // the webgl shader object
-    glType = null;          // the webgl shader type
-    glTypeStr = null;       // friendly string for webgl type
+    glType = null;          // webgl shader type
+    glTypeStr = null;       // string for shader type. frequently used as key.
 
-    constructor(gl, type, editor) {
+    constructor(gl, type) {
         this.gl = gl;
         this.glType = type;
-        this.editor = editor;
 
         this.glTypeStr = (type === this.gl.VERTEX_SHADER)    ? "vert" :
                          (type === this.gl.FRAGMENT_SHADER)  ? "frag" :
                          "unknown-type";
 
+        this.editor = ace.edit(`${this.glTypeStr}Editor`);
+        this.editor.setTheme("ace/theme/solarized_dark");
+        this.editor.session.setMode("ace/mode/glsl");
+
         this.editor.addEventListener("change", () => {
             this.clearErrors();
         })
+
+        this.load();
     }
 
+    get src() { return this.editor.getValue(); }
+    set src(val) { this.editor.setValue(val, -1); }
+
+    get defaultSrcPath() { return `${this.glTypeStr}.glsl`; }
+
     compile() {
-        if (this.editor.getValue() === "") {
+        if (this.src === "") {
             console.log(`Will not attempt to compile, ${this.glTypeStr} source not set`);
             return null;
         }
 
         this.glObj = this.gl.createShader(this.glType);
-        this.gl.shaderSource(this.glObj, this.editor.getValue());
+        this.gl.shaderSource(this.glObj, this.src);
         this.gl.compileShader(this.glObj);
 
         if (!this.gl.getShaderParameter(this.glObj, this.gl.COMPILE_STATUS)) {
@@ -93,6 +103,16 @@ export default class LiveShader {
         });
         this.editor.session.setAnnotations();
         this.errors = [];
+    }
+
+    load() {
+        // try to load from localStorage, otherwise load from defaultSrcPath
+        const localSrc = localStorage.getItem(this.glTypeStr);
+        this.src = (localSrc) ? localSrc : util.loadFileSync(this.defaultSrcPath);
+    }
+
+    save() {
+        localStorage.setItem(this.glTypeStr, this.src);
     }
 }
 

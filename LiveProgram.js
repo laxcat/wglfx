@@ -7,10 +7,10 @@ export default class LiveProgram {
     frag = null;    // instance of LiveShader
     glObj = null;   // the webgl program object
 
-    constructor(gl, vertEditor, fragEditor) {
+    constructor(gl) {
         this.gl = gl;
-        this.vert = new LiveShader(gl, gl.VERTEX_SHADER,   vertEditor);
-        this.frag = new LiveShader(gl, gl.FRAGMENT_SHADER, fragEditor);
+        this.vert = new LiveShader(gl, gl.VERTEX_SHADER  );
+        this.frag = new LiveShader(gl, gl.FRAGMENT_SHADER);
         this.compile();
     }
 
