@@ -12,7 +12,8 @@ export default class Pass {
         this.gl = gl;
 
         this.layout = new VertexLayout(gl, [
-            {size: 3, type: gl.FLOAT, name: "pos"},
+            {size: 4, type: gl.FLOAT, name: "pos"},
+            {size: 4, type: gl.FLOAT, name: "color"},
         ]);
 
         this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -23,12 +24,36 @@ export default class Pass {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attrib.glBuffer);
             attrib.data = new Float32Array(attrib.size * this.nVerts);
             this.gl.bufferData(this.gl.ARRAY_BUFFER, attrib.data, this.gl.STATIC_DRAW);
-            this.gl.vertexAttribPointer(0, attrib.size, attrib.type, false, 0, 0);
+            this.gl.vertexAttribPointer(index, attrib.size, attrib.type, false, 0, 0);
             this.gl.enableVertexAttribArray(index);
             ++index;
         });
 
         this.createUI(el);
+
+        this.setAttribDataForName(
+            "pos",
+            new Float32Array([
+                0.0, 0.0, 0.0, 1.0,
+                0.0, 1.0, 0.0, 1.0,
+                1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 0.0, 1.0,
+                1.0, 1.0, 0.0, 1.0,
+                1.0, 0.0, 0.0, 1.0,
+            ])
+        );
+
+        this.setAttribDataForName(
+            "color",
+            new Float32Array([
+                1.0, 0.0, 0.0, 1.0,
+                0.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 1.0,
+                1.0, 1.0, 0.0, 1.0,
+                0.0, 1.0, 1.0, 1.0,
+                1.0, 0.0, 1.0, 1.0,
+            ])
+        );
     }
 
     setAttribDataAtIndex(index, data, offset=0) {
@@ -78,6 +103,8 @@ export default class Pass {
 
         el.insertAdjacentHTML("beforeend",
             `<label>Vertex Data</label>
+            <label for="pass_vertCount">Count</label>
+            <input type="text" id="pass_vertCount" value="${this.nVerts}">
             <div id="attribs"></div>`
         );
         const attribs = last(el.children);
@@ -87,6 +114,9 @@ export default class Pass {
     }
 
     updateDataFromUI() {
-        this.layout.attribs.forEach(attrib => { attrib.updateDataFromUI(); })
+        this.nVerts = parseInt(document.getElementById("pass_vertCount").value);
+        this.layout.attribs.forEach(attrib => {
+            attrib.updateDataFromUI(this.nVerts);
+        })
     }
 }

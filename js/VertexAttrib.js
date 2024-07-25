@@ -59,18 +59,41 @@ export default class VertexAttrib {
         return str;
     }
 
-    updateDataFromUI() {
+    updateDataFromUI(nVerts) {
+        // number of elements in TypedArray, different if nVerts changed
+        const n = nVerts * this.size;
+
         // bail early if data has not changed
-        if (!this.dirty) {
+        if (!this.dirty && n === this.data.length) {
             return;
         }
 
         console.log(`Updating vertex attrib ${this.name} data from UI.`);
 
+        let minN = n;
+        const oldData = this.data;
+
+        // ui requesting smaller vert count
+        if (n < this.data.length) {
+            this.data = oldData.slice(0, n);
+            minN = n;
+        }
+        // ui request larger vert count
+        else if (n > oldData.length) {
+            this.data = new Float32Array(n);
+            this.data.set(oldData);
+            minN = oldData.length;
+        }
+
         // make string array from ui data
         const newData = this.dataEl.value.split(',');
+
+        // only update data if we have it
+        if (minN > newData.length) {
+            minN = newData.length;
+        }
         // update local copy from ui data
-        for (let i = 0; i < newData.length; ++i) {
+        for (let i = 0; i < minN; ++i) {
             this.data[i] = parseFloat(newData[i]);
         }
         // upload local copy to gpu

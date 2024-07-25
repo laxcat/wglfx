@@ -28,17 +28,6 @@ export default class Renderer {
         this.prog = new LiveProgram(this.gl, el);
 
         this.pass = new Pass(this.gl, el);
-        this.pass.setAttribDataForName(
-            "pos",
-            new Float32Array([
-                0.0, 0.0, 0.0,
-                0.0, 1.0, 0.0,
-                1.0, 1.0, 0.0,
-                0.0, 0.0, 0.0,
-                1.0, 1.0, 0.0,
-                1.0, 0.0, 0.0,
-            ])
-        );
 
         if (this.prog.valid && this.gl.getError() === 0) {
             this.canDraw = true;
