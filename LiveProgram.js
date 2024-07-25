@@ -1,5 +1,4 @@
 import LiveShader from "/LiveShader.js"
-import * as util from "/util.js"
 
 export default class LiveProgram {
     gl = null;      // webgl context object

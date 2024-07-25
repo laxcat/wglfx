@@ -1,3 +1,5 @@
+import * as util from "/util.js"
+
 export default class LiveShader {
     gl = null;              // reference to webgl context
     editor = null;          // instance of ace.editor
