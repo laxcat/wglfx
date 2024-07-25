@@ -20,8 +20,8 @@ export default class Pass {
         this.layout.attribs.forEach(attrib => {
             attrib.glBuffer = this.gl.createBuffer();
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attrib.glBuffer);
-            const data = new Float32Array(attrib.size * this.nVerts);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
+            attrib.data = new Float32Array(attrib.size * this.nVerts);
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, attrib.data, this.gl.STATIC_DRAW);
             this.gl.vertexAttribPointer(0, attrib.size, attrib.type, false, 0, 0);
             this.gl.enableVertexAttribArray(index);
             ++index;
@@ -44,8 +44,28 @@ export default class Pass {
     }
 
     setAttribData(attrib, data, offset=0) {
+        // update data in local copy, create dataStr for ui
+        let dataStr = "";
+        let rowIndex = 0;
+        for (let i = offset; i < attrib.data.length; ++i) {
+            // update data
+            attrib.data[i] = data[i];
+            // update data string for ui
+            dataStr += `${data[i]},`;
+            ++rowIndex;
+            if (rowIndex === attrib.size) {
+                dataStr += "\n";
+                rowIndex = 0;
+            }
+        }
+        document.getElementById(`pass_${attrib.name}`).value = dataStr;
+        // upload to gpu
+        this.uploadData(attrib);
+    }
+
+    uploadData(attrib) {
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attrib.glBuffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, offset, data);
+        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, attrib.data);
     }
 
     bind() {
@@ -72,13 +92,57 @@ export default class Pass {
     deleteAttribBuffers() {
         this.layout.attribs.forEach(attrib => {
             this.gl.deleteBuffer(attrib.glBuffer);
+            attrib.glBuffer = null;
+            attrib.data = null;
         });
     }
 
     createUI(el) {
-        el.insertAdjacentHTML('beforeend', '<label>VertexData</label>');
+        const last = util.last;
+
+        el.insertAdjacentHTML("beforeend",
+            `<label>Vertex Data</label>
+            <div id="attribs"></div>`
+        );
+        const attribs = last(el.children);
         this.layout.attribs.forEach(attrib => {
-            el.insertAdjacentHTML('beforeend', `<div>${attrib.name}</div>`);
+            attribs.insertAdjacentHTML("beforeend",
+                `<div class="attrib">
+                <div>${attrib.name}</div>
+                <textarea id="pass_${attrib.name}">${this.dataStr(attrib)}</textarea>
+                </div>`
+            );
+            attrib.dataEl = last(last(attribs.children).children);
+            attrib.dataEl.addEventListener("input", e => {
+                this.updateAttribData(attrib);
+            });
         });
+    }
+
+    dataStr(attrib) {
+        let str = "";
+        let rowIndex = 0;
+        attrib.data.forEach(dataItem => {
+            str += `${dataItem},`;
+            ++rowIndex;
+            if (rowIndex === attrib.size) {
+                str += "\n";
+                rowIndex = 0;
+            }
+        });
+        return str;
+    }
+
+    updateAttribData(attrib) {
+        const el = attrib.dataEl;
+        const newData = el.value.split(',');
+        const count = (attrib.data.length < newData.length)
+            ? attrib.data.length
+            : newData.length;
+        for (let i = 0; i < count; ++i) {
+            attrib.data[i] = parseFloat(newData[i]);
+        }
+        this.uploadData(attrib);
+        // el.value = this.dataStr(attrib);
     }
 }

@@ -4,6 +4,8 @@ class Attribute {
     type = 0;           // webgl component type (usually GL_FLOAT)
     name = "";          // friendly name to indicate nature of data. pos, norm, color, etc.
     glBuffer = null;    // when VertexLayout assigned to a pass, buffers get stored here
+    data = null;        // when VertexLayout assigned to a pass, keep copy of buffer data here
+    dataEl = null;      // when VertexLayout assigned to a pass, keep ref to data textarea here
 }
 
 // Can be generic, reuseable with different passes, etc

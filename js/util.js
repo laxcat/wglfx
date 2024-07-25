@@ -25,3 +25,6 @@ export function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+export function last(arrayLike) {
+    return arrayLike[arrayLike.length - 1];
+}

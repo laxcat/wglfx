@@ -50,8 +50,28 @@ canvas {
     background: rgba(1.0, 1.0, 1.0, 0.5) !important;
 }
 
-#ui > div {
+#attribs::after {
+   content: " ";
+   display: block;
+   height: 0;
+   clear: both;
+}
+
+.attrib {
     font-family: 'Menlo', monospace;
     font-size: 13px;
     color: #fff;
+    width: 150px;
+    float: left;
+}
+
+.attrib > textarea {
+    font-family: 'Menlo', monospace;
+    font-size: 13px;
+    color: #fff;
+    border: 1 solid #fff;
+    width: 100%;
+    height: 150px;
+    background-color: rgba(0, 0, 0, 0.0);
+
 }
