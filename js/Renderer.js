@@ -1,6 +1,6 @@
-import LiveProgram from "/LiveProgram.js"
-import Pass from "/Pass.js"
-import * as util from "/util.js"
+import LiveProgram from "/js/LiveProgram.js"
+import Pass from "/js/Pass.js"
+import * as util from "/js/util.js"
 
 export default class Renderer {
     gl = null;
@@ -8,6 +8,8 @@ export default class Renderer {
     pass = null;
     vertPosBuffer = null;
     prog = null;
+
+    static initCounter;
 
     constructor() {
         // setup context
@@ -20,9 +22,12 @@ export default class Renderer {
             return;
         }
 
-        this.prog = new LiveProgram(this.gl);
+        const el = document.getElementById("ui");
+        el.innerHTML = "";
 
-        this.pass = new Pass(this.gl);
+        this.prog = new LiveProgram(this.gl, el);
+
+        this.pass = new Pass(this.gl, el);
         this.pass.setAttribDataForName(
             "pos",
             new Float32Array([

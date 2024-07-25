@@ -1,6 +1,6 @@
-import Time from "/Time.js"
-import Renderer from "/Renderer.js"
-import * as util from "/util.js"
+import Time from "/js/Time.js"
+import Renderer from "/js/Renderer.js"
+import * as util from "/js/util.js"
 
 export default class App {
     renderer = new Renderer();

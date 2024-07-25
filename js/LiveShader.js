@@ -1,4 +1,4 @@
-import * as util from "/util.js"
+import * as util from "/js/util.js"
 
 export default class LiveShader {
     gl = null;              // reference to webgl context
@@ -8,13 +8,16 @@ export default class LiveShader {
     glType = null;          // webgl shader type
     glTypeStr = null;       // string for shader type. frequently used as key.
 
-    constructor(gl, type) {
+    constructor(gl, type, el) {
         this.gl = gl;
         this.glType = type;
 
         this.glTypeStr = (type === this.gl.VERTEX_SHADER)    ? "vert" :
                          (type === this.gl.FRAGMENT_SHADER)  ? "frag" :
                          "unknown-type";
+        ;
+
+        this.createUI(el);
 
         this.editor = ace.edit(`${this.glTypeStr}Editor`);
         this.editor.setTheme("ace/theme/solarized_dark");
@@ -30,7 +33,7 @@ export default class LiveShader {
     get src() { return this.editor.getValue(); }
     set src(val) { this.editor.setValue(val, -1); }
 
-    get defaultSrcPath() { return `${this.glTypeStr}.glsl`; }
+    get defaultSrcPath() { return `/glsl/${this.glTypeStr}.glsl`; }
 
     compile() {
         if (this.src === "") {
@@ -115,6 +118,21 @@ export default class LiveShader {
 
     save() {
         localStorage.setItem(this.glTypeStr, this.src);
+    }
+
+    createUI(el) {
+        const label = document.createElement("label");
+        const labelFor = document.createAttribute("for");
+        const labelText = document.createTextNode(`${util.capitalize(this.glTypeStr)}`);
+        labelFor.value = `${this.glTypeStr}Editor`;
+        label.setAttributeNode(labelFor);
+        label.appendChild(labelText);
+        el.appendChild(label);
+        const pre = document.createElement("pre");
+        const preId = document.createAttribute("id");
+        preId.value = `${this.glTypeStr}Editor`;
+        pre.setAttributeNode(preId);
+        el.appendChild(pre);
     }
 }
 

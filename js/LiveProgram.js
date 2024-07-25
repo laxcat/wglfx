@@ -1,4 +1,4 @@
-import LiveShader from "/LiveShader.js"
+import LiveShader from "/js/LiveShader.js"
 
 export default class LiveProgram {
     gl = null;      // webgl context object
@@ -6,10 +6,10 @@ export default class LiveProgram {
     frag = null;    // instance of LiveShader
     glObj = null;   // the webgl program object
 
-    constructor(gl) {
+    constructor(gl, el) {
         this.gl = gl;
-        this.vert = new LiveShader(gl, gl.VERTEX_SHADER  );
-        this.frag = new LiveShader(gl, gl.FRAGMENT_SHADER);
+        this.vert = new LiveShader(gl, gl.VERTEX_SHADER  , el);
+        this.frag = new LiveShader(gl, gl.FRAGMENT_SHADER, el);
         this.compile();
     }
 

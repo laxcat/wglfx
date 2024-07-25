@@ -1,11 +1,12 @@
-import VertexLayout from "/VertexLayout.js"
+import VertexLayout from "/js/VertexLayout.js"
 
 export default class Pass {
     gl = null;
     layout = null;
     nVerts = 6;
+    parentEl = null;
 
-    constructor(gl) {
+    constructor(gl, el) {
         this.gl = gl;
 
         this.layout = new VertexLayout(gl, [
@@ -24,6 +25,8 @@ export default class Pass {
             this.gl.enableVertexAttribArray(index);
             ++index;
         });
+
+        this.createUI(el);
     }
 
     setAttribDataAtIndex(index, data, offset=0) {
@@ -68,6 +71,19 @@ export default class Pass {
     deleteAttribBuffers() {
         this.layout.attribs.forEach(attrib => {
             this.gl.deleteBuffer(attrib.glBuffer);
+        });
+    }
+
+    createUI(el) {
+        const label = document.createElement("label");
+        const labelText = document.createTextNode("Vertex Data");
+        label.appendChild(labelText);
+        el.appendChild(label);
+        this.layout.attribs.forEach(attrib => {
+            const div = document.createElement("div");
+            const divText = document.createTextNode(attrib.name);
+            div.appendChild(divText);
+            el.appendChild(div);
         });
     }
 }
