@@ -1,9 +1,11 @@
 import LiveProgram from "/LiveProgram.js"
+import Pass from "/Pass.js"
 import * as util from "/util.js"
 
 export default class Renderer {
     gl = null;
     canDraw = false;
+    pass = null;
     vertPosBuffer = null;
     prog = null;
 
@@ -20,26 +22,22 @@ export default class Renderer {
 
         this.prog = new LiveProgram(this.gl);
 
-        this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
-        const quadData = new Float32Array([
-            0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0,
-            1.0, 1.0, 0.0,
-            0.0, 0.0, 0.0,
-            1.0, 1.0, 0.0,
-            1.0, 0.0, 0.0,
-        ]);
-        this.vertPosBuffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertPosBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, quadData, this.gl.STATIC_DRAW);
-        this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 0, 0);
-        this.gl.enableVertexAttribArray(0);
+        this.pass = new Pass(this.gl);
+        this.pass.setAttribDataForName(
+            "pos",
+            new Float32Array([
+                0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0,
+                1.0, 1.0, 0.0,
+                0.0, 0.0, 0.0,
+                1.0, 1.0, 0.0,
+                1.0, 0.0, 0.0,
+            ])
+        );
 
         if (this.prog.valid && this.gl.getError() === 0) {
             this.canDraw = true;
         }
-
     }
 
     compile() {
@@ -52,7 +50,7 @@ export default class Renderer {
         }
 
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+        this.pass.draw();
     }
 }
 
