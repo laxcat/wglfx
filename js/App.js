@@ -63,7 +63,11 @@ export default class App {
     }
 
     save() {
+        // compile shaders
         this.renderer.compile();
+        // update vertex data from ui
+        this.renderer.pass.updateDataFromUI();
+        // save shader src to localStorage
         this.renderer.prog.vert.save();
         this.renderer.prog.frag.save();
     }

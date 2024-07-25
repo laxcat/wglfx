@@ -1,12 +1,4 @@
-class Attribute {
-    index = 0;          // vertex attribute index
-    size = 4;           // number of compoenents
-    type = 0;           // webgl component type (usually GL_FLOAT)
-    name = "";          // friendly name to indicate nature of data. pos, norm, color, etc.
-    glBuffer = null;    // when VertexLayout assigned to a pass, buffers get stored here
-    data = null;        // when VertexLayout assigned to a pass, keep copy of buffer data here
-    dataEl = null;      // when VertexLayout assigned to a pass, keep ref to data textarea here
-}
+import VertexAttrib from "/js/VertexAttrib.js"
 
 // Can be generic, reuseable with different passes, etc
 // When assigned to mesh, gets buffer objects assigned to attributes
@@ -24,10 +16,18 @@ export default class VertexLayout {
         if (this.attribs.length) {
             this.clearAttribs();
         }
-        this.attribs = attribs;
+        let index = 0;
+        attribs.forEach(attrib => {
+            const va = new VertexAttrib(
+                this.gl, index, attrib.size, attrib.type, attrib.name
+            );
+            this.attribs.push(va);
+            ++index;
+        });
     }
 
     clearAttribs() {
+        this.attribs = [];
         // TODO
     }
 }

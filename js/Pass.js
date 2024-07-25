@@ -1,4 +1,5 @@
 import VertexLayout from "/js/VertexLayout.js"
+import VertexAttrib from "/js/VertexAttrib.js"
 import * as util from "/js/util.js"
 
 export default class Pass {
@@ -31,48 +32,23 @@ export default class Pass {
     }
 
     setAttribDataAtIndex(index, data, offset=0) {
-        this.setAttribData(this.layout.attribs[index], data, offset);
+        this.layout.attribs[index].setData(data, offset);
     }
 
     setAttribDataForName(name, data, offset=0) {
         this.layout.attribs.forEach(attrib => {
             if (attrib.name == name) {
-                this.setAttribData(attrib, data, offset);
+                attrib.setData(data, offset);
                 return;
             }
         })
-    }
-
-    setAttribData(attrib, data, offset=0) {
-        // update data in local copy, create dataStr for ui
-        let dataStr = "";
-        let rowIndex = 0;
-        for (let i = offset; i < attrib.data.length; ++i) {
-            // update data
-            attrib.data[i] = data[i];
-            // update data string for ui
-            dataStr += `${data[i]},`;
-            ++rowIndex;
-            if (rowIndex === attrib.size) {
-                dataStr += "\n";
-                rowIndex = 0;
-            }
-        }
-        document.getElementById(`pass_${attrib.name}`).value = dataStr;
-        // upload to gpu
-        this.uploadData(attrib);
-    }
-
-    uploadData(attrib) {
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attrib.glBuffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, attrib.data);
     }
 
     bind() {
         let index = 0;
         this.layout.attribs.forEach(attrib => {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attrib.glBuffer);
-            this.gl.vertexAttribPointer(0, attrib.size, attrib.type, false, 0, 0);
+            this.gl.vertexAttribPointer(index, attrib.size, attrib.type, false, 0, 0);
             this.gl.enableVertexAttribArray(index);
             ++index;
         });
@@ -109,40 +85,18 @@ export default class Pass {
             attribs.insertAdjacentHTML("beforeend",
                 `<div class="attrib">
                 <div>${attrib.name}</div>
-                <textarea id="pass_${attrib.name}">${this.dataStr(attrib)}</textarea>
+                <textarea id="pass_${attrib.name}">${attrib.dataStr}</textarea>
                 </div>`
             );
             attrib.dataEl = last(last(attribs.children).children);
             attrib.dataEl.addEventListener("input", e => {
-                this.updateAttribData(attrib);
+                // attrib.updateDataFromUI();
+                attrib.dirty = true;
             });
         });
     }
 
-    dataStr(attrib) {
-        let str = "";
-        let rowIndex = 0;
-        attrib.data.forEach(dataItem => {
-            str += `${dataItem},`;
-            ++rowIndex;
-            if (rowIndex === attrib.size) {
-                str += "\n";
-                rowIndex = 0;
-            }
-        });
-        return str;
-    }
-
-    updateAttribData(attrib) {
-        const el = attrib.dataEl;
-        const newData = el.value.split(',');
-        const count = (attrib.data.length < newData.length)
-            ? attrib.data.length
-            : newData.length;
-        for (let i = 0; i < count; ++i) {
-            attrib.data[i] = parseFloat(newData[i]);
-        }
-        this.uploadData(attrib);
-        // el.value = this.dataStr(attrib);
+    updateDataFromUI() {
+        this.layout.attribs.forEach(attrib => { attrib.updateDataFromUI(); })
     }
 }
