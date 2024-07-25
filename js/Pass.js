@@ -1,4 +1,5 @@
 import VertexLayout from "/js/VertexLayout.js"
+import * as util from "/js/util.js"
 
 export default class Pass {
     gl = null;
@@ -75,15 +76,9 @@ export default class Pass {
     }
 
     createUI(el) {
-        const label = document.createElement("label");
-        const labelText = document.createTextNode("Vertex Data");
-        label.appendChild(labelText);
-        el.appendChild(label);
+        el.insertAdjacentHTML('beforeend', '<label>VertexData</label>');
         this.layout.attribs.forEach(attrib => {
-            const div = document.createElement("div");
-            const divText = document.createTextNode(attrib.name);
-            div.appendChild(divText);
-            el.appendChild(div);
+            el.insertAdjacentHTML('beforeend', `<div>${attrib.name}</div>`);
         });
     }
 }

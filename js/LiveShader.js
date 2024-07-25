@@ -121,18 +121,10 @@ export default class LiveShader {
     }
 
     createUI(el) {
-        const label = document.createElement("label");
-        const labelFor = document.createAttribute("for");
-        const labelText = document.createTextNode(`${util.capitalize(this.glTypeStr)}`);
-        labelFor.value = `${this.glTypeStr}Editor`;
-        label.setAttributeNode(labelFor);
-        label.appendChild(labelText);
-        el.appendChild(label);
-        const pre = document.createElement("pre");
-        const preId = document.createAttribute("id");
-        preId.value = `${this.glTypeStr}Editor`;
-        pre.setAttributeNode(preId);
-        el.appendChild(pre);
+        el.insertAdjacentHTML('beforeend',
+            `<label for="${this.glTypeStr}Editor">${util.capitalize(this.glTypeStr)}</label>
+            <pre id="${this.glTypeStr}Editor"></pre>`
+        );
     }
 }
 

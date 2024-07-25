@@ -46,6 +46,12 @@ canvas {
     margin: 0;
     position: relative;
     width: 60%;
-    height: 500px;
+    height: 200px;
     background: rgba(1.0, 1.0, 1.0, 0.5) !important;
+}
+
+#ui > div {
+    font-family: 'Menlo', monospace;
+    font-size: 13px;
+    color: #fff;
 }
