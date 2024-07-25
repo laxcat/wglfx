@@ -7,7 +7,7 @@ export default class App {
     time = new Time();
 
     constructor() {
-        window.addEventListener("keydown", (e) => {
+        window.addEventListener("keydown", e => {
             if (e.shiftKey || e.altKey) {
                 return;
             }

@@ -56,7 +56,7 @@ export default class LiveShader {
         // split on lines
         const errors = info.split("\n");
         // for each line, construct an error object
-        errors.forEach((item) => {
+        errors.forEach(item => {
             const parts = item.split(":");
             if (parts[0] === "ERROR") {
                 const line = parseInt(parts[2]) - 1; // ace wants 0-index lines/cols
@@ -79,7 +79,7 @@ export default class LiveShader {
 
         let errorMsg = "";
         let annotations = [];
-        this.errors.forEach((item) => {
+        this.errors.forEach(item => {
             const r = new Range(item.line, item.partStart, item.line, item.partEnd);
             item.marker = this.editor.session.addMarker(r, "ace-error", "text");
             annotations.push({
@@ -98,7 +98,7 @@ export default class LiveShader {
     }
 
     clearErrors() {
-        this.errors.forEach((item) => {
+        this.errors.forEach(item => {
             this.editor.session.removeMarker(item.marker);
         });
         this.editor.session.setAnnotations();
