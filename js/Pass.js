@@ -82,17 +82,7 @@ export default class Pass {
         );
         const attribs = last(el.children);
         this.layout.attribs.forEach(attrib => {
-            attribs.insertAdjacentHTML("beforeend",
-                `<div class="attrib">
-                <div>${attrib.name}</div>
-                <textarea id="pass_${attrib.name}">${attrib.dataStr}</textarea>
-                </div>`
-            );
-            attrib.dataEl = last(last(attribs.children).children);
-            attrib.dataEl.addEventListener("input", e => {
-                // attrib.updateDataFromUI();
-                attrib.dirty = true;
-            });
+            attrib.createUI(attribs);
         });
     }
 

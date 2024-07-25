@@ -1,3 +1,5 @@
+import * as util from "/js/util.js"
+
 export default class VertexAttrib {
     gl = null;          // webgl contex object
     index = 0;          // vertex attribute index
@@ -38,6 +40,7 @@ export default class VertexAttrib {
     }
 
     uploadData() {
+        console.log(`Uploading vertex attrib ${this.name} local data to GPU.`);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.glBuffer);
         this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, this.data);
     }
@@ -62,6 +65,8 @@ export default class VertexAttrib {
             return;
         }
 
+        console.log(`Updating vertex attrib ${this.name} data from UI.`);
+
         // make string array from ui data
         const newData = this.dataEl.value.split(',');
         // update local copy from ui data
@@ -72,5 +77,18 @@ export default class VertexAttrib {
         this.uploadData();
         // set the data string again, to fix formatting, etc
         this.dataEl.value = this.dataStr;
+    }
+
+    createUI(el) {
+        el.insertAdjacentHTML("beforeend",
+            `<div class="attrib">
+            <div>${this.name}</div>
+            <textarea id="pass_${this.name}">${this.dataStr}</textarea>
+            </div>`
+        );
+        this.dataEl = util.last(util.last(el.children).children);
+        this.dataEl.addEventListener("input", e => {
+            this.dirty = true;
+        });
     }
 }

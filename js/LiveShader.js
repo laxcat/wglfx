@@ -117,6 +117,7 @@ export default class LiveShader {
     }
 
     save() {
+        console.log("Saving ${this.glTypeStr} shader to localStorage.");
         localStorage.setItem(this.glTypeStr, this.src);
     }
 
