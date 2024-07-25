@@ -7,6 +7,7 @@ export default class Pass {
     layout = null;
     nVerts = 6;
     parentEl = null;
+    clearColor = [0.0, 0.0, 0.0, 1.0];
 
     constructor(gl, el) {
         this.gl = gl;
@@ -16,7 +17,7 @@ export default class Pass {
             {size: 4, type: gl.FLOAT, name: "color"},
         ]);
 
-        this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        this.setClearColor();
 
         let index = 0;
         this.layout.attribs.forEach(attrib => {
@@ -56,6 +57,18 @@ export default class Pass {
         );
     }
 
+    setClearColor(newColor = null) {
+        if (newColor) {
+            this.clearColor = newColor;
+        }
+        this.gl.clearColor(
+            this.clearColor[0],
+            this.clearColor[1],
+            this.clearColor[2],
+            this.clearColor[3]
+        );
+    }
+
     setAttribDataAtIndex(index, data, offset=0) {
         this.layout.attribs[index].setData(data, offset);
     }
@@ -70,6 +83,7 @@ export default class Pass {
     }
 
     bind() {
+        setClearColor();
         let index = 0;
         this.layout.attribs.forEach(attrib => {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attrib.glBuffer);
