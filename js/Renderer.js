@@ -25,9 +25,8 @@ export default class Renderer {
         const el = document.getElementById("ui");
         el.innerHTML = "";
 
-        this.prog = new LiveProgram(this.gl, el);
-
         this.pass = new Pass(this.gl, el);
+        this.prog = new LiveProgram(this.gl, el);
 
         if (this.prog.valid && this.gl.getError() === 0) {
             this.canDraw = true;

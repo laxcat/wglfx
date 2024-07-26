@@ -111,8 +111,8 @@ export default class Pass {
 
         el.insertAdjacentHTML("beforeend",
             `<section>
-            <label id="vertexData" for="vertexDataContainer">Vertex Data</label>
-            <div id="vertexDataContainer">
+            <label id="vertData" for="vertDataContainer">Vert Data</label>
+            <div id="vertDataContainer">
                 <label for="pass_vertCount">Count</label>
                 <input type="text" id="pass_vertCount" value="${this.nVerts}">
                 <label for="attribs">Attribs</label>
@@ -125,8 +125,8 @@ export default class Pass {
             attrib.createUI(attribs);
         });
         util.makeCollapsible(
-            document.getElementById("vertexData"),
-            document.getElementById("vertexDataContainer")
+            document.getElementById("vertData"),
+            document.getElementById("vertDataContainer")
         );
     }
 

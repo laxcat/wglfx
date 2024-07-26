@@ -33,7 +33,7 @@ canvas {
 
     --border:       1px solid rgba(255 255 255 / 0.4);
     --border-focus: 1px solid rgba(255 255 255 / 0.8);
-    --color-bg:     rgba(0 0 0 / 0.3);
+    --color-bg:     rgba(0 0 0 / 0.5);
     --color-hover:  rgba(255 255 255 / 0.3);
 }
 
@@ -78,7 +78,7 @@ canvas {
     border: var(--border-focus);
 }
 
-#vertexDataContainer > label {
+#vertDataContainer > label {
     font-size: 13px;
     margin: 20px 0 0 0;
 }
@@ -93,6 +93,7 @@ input#pass_vertCount {
     color: #fff;
     font-size: 13px;
     width: 60px;
+    text-align: right;
 }
 input#pass_vertCount:focus {
     outline: none;

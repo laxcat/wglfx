@@ -11,8 +11,6 @@ export default class VertexAttrib {
     dirty = false;      // ui data has changed, has not been set to local/gpu yet
     editor = null;      // ace editor, replaces dataEl
 
-    static get seperator() { return "  "; }
-
     constructor(gl, index, size, type, name) {
         this.gl = gl;
         this.index = index;
@@ -73,7 +71,7 @@ export default class VertexAttrib {
         if (maxLen > 3) maxLen = 3;
         // console.log("max len in ", this.name, maxLen, hasNeg.length);
         this.data.forEach(item => {
-            str += `${item<0?"":hasNeg}${item.toFixed(maxLen)}${VertexAttrib.seperator}`;
+            str += `${item<0?"":hasNeg}${item.toFixed(maxLen)}  `;
             ++rowIndex;
             if (rowIndex === this.size) {
                 str += "\n";
@@ -89,7 +87,7 @@ export default class VertexAttrib {
             return;
         }
         // strings, might have extra empty element at end, or other junk
-        const uiDataStr = this.editor.getValue().split(VertexAttrib.seperator);
+        const uiDataStr = this.editor.getValue().split(/[\s]+/);
         // take only valid floats
         let uiData = [];
         uiDataStr.forEach(item => {
