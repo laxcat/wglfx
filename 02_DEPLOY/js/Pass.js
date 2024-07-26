@@ -1,6 +1,6 @@
-import VertexLayout from "/js/VertexLayout.js"
-import VertexAttrib from "/js/VertexAttrib.js"
-import * as util from "/js/util.js"
+import VertexLayout from "./VertexLayout.js"
+import VertexAttrib from "./VertexAttrib.js"
+import * as util from "./util.js"
 
 export default class Pass {
     gl = null;

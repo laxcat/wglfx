@@ -1,4 +1,4 @@
-import * as util from "/js/util.js"
+import * as util from "./util.js"
 
 export default class LiveShader {
     gl = null;              // reference to webgl context
@@ -27,7 +27,7 @@ export default class LiveShader {
     get src() { return this.editor.getValue(); }
     set src(val) { this.editor.setValue(val, -1); }
 
-    get defaultSrcPath() { return `/glsl/${this.glTypeStr}.glsl`; }
+    get defaultSrcPath() { return `./glsl/${this.glTypeStr}.glsl`; }
 
     compile() {
         if (this.src === "") {

@@ -1,6 +1,6 @@
-import LiveProgram from "/js/LiveProgram.js"
-import Pass from "/js/Pass.js"
-import * as util from "/js/util.js"
+import LiveProgram from "./LiveProgram.js"
+import Pass from "./Pass.js"
+import * as util from "./util.js"
 
 export default class Renderer {
     gl = null;

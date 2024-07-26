@@ -1,4 +1,4 @@
-import VertexAttrib from "/js/VertexAttrib.js"
+import VertexAttrib from "./VertexAttrib.js"
 
 // Can be generic, reuseable with different passes, etc
 // When assigned to mesh, gets buffer objects assigned to attributes

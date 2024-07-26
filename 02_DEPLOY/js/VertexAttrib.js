@@ -1,4 +1,4 @@
-import * as util from "/js/util.js"
+import * as util from "./util.js"
 
 /*
 NOTES:
