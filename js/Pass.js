@@ -103,16 +103,12 @@ export default class Pass {
     }
 
     createUI(el) {
-        const last = util.last;
-
         el.insertAdjacentHTML("beforeend",
             `<section>
             <label id="vertData" for="vertDataContainer">Vert Data</label>
             <div id="vertDataContainer">
-                <label for="pass_vertCount">Count</label>
-                <input type="text" id="pass_vertCount" value="${this.nVerts}">
-                <label for="attribData">Attrib Data</label>
-                <div id="attribData"></div>
+                <label for="attribs">Attribs</label>
+                <ul id="attribs"></ul>
                 <form>
                     <label for="pass_addAttribSize">Size</label>
                     <input type="text" id="pass_addAttribSize" value="4">
@@ -120,6 +116,10 @@ export default class Pass {
                     <input type="text" id="pass_addAttribName" value="norm">
                     <input type="submit" value="Add Attrib">
                 </form>
+                <label for="pass_vertCount">Count</label>
+                <input type="text" id="pass_vertCount" value="${this.nVerts}">
+                <label for="attribData">Attrib Data</label>
+                <div id="attribData"></div>
             </div>
             </section>`
         );
@@ -136,10 +136,7 @@ export default class Pass {
             );
         });
 
-        util.makeCollapsible(
-            document.getElementById("vertData"),
-            document.getElementById("vertDataContainer")
-        );
+        util.makeCollapsible(util.last(el.children));
     }
 
     updateDataFromUI() {

@@ -40,7 +40,12 @@ export function aceit(id, mode="ace/mode/glsl") {
     return editor;
 }
 
-export function makeCollapsible(head, body) {
+export function makeCollapsible(parent) {
+    if (parent.children.length !== 2) {
+        return;
+    }
+    const head = parent.children[0];
+    const body = parent.children[1];
     head.addEventListener("click", e => {
         body.classList.toggle("hidden");
     });

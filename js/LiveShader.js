@@ -129,10 +129,7 @@ export default class LiveShader {
             this.clearErrors();
         })
 
-        util.makeCollapsible(
-            document.getElementById(this.labelId),
-            document.getElementById(this.editorId)
-        );
+        util.makeCollapsible(util.last(el.children));
     }
 }
 

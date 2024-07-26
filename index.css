@@ -47,6 +47,8 @@ canvas {
     font-family: 'Menlo', monospace;
     font-weight: bold;
     color: #fff;
+    margin: 10px 0 0 0;
+    display: inline-block;
 }
 
 /* top-level ui labels */
@@ -80,7 +82,6 @@ canvas {
 
 #vertDataContainer > label {
     font-size: 13px;
-    margin: 20px 0 0 0;
 }
 
 label[for="pass_vertCount"] {
