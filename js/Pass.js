@@ -111,8 +111,8 @@ export default class Pass {
             <div id="vertDataContainer">
                 <label for="pass_vertCount">Count</label>
                 <input type="text" id="pass_vertCount" value="${this.nVerts}">
-                <label for="attribs">Attribs</label>
-                <div id="attribs"></div>
+                <label for="attribData">Attrib Data</label>
+                <div id="attribData"></div>
                 <form>
                     <label for="pass_addAttribSize">Size</label>
                     <input type="text" id="pass_addAttribSize" value="4">
@@ -123,9 +123,9 @@ export default class Pass {
             </div>
             </section>`
         );
-        const attribs = document.getElementById("attribs");
+        const attribData = document.getElementById("attribData");
         this.layout.attribs.forEach(attrib => {
-            attrib.createUI(attribs);
+            attrib.createUI(attribData);
         });
 
         document.querySelector("#vertDataContainer > form").addEventListener("submit", e => {
@@ -158,8 +158,18 @@ export default class Pass {
     }
 
     addAttrib(size, name) {
+        // basic error checking
+        if (!Number.isInteger(size) ||
+            size < 1 ||
+            size > 4 ||
+            this.layout.hasAttribName(name)
+            ) {
+            console.log("Did not create new attribute.", size, name);
+            return;
+        }
+
         const attrib = this.layout.addAttrib(size, name);
         attrib.createBuffer(this.nVerts);
-        attrib.createUI(document.getElementById("attribs"));
+        attrib.createUI(document.getElementById("attribData"));
     }
 }

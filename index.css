@@ -100,11 +100,11 @@ input#pass_vertCount:focus {
     border: var(--border-focus);
 }
 
-label[for="attribs"] {
+label[for="attribData"] {
     display: block;
 }
 
-#attribs::after {
+#attribData::after {
    content: " ";
    display: block;
    height: 0;

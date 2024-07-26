@@ -32,6 +32,15 @@ export default class VertexLayout {
         return attrib;
     }
 
+    hasAttribName(name) {
+        for (let i = 0; i < this.attribs.length; ++i) {
+            if (this.attribs[i].name === name) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     clearAttribs() {
         this.attribs = [];
         // TODO
