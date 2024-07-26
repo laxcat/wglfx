@@ -30,28 +30,67 @@ canvas {
     overflow-x: hidden;
     z-index: 1;
     width: 100%;
+
+    --border:       1px solid rgba(255 255 255 / 0.4);
+    --border-focus: 1px solid rgba(255 255 255 / 0.8);
+    --color-bg:     rgba(0 0 0 / 0.3);
+    --color-hover:  rgba(255 255 255 / 0.3);
 }
 
 #ui label {
     font-family: 'Menlo', monospace;
     font-weight: bold;
+    color: #fff;
+}
+
+#ui > label {
     font-size: 15px;
     padding: 0;
     margin: 15px 0 0 0;
-    color: #fff;
     display: block;
     position: relative;
 }
 
 #ui > label:hover {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: var(--color-hover);
 }
 
-#vertEditor, #fragEditor {
+#vertEditor,
+#fragEditor {
     margin: 0;
     position: relative;
     width: 780px;
-    background: rgba(1.0, 1.0, 1.0, 0.5) !important;
+    border: var(--border);
+    background-color: var(--color-bg);
+}
+#vertEditor.ace_focus,
+#fragEditor.ace_focus {
+    border: var(--border-focus);
+}
+
+#vertexDataContainer > label {
+    font-size: 13px;
+    margin: 20px 0 0 0;
+}
+
+label[for="pass_vertCount"] {
+    display: inline-block;
+}
+input#pass_vertCount {
+    display: inline-block;
+    border: var(--border);
+    background-color: var(--color-bg);
+    color: #fff;
+    font-size: 13px;
+    width: 60px;
+}
+input#pass_vertCount:focus {
+    outline: none;
+    border: var(--border-focus);
+}
+
+label[for="attribs"] {
+    display: block;
 }
 
 #attribs::after {
@@ -73,8 +112,11 @@ canvas {
     font-family: 'Menlo', monospace;
     font-size: 13px;
     color: #fff;
-    border: 1 solid #fff;
+    border: var(--border);
     width: 100%;
-    background-color: rgba(0, 0, 0, 0.0);
-
+    background-color: var(--color-bg);
+    margin: 0;
+}
+.attrib > pre.ace_focus {
+    border: var(--border-focus);
 }

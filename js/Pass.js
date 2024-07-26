@@ -114,10 +114,11 @@ export default class Pass {
             <div id="vertexDataContainer">
                 <label for="pass_vertCount">Count</label>
                 <input type="text" id="pass_vertCount" value="${this.nVerts}">
+                <label for="attribs">Attribs</label>
                 <div id="attribs"></div>
             </div>`
         );
-        const attribs = last(el.children);
+        const attribs = last(last(el.children).children);
         this.layout.attribs.forEach(attrib => {
             attrib.createUI(attribs);
         });
