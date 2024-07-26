@@ -26,6 +26,12 @@ export default class VertexLayout {
         });
     }
 
+    addAttrib(size, name) {
+        const attrib = new VertexAttrib(this.gl, this.attribs.length, size, name);
+        this.attribs.push(attrib);
+        return attrib;
+    }
+
     clearAttribs() {
         this.attribs = [];
         // TODO

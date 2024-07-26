@@ -15,14 +15,11 @@ export default class Pass {
             {size: 4, name: "pos"},
             {size: 4, name: "color"},
         ]);
-
-        this.setClearColor();
-
-        let index = 0;
         this.layout.attribs.forEach(attrib => {
             attrib.createBuffer(this.nVerts);
-            ++index;
         });
+
+        this.setClearColor();
 
         this.createUI(el);
 
@@ -116,6 +113,13 @@ export default class Pass {
                 <input type="text" id="pass_vertCount" value="${this.nVerts}">
                 <label for="attribs">Attribs</label>
                 <div id="attribs"></div>
+                <form>
+                    <label for="pass_addAttribSize">Size</label>
+                    <input type="text" id="pass_addAttribSize" value="4">
+                    <label for="pass_addAttribName">Name</label>
+                    <input type="text" id="pass_addAttribName" value="norm">
+                    <input type="submit" value="Add Attrib">
+                </form>
             </div>
             </section>`
         );
@@ -123,6 +127,15 @@ export default class Pass {
         this.layout.attribs.forEach(attrib => {
             attrib.createUI(attribs);
         });
+
+        document.querySelector("#vertDataContainer > form").addEventListener("submit", e => {
+            e.preventDefault();
+            this.addAttrib(
+                parseInt(document.getElementById("pass_addAttribSize").value),
+                document.getElementById("pass_addAttribName").value
+            );
+        });
+
         util.makeCollapsible(
             document.getElementById("vertData"),
             document.getElementById("vertDataContainer")
@@ -144,7 +157,9 @@ export default class Pass {
         });
     }
 
-    addAttrib() {
-
+    addAttrib(size, name) {
+        const attrib = this.layout.addAttrib(size, name);
+        attrib.createBuffer(this.nVerts);
+        attrib.createUI(document.getElementById("attribs"));
     }
 }

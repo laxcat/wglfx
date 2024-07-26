@@ -131,3 +131,18 @@ label[for="attribs"] {
 .attrib > pre.ace_focus {
     border: var(--border-focus);
 }
+
+#vertDataContainer > form > label {
+    font-size: 13px;
+}
+
+#vertDataContainer > form > input[type="text"] {
+    border: var(--border);
+    background-color: var(--color-bg);
+    color: #fff;
+    font-size: 13px;
+}
+#vertDataContainer > form > input[type="text"]:focus {
+    border: var(--border-focus);
+    outline: none;
+}
