@@ -34,6 +34,7 @@ export default class VertexAttrib {
     }
 
     deleteBuffer() {
+        this.gl.disableVertexAttribArray(this.index);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         this.gl.deleteBuffer(this.glBuffer);
         this.glBuffer = null;
