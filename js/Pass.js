@@ -110,15 +110,17 @@ export default class Pass {
         const last = util.last;
 
         el.insertAdjacentHTML("beforeend",
-            `<label id="vertexData" for="vertexDataContainer">Vertex Data</label>
+            `<section>
+            <label id="vertexData" for="vertexDataContainer">Vertex Data</label>
             <div id="vertexDataContainer">
                 <label for="pass_vertCount">Count</label>
                 <input type="text" id="pass_vertCount" value="${this.nVerts}">
                 <label for="attribs">Attribs</label>
                 <div id="attribs"></div>
-            </div>`
+            </div>
+            </section>`
         );
-        const attribs = last(last(el.children).children);
+        const attribs = document.getElementById("attribs");
         this.layout.attribs.forEach(attrib => {
             attrib.createUI(attribs);
         });

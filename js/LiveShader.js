@@ -129,8 +129,10 @@ export default class LiveShader {
 
     createUI(el) {
         el.insertAdjacentHTML("beforeend",
-            `<label id="${this.labelId}" for="${this.editorId}">${util.capitalize(this.glTypeStr)}</label>
-            <pre id="${this.editorId}"></pre>`
+            `<section>
+            <label id="${this.labelId}" for="${this.editorId}">${util.capitalize(this.glTypeStr)}</label>
+            <pre id="${this.editorId}"></pre>
+            </section>`
         );
 
     }
