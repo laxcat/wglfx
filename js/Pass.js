@@ -6,7 +6,6 @@ export default class Pass {
     gl = null;
     layout = null;
     nVerts = 6;
-    parentEl = null;
     clearColor = [0.0, 0.0, 0.0, 1.0];
 
     constructor(gl, el) {
