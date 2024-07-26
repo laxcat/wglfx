@@ -110,15 +110,21 @@ export default class Pass {
         const last = util.last;
 
         el.insertAdjacentHTML("beforeend",
-            `<label>Vertex Data</label>
-            <label for="pass_vertCount">Count</label>
-            <input type="text" id="pass_vertCount" value="${this.nVerts}">
-            <div id="attribs"></div>`
+            `<label id="vertexData" for="vertexDataContainer">Vertex Data</label>
+            <div id="vertexDataContainer">
+                <label for="pass_vertCount">Count</label>
+                <input type="text" id="pass_vertCount" value="${this.nVerts}">
+                <div id="attribs"></div>
+            </div>`
         );
         const attribs = last(el.children);
         this.layout.attribs.forEach(attrib => {
             attrib.createUI(attribs);
         });
+        util.makeCollapsible(
+            document.getElementById("vertexData"),
+            document.getElementById("vertexDataContainer")
+        );
     }
 
     updateDataFromUI() {
@@ -134,9 +140,5 @@ export default class Pass {
             }
             attrib.updateDataFromUI();
         });
-
-        if (nVertsChanged) {
-            // this.bind();
-        }
     }
 }

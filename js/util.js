@@ -39,3 +39,9 @@ export function aceit(id, mode="ace/mode/glsl") {
     editor.session.setMode(mode);
     return editor;
 }
+
+export function makeCollapsible(head, body) {
+    head.addEventListener("click", e => {
+        body.classList.toggle("hidden");
+    });
+}

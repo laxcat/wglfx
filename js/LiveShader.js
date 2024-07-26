@@ -19,13 +19,21 @@ export default class LiveShader {
         this.createUI(el);
 
         this.editor = util.aceit(this.editorId);
+        this.editor.session.setUseWrapMode(true);
+        this.editor.session.setWrapLimit(100);
         this.editor.addEventListener("change", () => {
             this.clearErrors();
         })
 
+        util.makeCollapsible(
+            document.getElementById(this.labelId),
+            document.getElementById(this.editorId)
+        );
+
         this.load();
     }
 
+    get labelId() { return `${this.glTypeStr}Label`; }
     get editorId() { return `${this.glTypeStr}Editor`; }
 
     get src() { return this.editor.getValue(); }
@@ -121,9 +129,10 @@ export default class LiveShader {
 
     createUI(el) {
         el.insertAdjacentHTML("beforeend",
-            `<label for="${this.editorId}">${util.capitalize(this.glTypeStr)}</label>
+            `<label id="${this.labelId}" for="${this.editorId}">${util.capitalize(this.glTypeStr)}</label>
             <pre id="${this.editorId}"></pre>`
         );
+
     }
 }
 
