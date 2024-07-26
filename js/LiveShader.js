@@ -15,12 +15,12 @@ export default class LiveShader {
         this.glTypeStr = (type === this.gl.VERTEX_SHADER)    ? "vert" :
                          (type === this.gl.FRAGMENT_SHADER)  ? "frag" :
                          "unknown-type";
-        ;
 
         this.createUI(el);
 
-        this.editor = ace.edit(`${this.glTypeStr}Editor`);
+        this.editor = ace.edit(this.editorId);
         this.editor.setTheme("ace/theme/solarized_dark");
+        this.editor.setKeyboardHandler("ace/keyboard/sublime");
         this.editor.session.setMode("ace/mode/glsl");
 
         this.editor.addEventListener("change", () => {
@@ -29,6 +29,8 @@ export default class LiveShader {
 
         this.load();
     }
+
+    get editorId() { return `${this.glTypeStr}Editor`; }
 
     get src() { return this.editor.getValue(); }
     set src(val) { this.editor.setValue(val, -1); }
@@ -123,8 +125,8 @@ export default class LiveShader {
 
     createUI(el) {
         el.insertAdjacentHTML("beforeend",
-            `<label for="${this.glTypeStr}Editor">${util.capitalize(this.glTypeStr)}</label>
-            <pre id="${this.glTypeStr}Editor"></pre>`
+            `<label for="${this.editorId}">${util.capitalize(this.glTypeStr)}</label>
+            <pre id="${this.editorId}"></pre>`
         );
     }
 }

@@ -72,7 +72,7 @@ export default class Pass {
     }
 
     bind() {
-        setClearColor();
+        this.setClearColor();
         let index = 0;
         this.layout.attribs.forEach(attrib => {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attrib.glBuffer);
@@ -91,6 +91,7 @@ export default class Pass {
 
     draw() {
         this.gl.drawArrays(this.gl.TRIANGLES, 0, this.nVerts);
+        // util.checkError(this.gl);
     }
 
     deleteAttribBuffers() {
@@ -120,7 +121,16 @@ export default class Pass {
         this.nVerts = newNVerts;
 
         this.layout.attribs.forEach(attrib => {
-            attrib.updateDataFromUI(this.nVerts);
+            if (nVertsChanged) {
+                attrib.deleteBuffer();
+                attrib.createBuffer(this.nVerts);
+                attrib.dirty = true; // forces data to be pulled from ui
+            }
+            attrib.updateDataFromUI();
         });
+
+        if (nVertsChanged) {
+            // this.bind();
+        }
     }
 }

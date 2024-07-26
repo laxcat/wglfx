@@ -31,6 +31,7 @@ export default class VertexAttrib {
     }
 
     deleteBuffer() {
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         this.gl.deleteBuffer(this.glBuffer);
         this.glBuffer = null;
         this.data = null;
@@ -79,44 +80,27 @@ export default class VertexAttrib {
         return str;
     }
 
-    updateDataFromUI(nVerts) {
-        // number of elements in TypedArray, different if nVerts changed
-        const n = nVerts * this.size;
-
-        // bail early if data has not changed
-        if (!this.dirty && n === this.data.length) {
-            return;
+    updateDataFromUI() {
+        // strings, might have extra empty element at end, or other junk
+        const uiDataStr = this.dataEl.value.split(VertexAttrib.seperator);
+        // take only valid floats
+        let uiData = [];
+        uiDataStr.forEach(item => {
+            const f = parseFloat(item);
+            if (!isNaN(f)) {
+                uiData.push(f);
+            }
+        })
+        console.log(`Updating vertex attrib ${this.name} data from UI:\n` +
+                    `UI has ${uiData.length} elements. (Data buffer has ${this.data.length})`
+        );
+        // don't go beyond bound of this.data or uiData. we don't care which is bigger.
+        const n = Math.min(uiData.length, this.data.length);
+        // copy whatever data we can from ui to this.data
+        for (let i = 0; i < n; ++i) {
+            this.data[i] = uiData[i];
         }
-
-        console.log(`Updating vertex attrib ${this.name} data from UI.`);
-
-        let minN = n;
-        const oldData = this.data;
-
-        // ui requesting smaller vert count
-        if (n < this.data.length) {
-            this.data = oldData.slice(0, n);
-            minN = n;
-        }
-        // ui request larger vert count
-        else if (n > oldData.length) {
-            this.data = new Float32Array(n);
-            this.data.set(oldData);
-            minN = oldData.length;
-        }
-
-        // make string array from ui data
-        const newData = this.dataEl.value.split(VertexAttrib.seperator);
-
-        // only update data if we have it
-        if (minN > newData.length) {
-            minN = newData.length;
-        }
-        // update local copy from ui data
-        for (let i = 0; i < minN; ++i) {
-            this.data[i] = parseFloat(newData[i]);
-        }
-        // upload local copy to gpu
+        // upload this.data to gpu
         this.uploadData();
         // set the data string again, to fix formatting, etc
         this.dataEl.value = this.dataStr;
