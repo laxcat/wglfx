@@ -47,7 +47,7 @@ export default class VertexAttrib {
             this.data[i] = data[i];
         }
         // update ui from this.data
-        this.editor.setValue(this.dataStr);
+        this.updateEditorValue()
         // upload this.data to gpu
         this.uploadData();
     }
@@ -111,9 +111,16 @@ export default class VertexAttrib {
         // upload ALL of this.data to gpu (even parts not changed by uiData)
         this.uploadData();
         // set the data string again, to fix formatting, etc
-        this.editor.setValue(this.dataStr);
+        this.updateEditorValue()
         // this house is clean
         this.uiDirty = false;
+    }
+
+    updateEditorValue() {
+        const row = this.editor.session.selection.cursor.row;
+        const col = this.editor.session.selection.cursor.column;
+        this.editor.setValue(this.dataStr);
+        this.editor.moveCursorTo(row, col);
     }
 
     createUI(el) {
