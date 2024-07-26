@@ -19,7 +19,7 @@ export default class VertexLayout {
         let index = 0;
         attribs.forEach(attrib => {
             const va = new VertexAttrib(
-                this.gl, index, attrib.size, attrib.type, attrib.name
+                this.gl, index, attrib.size, attrib.name
             );
             this.attribs.push(va);
             ++index;

@@ -1,21 +1,24 @@
 import * as util from "/js/util.js"
 
+/*
+NOTES:
+ • component type is always float32
+*/
+
 export default class VertexAttrib {
     gl = null;          // webgl contex object
     index = 0;          // vertex attribute index
     size = 4;           // number of compoenents
-    type = 0;           // webgl component type (usually GL_FLOAT)
     name = "";          // friendly name to indicate nature of data. pos, norm, color, etc.
     glBuffer = null;    // when VertexLayout assigned to a pass, buffers get stored here
     data = null;        // when VertexLayout assigned to a pass, keep copy of buffer data here
     uiDirty = false;      // ui data has changed, has not been set to local/gpu yet
     editor = null;      // ace editor, replaces dataEl
 
-    constructor(gl, index, size, type, name) {
+    constructor(gl, index, size, name) {
         this.gl = gl;
         this.index = index;
         this.size = size;
-        this.type = type;
         this.name = name;
     }
 
@@ -26,7 +29,7 @@ export default class VertexAttrib {
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.glBuffer);
         this.data = new Float32Array(this.size * nVerts);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, this.data, this.gl.STATIC_DRAW);
-        this.gl.vertexAttribPointer(this.index, this.size, this.type, false, 0, 0);
+        this.gl.vertexAttribPointer(this.index, this.size, this.gl.FLOAT, false, 0, 0);
         this.gl.enableVertexAttribArray(this.index);
     }
 

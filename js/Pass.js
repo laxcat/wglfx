@@ -12,8 +12,8 @@ export default class Pass {
         this.gl = gl;
 
         this.layout = new VertexLayout(gl, [
-            {size: 4, type: gl.FLOAT, name: "pos"},
-            {size: 4, type: gl.FLOAT, name: "color"},
+            {size: 4, name: "pos"},
+            {size: 4, name: "color"},
         ]);
 
         this.setClearColor();
@@ -81,7 +81,7 @@ export default class Pass {
         let index = 0;
         this.layout.attribs.forEach(attrib => {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attrib.glBuffer);
-            this.gl.vertexAttribPointer(index, attrib.size, attrib.type, false, 0, 0);
+            this.gl.vertexAttribPointer(index, attrib.size, this.gl.FLOAT, false, 0, 0);
             this.gl.enableVertexAttribArray(index);
             ++index;
         });
@@ -142,5 +142,9 @@ export default class Pass {
             }
             attrib.updateDataFromUI();
         });
+    }
+
+    addAttrib() {
+
     }
 }
