@@ -8,7 +8,7 @@ export default class VertexAttrib {
     name = "";          // friendly name to indicate nature of data. pos, norm, color, etc.
     glBuffer = null;    // when VertexLayout assigned to a pass, buffers get stored here
     data = null;        // when VertexLayout assigned to a pass, keep copy of buffer data here
-    dirty = false;      // ui data has changed, has not been set to local/gpu yet
+    uiDirty = false;    // ui data has changed, has not been set to local/gpu yet
     editor = null;      // ace editor, replaces dataEl
 
     constructor(gl, index, size, type, name) {
@@ -83,8 +83,8 @@ export default class VertexAttrib {
 
     updateDataFromUI() {
         // BAIL IF NO CHANGES MADE!
-        if (!this.dirty) {
-            return;
+        if (!this.uiDirty) {
+          return;
         }
         // strings, might have extra empty element at end, or other junk
         const uiDataStr = this.editor.getValue().split(/[\s]+/);
@@ -110,8 +110,8 @@ export default class VertexAttrib {
         // set the data string again, to fix formatting, etc
         this.editor.setValue(this.dataStr);
         // this house is clean
-        this.dirty = false;
-    }
+        this.uiDirty = false;
+   
 
     createUI(el) {
         el.insertAdjacentHTML("beforeend",
@@ -122,7 +122,7 @@ export default class VertexAttrib {
         );
         this.editor = util.aceit(this.editorId, "ace/mode/text");
         this.editor.addEventListener("change", e => {
-            this.dirty = true;
-        })
+            this.uiDirty = true;
+      })
     }
 }

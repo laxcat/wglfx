@@ -139,7 +139,7 @@ export default class Pass {
             if (nVertsChanged) {
                 attrib.deleteBuffer();
                 attrib.createBuffer(this.nVerts);
-                attrib.dirty = true; // forces data to be pulled from ui
+                attrib.uiDirty = true; // forces data to be pulled from ui
             }
             attrib.updateDataFromUI();
         });
