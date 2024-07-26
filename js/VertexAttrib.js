@@ -8,8 +8,8 @@ export default class VertexAttrib {
     name = "";          // friendly name to indicate nature of data. pos, norm, color, etc.
     glBuffer = null;    // when VertexLayout assigned to a pass, buffers get stored here
     data = null;        // when VertexLayout assigned to a pass, keep copy of buffer data here
-    dataEl = null;      // when VertexLayout assigned to a pass, keep ref to data textarea here
     dirty = false;      // ui data has changed, has not been set to local/gpu yet
+    editor = null;      // ace editor, replaces dataEl
 
     static get seperator() { return "  "; }
 
@@ -20,6 +20,8 @@ export default class VertexAttrib {
         this.type = type;
         this.name = name;
     }
+
+    get editorId() { return `pass_${this.name}`; }
 
     createBuffer(nVerts) {
         this.glBuffer = this.gl.createBuffer();
@@ -38,13 +40,14 @@ export default class VertexAttrib {
     }
 
     setData(data, offset=0) {
-        // update data in local copy
-        const minN = (data.length < this.data.length) ? data.length : this.data.length;
-        for (let i = offset; i < minN; ++i) {
+        // update this.data
+        const n = Math.min(data.length, this.data.length);
+        for (let i = offset; i < n; ++i) {
             this.data[i] = data[i];
         }
-        document.getElementById(`pass_${this.name}`).value = this.dataStr;
-        // upload local copy to gpu
+        // update ui from this.data
+        this.editor.setValue(this.dataStr);
+        // upload this.data to gpu
         this.uploadData();
     }
 
@@ -81,8 +84,12 @@ export default class VertexAttrib {
     }
 
     updateDataFromUI() {
+        // BAIL IF NO CHANGES MADE!
+        if (!this.dirty) {
+            return;
+        }
         // strings, might have extra empty element at end, or other junk
-        const uiDataStr = this.dataEl.value.split(VertexAttrib.seperator);
+        const uiDataStr = this.editor.getValue().split(VertexAttrib.seperator);
         // take only valid floats
         let uiData = [];
         uiDataStr.forEach(item => {
@@ -100,22 +107,24 @@ export default class VertexAttrib {
         for (let i = 0; i < n; ++i) {
             this.data[i] = uiData[i];
         }
-        // upload this.data to gpu
+        // upload ALL of this.data to gpu (even parts not changed by uiData)
         this.uploadData();
         // set the data string again, to fix formatting, etc
-        this.dataEl.value = this.dataStr;
+        this.editor.setValue(this.dataStr);
+        // this house is clean
+        this.dirty = false;
     }
 
     createUI(el) {
         el.insertAdjacentHTML("beforeend",
             `<div class="attrib">
             <div>${this.name}</div>
-            <textarea id="pass_${this.name}">${this.dataStr}</textarea>
+            <pre id="${this.editorId}">${this.dataStr}</pre>
             </div>`
         );
-        this.dataEl = util.last(util.last(el.children).children);
-        this.dataEl.addEventListener("input", e => {
+        this.editor = util.aceit(this.editorId, "ace/mode/text");
+        this.editor.addEventListener("change", e => {
             this.dirty = true;
-        });
+        })
     }
 }

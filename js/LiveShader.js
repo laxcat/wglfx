@@ -18,11 +18,7 @@ export default class LiveShader {
 
         this.createUI(el);
 
-        this.editor = ace.edit(this.editorId);
-        this.editor.setTheme("ace/theme/solarized_dark");
-        this.editor.setKeyboardHandler("ace/keyboard/sublime");
-        this.editor.session.setMode("ace/mode/glsl");
-
+        this.editor = util.aceit(this.editorId);
         this.editor.addEventListener("change", () => {
             this.clearErrors();
         })

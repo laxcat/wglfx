@@ -28,3 +28,14 @@ export function capitalize(str) {
 export function last(arrayLike) {
     return arrayLike[arrayLike.length - 1];
 }
+
+export function aceit(id, mode="ace/mode/glsl") {
+    const editor = ace.edit(id);
+    editor.setTheme("ace/theme/solarized_dark");
+    editor.setKeyboardHandler("ace/keyboard/sublime");
+    editor.setOptions({
+        maxLines:9999,
+    });
+    editor.session.setMode(mode);
+    return editor;
+}

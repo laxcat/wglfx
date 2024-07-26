@@ -27,6 +27,7 @@ canvas {
 #ui {
     position: absolute;
     overflow: scroll;
+    overflow-x: hidden;
     z-index: 1;
     width: 100%;
 }
@@ -46,7 +47,6 @@ canvas {
     margin: 0;
     position: relative;
     width: 60%;
-    height: 200px;
     background: rgba(1.0, 1.0, 1.0, 0.5) !important;
 }
 
@@ -61,17 +61,16 @@ canvas {
     font-family: 'Menlo', monospace;
     font-size: 13px;
     color: #fff;
-    width: 250px;
+    width: 300px;
     float: left;
 }
 
-.attrib > textarea {
+.attrib > pre {
     font-family: 'Menlo', monospace;
     font-size: 13px;
     color: #fff;
     border: 1 solid #fff;
     width: 100%;
-    height: 150px;
     background-color: rgba(0, 0, 0, 0.0);
 
 }

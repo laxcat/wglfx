@@ -5,7 +5,7 @@ import * as util from "/js/util.js"
 export default class Pass {
     gl = null;
     layout = null;
-    nVerts = 3;
+    nVerts = 6;
     parentEl = null;
     clearColor = [0.0, 0.0, 0.0, 1.0];
 
@@ -30,9 +30,12 @@ export default class Pass {
         this.setAttribDataForName(
             "pos",
             new Float32Array([
-                 0,   1,   0,   1,
-                 1,  -1,   0,   1,
-                -1,  -1,   0,   1,
+                 0.50,   1.00,   0.00,   1.00,
+                 1.00,  -1.00,   0.00,   1.00,
+                -1.00,  -1.00,   0.00,   1.00,
+                -0.50,   1.00,   0.00,   1.00,
+                 1.00,  -1.00,   0.00,   1.00,
+                -1.00,  -1.00,   0.00,   1.00,
             ])
         );
 
@@ -40,6 +43,9 @@ export default class Pass {
             "color",
             new Float32Array([
                 0.5,  0.0,  0.0,  1.0,
+                0.0,  0.0,  0.0,  1.0,
+                0.0,  0.0,  0.0,  1.0,
+                0.0,  0.5,  0.5,  1.0,
                 0.0,  0.0,  0.0,  1.0,
                 0.0,  0.0,  0.0,  1.0,
             ])
