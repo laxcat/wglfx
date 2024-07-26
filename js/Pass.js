@@ -5,7 +5,7 @@ import * as util from "/js/util.js"
 export default class Pass {
     gl = null;
     layout = null;
-    nVerts = 6;
+    nVerts = 3;
     parentEl = null;
     clearColor = [0.0, 0.0, 0.0, 1.0];
 
@@ -21,12 +21,7 @@ export default class Pass {
 
         let index = 0;
         this.layout.attribs.forEach(attrib => {
-            attrib.glBuffer = this.gl.createBuffer();
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attrib.glBuffer);
-            attrib.data = new Float32Array(attrib.size * this.nVerts);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, attrib.data, this.gl.STATIC_DRAW);
-            this.gl.vertexAttribPointer(index, attrib.size, attrib.type, false, 0, 0);
-            this.gl.enableVertexAttribArray(index);
+            attrib.createBuffer(this.nVerts);
             ++index;
         });
 
@@ -35,24 +30,18 @@ export default class Pass {
         this.setAttribDataForName(
             "pos",
             new Float32Array([
-                0.0, 0.0, 0.0, 1.0,
-                0.0, 1.0, 0.0, 1.0,
-                1.0, 1.0, 0.0, 1.0,
-                0.0, 0.0, 0.0, 1.0,
-                1.0, 1.0, 0.0, 1.0,
-                1.0, 0.0, 0.0, 1.0,
+                 0,   1,   0,   1,
+                 1,  -1,   0,   1,
+                -1,  -1,   0,   1,
             ])
         );
 
         this.setAttribDataForName(
             "color",
             new Float32Array([
-                1.0, 0.0, 0.0, 1.0,
-                0.0, 1.0, 0.0, 1.0,
-                0.0, 0.0, 1.0, 1.0,
-                1.0, 1.0, 0.0, 1.0,
-                0.0, 1.0, 1.0, 1.0,
-                1.0, 0.0, 1.0, 1.0,
+                0.5,  0.0,  0.0,  1.0,
+                0.0,  0.0,  0.0,  1.0,
+                0.0,  0.0,  0.0,  1.0,
             ])
         );
     }
@@ -106,9 +95,7 @@ export default class Pass {
 
     deleteAttribBuffers() {
         this.layout.attribs.forEach(attrib => {
-            this.gl.deleteBuffer(attrib.glBuffer);
-            attrib.glBuffer = null;
-            attrib.data = null;
+            attrib.deleteBuffer();
         });
     }
 
@@ -128,9 +115,12 @@ export default class Pass {
     }
 
     updateDataFromUI() {
-        this.nVerts = parseInt(document.getElementById("pass_vertCount").value);
+        const newNVerts = parseInt(document.getElementById("pass_vertCount").value);;
+        const nVertsChanged = (this.nVerts !== newNVerts);
+        this.nVerts = newNVerts;
+
         this.layout.attribs.forEach(attrib => {
             attrib.updateDataFromUI(this.nVerts);
-        })
+        });
     }
 }
