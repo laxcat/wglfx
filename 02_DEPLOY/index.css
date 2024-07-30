@@ -84,6 +84,14 @@ canvas {
     font-size: 13px;
 }
 
+#attribs li {
+    font-family: 'Menlo', monospace;
+    font-weight: bold;
+    font-size: 13px;
+    white-space: pre;
+    color: #fff;
+}
+
 label[for="pass_vertCount"] {
     display: inline-block;
 }
@@ -102,7 +110,7 @@ input#pass_vertCount:focus {
 }
 
 label[for="attribData"] {
-    display: block;
+    display: block !important;
 }
 
 #attribData::after {

@@ -25,6 +25,11 @@ export default class VertexAttrib {
     get editorId() { return `pass_${this.name}`; }
 
     createBuffer(nVerts) {
+        if (this.glBuffer || this.data) {
+            throw `Unexpected call to createBuffer. Buffer already created.\n`+
+                  `${this.glBuffer}\n`+
+                  `${this.data}\n`;
+        }
         this.glBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.glBuffer);
         this.data = new Float32Array(this.size * nVerts);
@@ -34,6 +39,11 @@ export default class VertexAttrib {
     }
 
     deleteBuffer() {
+        // if (!this.glBuffer || !this.data) {
+        //     throw `Unexpected call to deleteBuffer. Buffer not created.\n`+
+        //           `${this.glBuffer}\n`+
+        //           `${this.data}\n`;
+        // }
         this.gl.disableVertexAttribArray(this.index);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         this.gl.deleteBuffer(this.glBuffer);
@@ -48,7 +58,7 @@ export default class VertexAttrib {
             this.data[i] = data[i];
         }
         // update ui from this.data
-        this.updateEditorValue()
+        // this.updateEditorValue()
         // upload this.data to gpu
         this.uploadData();
     }
@@ -124,16 +134,22 @@ export default class VertexAttrib {
         this.editor.moveCursorTo(row, col);
     }
 
-    createUI(el) {
+    createListUI(el) {
         el.insertAdjacentHTML("beforeend",
-            `<div class="attrib">
-            <div>${this.name}</div>
-            <pre id="${this.editorId}">${this.dataStr}</pre>
-            </div>`
+            `<li>${this.index}: ${this.name.padStart(6)}, ${this.size} float components, ${this.size * 4} bytes</li>`
         );
-        this.editor = util.aceit(this.editorId, "ace/mode/text");
-        this.editor.addEventListener("change", e => {
-            this.uiDirty = true;
-        })
     }
+
+    // createDataUI(el) {
+    //     el.insertAdjacentHTML("beforeend",
+    //         `<div class="attrib">
+    //         <div>${this.name}</div>
+    //         <pre id="${this.editorId}">${this.dataStr}</pre>
+    //         </div>`
+    //     );
+    //     this.editor = util.aceit(this.editorId, "ace/mode/text");
+    //     this.editor.addEventListener("change", e => {
+    //         this.uiDirty = true;
+    //     })
+    // }
 }

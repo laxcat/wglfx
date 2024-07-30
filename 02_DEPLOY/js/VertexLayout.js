@@ -8,7 +8,6 @@ export default class VertexLayout {
 
     constructor(gl, attribs) {
         this.gl = gl;
-
         this.setAttribs(attribs);
     }
 
@@ -16,6 +15,7 @@ export default class VertexLayout {
         if (this.attribs.length) {
             this.clearAttribs();
         }
+        console.log("attribs", attribs);
         let index = 0;
         attribs.forEach(attrib => {
             const va = new VertexAttrib(
@@ -44,5 +44,14 @@ export default class VertexLayout {
     clearAttribs() {
         this.attribs = [];
         // TODO
+    }
+
+    setDataByName(name, data, offset=0) {
+        for (let i = 0; i < this.attribs.length; ++i) {
+            if (this.attribs[i].name === name) {
+                this.attribs[i].setData(data, offset);
+                return;
+            }
+        }
     }
 }
