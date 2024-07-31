@@ -9,10 +9,7 @@ export default class Pass {
     meshes = [];
     nMeshes = 0;
     clearColor = [0.0, 0.0, 0.0, 1.0];
-
-    static nextId = 0;
-    uid = ++Pass.nextId;
-    get uname() { return `pass-${this.uid}`; }
+    el = null;
 
     constructor(gl) {
         this.gl = gl;
@@ -140,19 +137,19 @@ export default class Pass {
     // }
 
     createUI(parentEl) {
-        const pass = ui.appendHTML(parentEl,
+        this.passEl = ui.appendHTML(parentEl,
             `
-            <li id="${this.uname}">
+            <li>
                 <label class="collapsible">Pass</label>
                 <section>
                     <label class="collapsible">Layout</label>
                     <section>
-                        <ul id="${this.uname}-layout"></ul>
-                        <form class="small" id="${this.uname}-add-attrib">
+                        <ul></ul>
+                        <form class="small"-attrib">
                             <label>Size</label>
-                            <input type="number" id="${this.uname}-attrib-size" min="1" max="4">
+                            <input type="number" min="1" max="4">
                             <label>Name</label>
-                            <input type="text" id="${this.uname}-attrib-name" pattern="[a-z]{3,12}" placeholder="[a-z]{3,12}">
+                            <input type="text" pattern="[a-z]{3,12}" placeholder="[a-z]{3,12}">
                             <input type="submit" value="Add Attribute">
                         </form>
                     </section>
@@ -162,19 +159,19 @@ export default class Pass {
         );
 
         // create attributes list (layout)
-        const layoutEl = document.getElementById(`${this.uname}-layout`);
+        const layoutEl = this.passEl.querySelector("ul");
         this.layout.attribs.forEach(attrib => attrib.createUI(layoutEl));
 
         // add form handler
-        const form = document.getElementById(`${this.uname}-add-attrib`);
-        const size = document.getElementById(`${this.uname}-attrib-size`);
-        const name = document.getElementById(`${this.uname}-attrib-name`);
+        const form = this.passEl.querySelector("form");
+        const size = form.querySelectorAll("input")[0];
+        const name = form.querySelectorAll("input")[1];
         form.addEventListener("submit", e => {
             e.preventDefault();
-            this.addAttrib(parseInt(size.value), name.value);
+            if (this.addAttrib(parseInt(size.value), name.value)) {
+                form.reset();
+            }
         });
-
-        // util.makeCollapsible(util.last(parentEl.children));
     }
 
     updateDataFromUI() {
@@ -195,18 +192,21 @@ export default class Pass {
     }
 
     addAttrib(size, name) {
+        name = name.trim();
         // basic error checking
         if (!Number.isInteger(size) ||
             size < 1 ||
             size > 4 ||
+            name.length < 3 ||
             this.layout.hasAttribName(name)
             ) {
             console.log("Did not create new attribute.", size, name);
-            return;
+            return false;
         }
 
         const attrib = this.layout.addAttrib(size, name);
         attrib.createBuffer(this.nVerts);
-        attrib.createUI(document.getElementById(`${this.uname}-layout`));
+        attrib.createUI(this.passEl.querySelector("ul"));
+        return true;
     }
 }

@@ -134,8 +134,8 @@ export default class VertexAttrib {
         this.editor.moveCursorTo(row, col);
     }
 
-    createUI(el) {
-        el.insertAdjacentHTML("beforeend",
+    createUI(parentEl) {
+        parentEl.insertAdjacentHTML("beforeend",
             `<li>${this.index}: ${this.name.padEnd(12)}, ${this.size} float components, ${this.size * 4} bytes</li>`
         );
     }
