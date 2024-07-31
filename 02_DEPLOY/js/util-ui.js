@@ -2,7 +2,7 @@ import "./util.js"
 
 export function parse(uiEl) {
     // add collapsible handlers
-    const collapsibles = uiEl.querySelectorAll("*:has(> label.collapsible + *)");
+    const collapsibles = uiEl.querySelectorAll("label.collapsible");
     collapsibles.forEach(makeCollapsible);
 
     // add generic form handlers to always prevent default
@@ -10,16 +10,11 @@ export function parse(uiEl) {
     forms.forEach(form => form.addEventListener("submit", e => e.preventDefault()));
 }
 
-export function makeCollapsible(parentEl) {
-    if (parentEl.children.length !== 2) {
-        console.log("Skipping makeCollapsible for children of ${parentEl}. Collapsible expects exactly 1 sibling.");
-        return;
+export function makeCollapsible(el) {
+    const next = el.nextElementSibling;
+    if (next) {
+        el.addEventListener("click", e => next.classList.toggle("hidden"));
     }
-    const head = parentEl.children[0];
-    const body = parentEl.children[1];
-    head.addEventListener("click", e => {
-        body.classList.toggle("hidden");
-    });
 }
 
 Element.prototype.appendHTML = function(html) {

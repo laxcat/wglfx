@@ -22,8 +22,6 @@ export default class VertexAttrib {
         this.name = name;
     }
 
-    get editorId() { return `pass_${this.name}`; }
-
     createBuffer(nVerts) {
         if (this.glBuffer || this.data) {
             throw `Unexpected call to createBuffer. Buffer already created.\n`+
@@ -58,7 +56,7 @@ export default class VertexAttrib {
             this.data[i] = data[i];
         }
         // update ui from this.data
-        // this.updateEditorValue()
+        this.updateEditorValue()
         // upload this.data to gpu
         this.uploadData();
     }
@@ -128,28 +126,31 @@ export default class VertexAttrib {
     }
 
     updateEditorValue() {
+        if (!this.editor) {
+            return;
+        }
         const row = this.editor.session.selection.cursor.row;
         const col = this.editor.session.selection.cursor.column;
         this.editor.setValue(this.dataStr);
         this.editor.moveCursorTo(row, col);
     }
 
-    createUI(parentEl) {
+    createListUI(parentEl) {
         parentEl.appendHTML(
             `<li>${this.index}: ${this.name.padEnd(12)}, ${this.size} float components, ${this.size * 4} bytes</li>`
         );
     }
 
-    // createDataUI(el) {
-    //     el.insertAdjacentHTML("beforeend",
-    //         `<div class="attrib">
-    //         <div>${this.name}</div>
-    //         <pre id="${this.editorId}">${this.dataStr}</pre>
-    //         </div>`
-    //     );
-    //     this.editor = util.aceit(this.editorId, "ace/mode/text");
-    //     this.editor.addEventListener("change", e => {
-    //         this.uiDirty = true;
-    //     })
-    // }
+    createDataUI(parentEl) {
+        const dataEl = parentEl.appendHTML(
+            `<li>
+            <div>${this.name}</div>
+            <pre>${this.dataStr}</pre>
+            </li>`
+        );
+        this.editor = ui.aceit(dataEl.querySelector("pre"), "ace/mode/text");
+        this.editor.addEventListener("change", e => {
+            this.uiDirty = true;
+        })
+    }
 }

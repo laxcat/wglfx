@@ -23,8 +23,6 @@ export default class LiveShader {
         // this.load();
     }
 
-    get labelId() { return `${this.glTypeStr}Label`; }
-    get editorId() { return `${this.glTypeStr}Editor`; }
 
     get src() { return (this.editor) ? this.editor.getValue() : ""; }
     set src(val) { this.editor.setValue(val, -1); }
@@ -126,10 +124,10 @@ export default class LiveShader {
 
     createUI(parentEl) {
         this.el = parentEl.appendHTML(
-            `<section class="shader">
+            `<li>
             <label class="collapsible">${this.glTypeStr.toStartCase()} Shader</label>
             <pre></pre>
-            </section>`
+            </li>`
         );
         this.editor = ui.aceit(this.el.querySelector("pre"));
         this.editor.session.setUseWrapMode(true);

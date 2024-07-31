@@ -16,7 +16,8 @@ export default class App {
         // load settings/src from user's localStorage. will set defaults if none found.
         this.load();
 
-        this.renderer.prog.compile();
+        // compile the shader program
+        this.renderer.compile();
 
         // start the run loop
         this.loop(0);
@@ -83,7 +84,7 @@ export default class App {
     save() {
         console.log("SAVE START -----------------------------------------------------")
         // compile shaders
-        this.renderer.prog.compile();
+        this.renderer.compile();
         // update vertex data from ui
         this.renderer.pass.updateDataFromUI();
         // save shader src to localStorage

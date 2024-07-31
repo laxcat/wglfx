@@ -4,6 +4,8 @@ export default class Mesh {
     gl = null;
     nVerts = 0;
     layout = null;
+    el = null;
+    editor = null;
 
     constructor(gl, nVerts, layout, dataList=null) {
         this.gl = gl;
@@ -12,7 +14,7 @@ export default class Mesh {
         this.layout.attribs.forEach(attrib => {
             attrib.createBuffer(this.nVerts);
         });
-        // this.setDataFromList(dataList);
+        this.setDataFromList(dataList);
     }
 
     setDataFromList(list) {
@@ -44,4 +46,18 @@ export default class Mesh {
         this.gl.drawArrays(this.gl.TRIANGLES, 0, this.nVerts);
         // this.gl.throwError();
     }
+
+    createUI(parentEl) {
+        this.el = parentEl.appendHTML(
+            `
+            <li>
+                <label class="collapsible">Mesh</label>
+                <ul></ul>
+            </li>
+            `
+        );
+        const attribsEl = this.el.querySelector("ul");
+        this.layout.attribs.forEach(attrib => attrib.createDataUI(attribsEl));
+    }
+
 }

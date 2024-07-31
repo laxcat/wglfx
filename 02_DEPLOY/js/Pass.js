@@ -143,7 +143,7 @@ export default class Pass {
                 <label class="collapsible">Pass</label>
                 <section>
                     <label class="collapsible">Layout</label>
-                    <section>
+                    <section class="layout">
                         <ul></ul>
                         <form>
                             <label>Size</label>
@@ -153,14 +153,20 @@ export default class Pass {
                             <input type="submit" value="Add Attribute">
                         </form>
                     </section>
+                    <label class="collapsible">Meshes</label>
+                    <ul class="meshes"></ul>
                 </section>
             </li>
             `
         );
 
         // create attributes list (layout)
-        const layoutEl = this.passEl.querySelector("ul");
-        this.layout.attribs.forEach(attrib => attrib.createUI(layoutEl));
+        const layoutEl = this.passEl.querySelector("section.layout > ul");
+        this.layout.attribs.forEach(attrib => attrib.createListUI(layoutEl));
+
+        // create mesh list
+        const meshesEl = this.passEl.querySelector("ul.meshes");
+        this.meshes.forEach(mesh => mesh.createUI(meshesEl));
 
         // add form handler
         const form = this.passEl.querySelector("form");

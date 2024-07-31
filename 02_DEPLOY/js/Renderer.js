@@ -24,7 +24,10 @@ export default class Renderer {
 
         this.pass = new Pass(this.gl);
         this.prog = new LiveProgram(this.gl);
+    }
 
+    compile() {
+        this.prog.compile();
         if (this.prog.valid && this.gl.getError() === 0) {
             this.canDraw = true;
         }
