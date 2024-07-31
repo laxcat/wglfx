@@ -1,3 +1,5 @@
+import "./util.js"
+
 export function parse(uiEl) {
     // add collapsible handlers
     const collapsibles = uiEl.querySelectorAll("*:has(> label.collapsible + *)");
@@ -20,18 +22,18 @@ export function makeCollapsible(parentEl) {
     });
 }
 
-export function appendHTML(parentEl, html) {
-    const oldLen = parentEl.children.length;
-    parentEl.insertAdjacentHTML("beforeend", html);
-    const newLen = parentEl.children.length;
+Element.prototype.appendHTML = function(html) {
+    const oldLen = this.children.length;
+    this.insertAdjacentHTML("beforeend", html);
+    const newLen = this.children.length;
 
     // exactly one node added, return one node
     if (newLen === oldLen + 1) {
-        return parentEl.children[newLen - 1];
+        return this.children.last();
     }
 
     // otherwise, return an array, maybe an empty array if nothing added
-    return parentEl.children.slice(oldLen, newLen);
+    return this.children.slice(oldLen, newLen);
 }
 
 export function aceit(idOrEl, mode="ace/mode/glsl") {

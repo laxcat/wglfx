@@ -42,6 +42,6 @@ export default class Mesh {
 
     draw() {
         this.gl.drawArrays(this.gl.TRIANGLES, 0, this.nVerts);
-        // util.checkError(this.gl);
+        // this.gl.throwError();
     }
 }

@@ -41,7 +41,7 @@ export default class Renderer {
 
     createUI(parentEl) {
         // add pass ui
-        const listEl = ui.appendHTML(parentEl, `<ul id="passes"></ul>`);
+        const listEl = parentEl.appendHTML(`<ul id="passes"></ul>`);
         // pass will be an array eventually, making this a loop
         this.pass.createUI(listEl);
 

@@ -125,9 +125,9 @@ export default class LiveShader {
     }
 
     createUI(parentEl) {
-        this.el = ui.appendHTML(parentEl,
+        this.el = parentEl.appendHTML(
             `<section class="shader">
-            <label class="collapsible">${util.capitalize(this.glTypeStr)} Shader</label>
+            <label class="collapsible">${this.glTypeStr.toStartCase()} Shader</label>
             <pre></pre>
             </section>`
         );

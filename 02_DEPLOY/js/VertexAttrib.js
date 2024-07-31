@@ -135,7 +135,7 @@ export default class VertexAttrib {
     }
 
     createUI(parentEl) {
-        ui.appendHTML(parentEl,
+        parentEl.appendHTML(
             `<li>${this.index}: ${this.name.padEnd(12)}, ${this.size} float components, ${this.size * 4} bytes</li>`
         );
     }

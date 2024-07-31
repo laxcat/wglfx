@@ -8,45 +8,50 @@ export function loadFileSync(path) {
     return null;
 }
 
-export function checkError(gl) {
-    const err = gl.getError();
+WebGLRenderingContext.prototype.throwError =
+WebGL2RenderingContext.prototype.throwError = function() {
+    const err = this.getError();
     switch(err) {
-    case gl.INVALID_ENUM:                   throw "INVALID_ENUM";
-    case gl.INVALID_VALUE:                  throw "INVALID_VALUE";
-    case gl.INVALID_OPERATION:              throw "INVALID_OPERATION";
-    case gl.INVALID_FRAMEBUFFER_OPERATION:  throw "INVALID_FRAMEBUFFER_OPERATION";
-    case gl.OUT_OF_MEMORY:                  throw "OUT_OF_MEMORY";
-    case gl.CONTEXT_LOST_WEBGL:             throw "CONTEXT_LOST_WEBGL";
+    case this.INVALID_ENUM:                   throw "INVALID_ENUM";
+    case this.INVALID_VALUE:                  throw "INVALID_VALUE";
+    case this.INVALID_OPERATION:              throw "INVALID_OPERATION";
+    case this.INVALID_FRAMEBUFFER_OPERATION:  throw "INVALID_FRAMEBUFFER_OPERATION";
+    case this.OUT_OF_MEMORY:                  throw "OUT_OF_MEMORY";
+    case this.CONTEXT_LOST_WEBGL:             throw "CONTEXT_LOST_WEBGL";
     default: return;
     }
 }
 
-export function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-export function last(arrayLike) {
-    return arrayLike[arrayLike.length - 1];
-}
-
-export function aceit(id, mode="ace/mode/glsl") {
-    const editor = ace.edit(id);
-    editor.setTheme("ace/theme/solarized_dark");
-    editor.setKeyboardHandler("ace/keyboard/sublime");
-    editor.setOptions({
-        maxLines:9999,
-    });
-    editor.session.setMode(mode);
-    return editor;
-}
-
-export function makeCollapsible(parent) {
-    if (parent.children.length !== 2) {
-        return;
+String.prototype.toStartCase = function() {
+    let str = "";
+    const len = this.length;
+    // was previous character whitespace?
+    let prevIsWS = true;
+    // for each char in string...
+    for (let i = 0; i < len; ++i) {
+        // is this char whitespace?
+        const isWS = (
+            this[i] === " " ||
+            this[i] === "\n" ||
+            this[i] === "\t" ||
+            this[i] === "-" ||
+            this[i] === "_"
+        );
+        // this char mets requirements to be upper cased
+        if (prevIsWS && !isWS) {
+            str += this[i].toUpperCase();
+            prevIsWS = false;
+        }
+        // all other characters are copied over
+        else {
+            str += this[i];
+            prevIsWS = isWS;
+        }
     }
-    const head = parent.children[0];
-    const body = parent.children[1];
-    head.addEventListener("click", e => {
-        body.classList.toggle("hidden");
-    });
+    return str;
+}
+
+Array.prototype.last =
+HTMLCollection.prototype.last = function() {
+    return this[this.length - 1];
 }

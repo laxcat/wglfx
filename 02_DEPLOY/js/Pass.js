@@ -137,7 +137,7 @@ export default class Pass {
     // }
 
     createUI(parentEl) {
-        this.passEl = ui.appendHTML(parentEl,
+        this.passEl = parentEl.appendHTML(
             `
             <li class="pass">
                 <label class="collapsible">Pass</label>
