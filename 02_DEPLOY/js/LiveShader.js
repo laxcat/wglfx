@@ -8,7 +8,7 @@ export default class LiveShader {
     glType = null;          // webgl shader type
     glTypeStr = null;       // string for shader type. frequently used as key.
 
-    constructor(gl, type, el) {
+    constructor(gl, type) {
         this.gl = gl;
         this.glType = type;
 
@@ -16,15 +16,15 @@ export default class LiveShader {
                          (type === this.gl.FRAGMENT_SHADER)  ? "frag" :
                          "unknown-type";
 
-        this.createUI(el);
+        // this.createUI(el);
 
-        this.load();
+        // this.load();
     }
 
     get labelId() { return `${this.glTypeStr}Label`; }
     get editorId() { return `${this.glTypeStr}Editor`; }
 
-    get src() { return this.editor.getValue(); }
+    get src() { return (this.editor) ? this.editor.getValue() : ""; }
     set src(val) { this.editor.setValue(val, -1); }
 
     get defaultSrcPath() { return `./glsl/${this.glTypeStr}.glsl`; }
@@ -74,6 +74,10 @@ export default class LiveShader {
     }
 
     showErrors() {
+        if (!this.editor) {
+            return;
+        }
+
         const Range = ace.require("ace/range").Range;
 
         let errorMsg = "";
@@ -97,6 +101,9 @@ export default class LiveShader {
     }
 
     clearErrors() {
+        if (!this.editor) {
+            return;
+        }
         this.errors.forEach(item => {
             this.editor.session.removeMarker(item.marker);
         });
@@ -115,8 +122,8 @@ export default class LiveShader {
         localStorage.setItem(this.glTypeStr, this.src);
     }
 
-    createUI(el) {
-        el.insertAdjacentHTML("beforeend",
+    createUI(parentEl) {
+        parentEl.insertAdjacentHTML("beforeend",
             `<section>
             <label id="${this.labelId}" for="${this.editorId}">${util.capitalize(this.glTypeStr)} Shader</label>
             <pre id="${this.editorId}"></pre>
@@ -129,7 +136,7 @@ export default class LiveShader {
             this.clearErrors();
         })
 
-        util.makeCollapsible(util.last(el.children));
+        util.makeCollapsible(util.last(parentEl.children));
     }
 }
 

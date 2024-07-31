@@ -1,0 +1,42 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>UI Sample</title>
+    <link rel="stylesheet" href="ui.css">
+    <link rel="icon" href="./img/white.png">
+</head>
+<body>
+
+    <canvas></canvas>
+
+    <div id="ui">
+    <ul>
+        <li>
+            <label class="collapsible">Pass 1</label>
+            <section>
+                <label class="collapsible">Layout</label>
+                <section>
+                    <ul>
+                        <li>0 pos</li>
+                        <li>1 color</li>
+                    </ul>
+                    <form class="small">
+                        <label>Size</label>
+                        <input type="text">
+                        <label>Name</label>
+                        <input type="text">
+                        <input type="submit" value="Add Attribute">
+                    </form>
+                </section>
+            </section>
+        </li>
+    </ul>
+    </div>
+
+    <script type="module">
+        import * as ui from './js/util-ui.js'
+        ui.parse(document.getElementById("ui"));
+    </script>
+
+</body>
+</html>

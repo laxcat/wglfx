@@ -1,6 +1,6 @@
 import LiveProgram from "./LiveProgram.js"
 import Pass from "./Pass.js"
-import * as util from "./util.js"
+import * as ui from "./util-ui.js"
 
 export default class Renderer {
     gl = null;
@@ -22,19 +22,12 @@ export default class Renderer {
             return;
         }
 
-        const el = document.getElementById("ui");
-        el.innerHTML = "";
-
-        this.pass = new Pass(this.gl, el);
-        this.prog = new LiveProgram(this.gl, el);
+        this.pass = new Pass(this.gl);
+        this.prog = new LiveProgram(this.gl);
 
         if (this.prog.valid && this.gl.getError() === 0) {
             this.canDraw = true;
         }
-    }
-
-    compile() {
-        this.prog.compile();
     }
 
     draw() {
@@ -44,6 +37,16 @@ export default class Renderer {
 
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.pass.draw();
+    }
+
+    createUI(parentEl) {
+        // add pass ui
+        const listEl = ui.appendHTML(parentEl, `<ul id="passes"></ul>`);
+        // pass will be an array eventually, making this a loop
+        this.pass.createUI(listEl);
+
+        // add program ui
+        this.prog.createUI(parentEl);
     }
 }
 

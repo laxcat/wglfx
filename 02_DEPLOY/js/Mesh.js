@@ -12,7 +12,7 @@ export default class Mesh {
         this.layout.attribs.forEach(attrib => {
             attrib.createBuffer(this.nVerts);
         });
-        this.setDataFromList(dataList);
+        // this.setDataFromList(dataList);
     }
 
     setDataFromList(list) {

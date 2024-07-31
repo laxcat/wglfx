@@ -1,7 +1,7 @@
 import VertexLayout from "./VertexLayout.js"
 import VertexAttrib from "./VertexAttrib.js"
 import Mesh from "./Mesh.js"
-import * as util from "./util.js"
+import * as ui from "./util-ui.js"
 
 export default class Pass {
     gl = null;
@@ -10,7 +10,11 @@ export default class Pass {
     nMeshes = 0;
     clearColor = [0.0, 0.0, 0.0, 1.0];
 
-    constructor(gl, el) {
+    static nextId = 0;
+    uid = ++Pass.nextId;
+    get uname() { return `pass-${this.uid}`; }
+
+    constructor(gl) {
         this.gl = gl;
 
         this.layout = new VertexLayout(gl, [
@@ -51,7 +55,7 @@ export default class Pass {
 
         this.setClearColor();
 
-        this.createUI(el);
+        // this.createUI(el);
 
         // this.setAttribDataForName(
         //     "pos",
@@ -135,47 +139,42 @@ export default class Pass {
     //     });
     // }
 
-    createUI(el) {
-        el.insertAdjacentHTML("beforeend",
-            `<section>
-            <label id="vertData" for="vertDataContainer">Pass</label>
-            <div id="vertDataContainer">
-                <label for="attribs">Attribs</label>
-                <ul id="attribs"></ul>
-                <form id="addAttrib">
-                    <label for="pass_addAttribSize">Size</label>
-                    <input type="text" id="pass_addAttribSize" value="4">
-                    <label for="pass_addAttribName">Name</label>
-                    <input type="text" id="pass_addAttribName" value="norm">
-                    <input type="submit" value="Add Attrib">
-                </form>
-            </div>
-            </section>`
+    createUI(parentEl) {
+        const pass = ui.appendHTML(parentEl,
+            `
+            <li id="${this.uname}">
+                <label class="collapsible">Pass</label>
+                <section>
+                    <label class="collapsible">Layout</label>
+                    <section>
+                        <ul id="${this.uname}-layout"></ul>
+                        <form class="small" id="${this.uname}-add-attrib">
+                            <label>Size</label>
+                            <input type="number" id="${this.uname}-attrib-size" min="1" max="4">
+                            <label>Name</label>
+                            <input type="text" id="${this.uname}-attrib-name" pattern="[a-z]{3,12}" placeholder="[a-z]{3,12}">
+                            <input type="submit" value="Add Attribute">
+                        </form>
+                    </section>
+                </section>
+            </li>
+            `
         );
-                // <label for="pass_vertCount">Count</label>
-                // <input type="text" id="pass_vertCount" value="${this.nVerts}">
-                // <label for="attribData">Attrib Data</label>
-                // <div id="attribData"></div>
 
+        // create attributes list (layout)
+        const layoutEl = document.getElementById(`${this.uname}-layout`);
+        this.layout.attribs.forEach(attrib => attrib.createUI(layoutEl));
 
-        const attribs = document.getElementById("attribs");
-        this.layout.attribs.forEach(attrib => {
-            attrib.createListUI(attribs);
-        });
-        // const attribData = document.getElementById("attribData");
-        // this.layout.attribs.forEach(attrib => {
-        //     attrib.createDataUI (attribData);
-        // });
-
-        document.getElementById("addAttrib").addEventListener("submit", e => {
+        // add form handler
+        const form = document.getElementById(`${this.uname}-add-attrib`);
+        const size = document.getElementById(`${this.uname}-attrib-size`);
+        const name = document.getElementById(`${this.uname}-attrib-name`);
+        form.addEventListener("submit", e => {
             e.preventDefault();
-            this.addAttrib(
-                parseInt(document.getElementById("pass_addAttribSize").value),
-                document.getElementById("pass_addAttribName").value
-            );
+            this.addAttrib(parseInt(size.value), name.value);
         });
 
-        util.makeCollapsible(util.last(el.children));
+        // util.makeCollapsible(util.last(parentEl.children));
     }
 
     updateDataFromUI() {
@@ -208,6 +207,6 @@ export default class Pass {
 
         const attrib = this.layout.addAttrib(size, name);
         attrib.createBuffer(this.nVerts);
-        attrib.createListUI(document.getElementById("attribs"));
+        attrib.createUI(document.getElementById(`${this.uname}-layout`));
     }
 }

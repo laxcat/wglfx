@@ -6,11 +6,10 @@ export default class LiveProgram {
     frag = null;    // instance of LiveShader
     glObj = null;   // the webgl program object
 
-    constructor(gl, el) {
+    constructor(gl) {
         this.gl = gl;
-        this.vert = new LiveShader(gl, gl.VERTEX_SHADER  , el);
-        this.frag = new LiveShader(gl, gl.FRAGMENT_SHADER, el);
-        this.compile();
+        this.vert = new LiveShader(gl, gl.VERTEX_SHADER);
+        this.frag = new LiveShader(gl, gl.FRAGMENT_SHADER);
     }
 
     get valid() {
@@ -18,6 +17,7 @@ export default class LiveProgram {
     }
 
     compile() {
+        console.log("program compile");
         this.gl.deleteProgram(this.glObj);
         this.glObj = null;
         this.vert.clearErrors();
@@ -63,5 +63,10 @@ export default class LiveProgram {
             this.gl.deleteProgram(this.glObj);
             this.glObj = null;
         }
+    }
+
+    createUI(parentEl) {
+        this.vert.createUI(parentEl);
+        this.frag.createUI(parentEl);
     }
 }

@@ -1,12 +1,41 @@
 import Time from "./Time.js"
 import Renderer from "./Renderer.js"
-import * as util from "./util.js"
+import * as ui from "./util-ui.js"
 
 export default class App {
     renderer = new Renderer();
     time = new Time();
 
     constructor() {
+        // create keyboard shortcuts and anything that opperates on whole App
+        this.setupGlobalHandlers();
+
+        // create the HTML UI
+        this.createUI(document.getElementById("ui"));
+
+        // load settings/src from user's localStorage. will set defaults if none found.
+        this.load();
+
+        this.renderer.prog.compile();
+
+        // start the run loop
+        this.loop(0);
+    }
+
+    get uiShowing() {
+        return (document.getElementById("ui").classList.contains("hidden") === false);
+    }
+
+    toggleUI() {
+        document.getElementById("ui").classList.toggle("hidden");
+    }
+
+    toggleRun() {
+        this.time.isRunning = !this.time.isRunning;
+        this.time.printStatus();
+    }
+
+    setupGlobalHandlers() {
         window.addEventListener("keydown", e => {
             if (e.shiftKey || e.altKey) {
                 return;
@@ -22,22 +51,6 @@ export default class App {
                 e.preventDefault();
             }
         });
-
-        // start
-        this.loop(0);
-    }
-
-    get uiShowing() {
-        return (document.getElementById("ui").classList.contains("hidden") === false);
-    }
-
-    toggleUI() {
-        document.getElementById("ui").classList.toggle("hidden");
-    }
-
-    toggleRun() {
-        this.time.isRunning = !this.time.isRunning;
-        this.time.printStatus();
     }
 
     loop(eventTime) {
@@ -62,15 +75,26 @@ export default class App {
         // console.log("now", this.time.now);
     }
 
+    load() {
+        this.renderer.prog.vert.load();
+        this.renderer.prog.frag.load();
+    }
+
     save() {
         console.log("SAVE START -----------------------------------------------------")
         // compile shaders
-        this.renderer.compile();
+        this.renderer.prog.compile();
         // update vertex data from ui
         this.renderer.pass.updateDataFromUI();
         // save shader src to localStorage
         this.renderer.prog.vert.save();
         this.renderer.prog.frag.save();
         console.log("------------------------------------------------------- SAVE END");
+    }
+
+    createUI(parentEl) {
+        this.renderer.createUI(parentEl);
+        // adds systematic handlers, etc
+        ui.parse(parentEl);
     }
 }
