@@ -43,13 +43,13 @@ export default class App {
             }
             // cmd+s, save/recompile
             else if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
-                this.save();
                 e.preventDefault();
+                this.save();
             }
             // cmd+e, toggle ui
             else if (e.key === "e" && (e.metaKey || e.ctrlkey)) {
-                this.toggleUI();
                 e.preventDefault();
+                this.toggleUI();
             }
         });
     }

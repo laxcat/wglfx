@@ -5,6 +5,7 @@ export default class LiveProgram {
     vert = null;    // instance of LiveShader
     frag = null;    // instance of LiveShader
     glObj = null;   // the webgl program object
+    el = null;
 
     constructor(gl) {
         this.gl = gl;
@@ -66,7 +67,8 @@ export default class LiveProgram {
     }
 
     createUI(parentEl) {
-        this.vert.createUI(parentEl);
-        this.frag.createUI(parentEl);
+        this.el = parentEl.appendHTML(`<ul id="program"></ul>`);
+        this.vert.createUI(this.el);
+        this.frag.createUI(this.el);
     }
 }

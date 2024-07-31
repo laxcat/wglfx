@@ -81,9 +81,33 @@ canvas {
         color: #000;
     }
 
-/* PASS ********************************************************************* */
-    li.pass > section {
+/* PASS / LAYOUT / MESHES *************************************************** */
+    ul#passes > li > section {
         margin: 0 0 30px 30px;
+
+        section.layout {
+            margin: 0 0 0 30px;
+        }
+
+        ul.meshes > li {
+            margin: 0 0 30px 30px;
+
+            section {
+                margin: 0 0 30px 30px;
+
+                ul.attribs::after {
+                   content: " ";
+                   display: block;
+                   height: 0;
+                   clear: both;
+                }
+
+                ul.attribs > li {
+                    width: 300px;
+                    float: left;
+                }
+            }
+        }
     }
 
 /* SHADER ******************************************************************* */

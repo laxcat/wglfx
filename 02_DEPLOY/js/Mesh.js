@@ -42,6 +42,21 @@ export default class Mesh {
         }
     }
 
+    updateDataFromUI() {
+        const newNVerts = parseInt(this.el.querySelector("input").value);
+        const nVertsChanged = (this.nVerts !== newNVerts);
+        this.nVerts = newNVerts;
+
+        this.layout.attribs.forEach(attrib => {
+            if (nVertsChanged) {
+                attrib.deleteBuffer();
+                attrib.createBuffer(this.nVerts);
+                attrib.uiDirty = true; // forces data to be pulled from ui
+            }
+            attrib.updateDataFromUI();
+        });
+    }
+
     draw() {
         this.gl.drawArrays(this.gl.TRIANGLES, 0, this.nVerts);
         // this.gl.throwError();
@@ -52,7 +67,11 @@ export default class Mesh {
             `
             <li>
                 <label class="collapsible">Mesh</label>
-                <ul></ul>
+                <section>
+                    <label for="pass_vertCount">Count</label>
+                    <input type="number" value="${this.nVerts}">
+                    <ul class="attribs"></ul>
+                </section>
             </li>
             `
         );

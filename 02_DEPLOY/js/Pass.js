@@ -72,7 +72,7 @@ export default class Pass {
     createUI(parentEl) {
         this.passEl = parentEl.appendHTML(
             `
-            <li class="pass">
+            <li>
                 <label class="collapsible">Pass</label>
                 <section>
                     <label class="collapsible">Layout</label>
@@ -113,23 +113,12 @@ export default class Pass {
     }
 
     updateDataFromUI() {
-        const newNVerts = parseInt(document.getElementById("pass_vertCount").value);
-        const nVertsChanged = (this.nVerts !== newNVerts);
-        this.nVerts = newNVerts;
-
-        this.layout.attribs.forEach(attrib => {
-            if (nVertsChanged) {
-                attrib.deleteBuffer();
-                attrib.createBuffer(this.nVerts);
-                attrib.uiDirty = true; // forces data to be pulled from ui
-            }
-            attrib.updateDataFromUI();
-        });
+        this.meshes.forEach(mesh => mesh.updateDataFromUI());
     }
 
     addAttrib(size, name) {
         name = name.trim();
-        
+
         // basic error checking
         if (!Number.isInteger(size) ||
             size < 1 ||
