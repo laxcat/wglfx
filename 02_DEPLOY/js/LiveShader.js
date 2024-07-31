@@ -1,4 +1,5 @@
 import * as util from "./util.js"
+import * as ui from "./util-ui.js"
 
 export default class LiveShader {
     gl = null;              // reference to webgl context
@@ -7,6 +8,7 @@ export default class LiveShader {
     glObj = null;           // the webgl shader object
     glType = null;          // webgl shader type
     glTypeStr = null;       // string for shader type. frequently used as key.
+    el = null;              // reference to the primary HTML element of the UI
 
     constructor(gl, type) {
         this.gl = gl;
@@ -123,20 +125,18 @@ export default class LiveShader {
     }
 
     createUI(parentEl) {
-        parentEl.insertAdjacentHTML("beforeend",
-            `<section>
-            <label id="${this.labelId}" for="${this.editorId}">${util.capitalize(this.glTypeStr)} Shader</label>
-            <pre id="${this.editorId}"></pre>
+        this.el = ui.appendHTML(parentEl,
+            `<section class="shader">
+            <label class="collapsible">${util.capitalize(this.glTypeStr)} Shader</label>
+            <pre></pre>
             </section>`
         );
-        this.editor = util.aceit(this.editorId);
+        this.editor = ui.aceit(this.el.querySelector("pre"));
         this.editor.session.setUseWrapMode(true);
         this.editor.session.setWrapLimit(100);
         this.editor.addEventListener("change", () => {
             this.clearErrors();
         })
-
-        util.makeCollapsible(util.last(parentEl.children));
     }
 }
 

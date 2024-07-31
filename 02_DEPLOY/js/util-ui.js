@@ -1,17 +1,11 @@
 export function parse(uiEl) {
     // add collapsible handlers
-    const collapsibles = uiEl.querySelectorAll("*:has(> label.collapsible + section)");
+    const collapsibles = uiEl.querySelectorAll("*:has(> label.collapsible + *)");
     collapsibles.forEach(makeCollapsible);
 
-    // add form handlers
+    // add generic form handlers to always prevent default
     const forms = uiEl.querySelectorAll("form");
-    forms.forEach(form => {
-        // console.log("listener??", form.getAttribute("listener"));
-        form.addEventListener("submit", e => {
-            e.preventDefault();
-            console.log("form submitted");
-        });
-    });
+    forms.forEach(form => form.addEventListener("submit", e => e.preventDefault()));
 }
 
 export function makeCollapsible(parentEl) {
@@ -36,6 +30,17 @@ export function appendHTML(parentEl, html) {
         return parentEl.children[newLen - 1];
     }
 
-    // otherwise, return a list, maybe an empty list if nothing added
+    // otherwise, return an array, maybe an empty array if nothing added
     return parentEl.children.slice(oldLen, newLen);
+}
+
+export function aceit(idOrEl, mode="ace/mode/glsl") {
+    const editor = ace.edit(idOrEl);
+    editor.setTheme("ace/theme/solarized_dark");
+    editor.setKeyboardHandler("ace/keyboard/sublime");
+    editor.setOptions({
+        maxLines:9999,
+    });
+    editor.session.setMode(mode);
+    return editor;
 }

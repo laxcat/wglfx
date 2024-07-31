@@ -139,13 +139,13 @@ export default class Pass {
     createUI(parentEl) {
         this.passEl = ui.appendHTML(parentEl,
             `
-            <li>
+            <li class="pass">
                 <label class="collapsible">Pass</label>
                 <section>
                     <label class="collapsible">Layout</label>
                     <section>
                         <ul></ul>
-                        <form class="small"-attrib">
+                        <form>
                             <label>Size</label>
                             <input type="number" min="1" max="4">
                             <label>Name</label>
@@ -167,7 +167,6 @@ export default class Pass {
         const size = form.querySelectorAll("input")[0];
         const name = form.querySelectorAll("input")[1];
         form.addEventListener("submit", e => {
-            e.preventDefault();
             if (this.addAttrib(parseInt(size.value), name.value)) {
                 form.reset();
             }

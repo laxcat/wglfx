@@ -1,4 +1,4 @@
-import * as util from "./util.js"
+import * as ui from "./util-ui.js"
 
 /*
 NOTES:
@@ -135,7 +135,7 @@ export default class VertexAttrib {
     }
 
     createUI(parentEl) {
-        parentEl.insertAdjacentHTML("beforeend",
+        ui.appendHTML(parentEl,
             `<li>${this.index}: ${this.name.padEnd(12)}, ${this.size} float components, ${this.size * 4} bytes</li>`
         );
     }

@@ -1,3 +1,5 @@
+/* GLOBAL ******************************************************************* */
+
 html, body, canvas, #ui {
     width: 100%;
     height: 100%;
@@ -15,15 +17,7 @@ canvas {
     z-index: 0;
 }
 
-.hidden {
-    display: none !important;
-}
-
-.ace-error {
-    background-color: #800;
-    position: absolute;
-}
-
+/* UI GENERAL RULES ********************************************************* */
 #ui {
     position: absolute;
     overflow: scroll;
@@ -42,12 +36,21 @@ canvas {
         color: #fff;
     }
 
-    ul, ol {
+    .hidden {
+        display: none !important;
+    }
+
+    ul {
+        margin: 0;
         padding: 0;
     }
 
     li {
         list-style: none;
+    }
+
+    label {
+        margin: 0 0 10px 0;
     }
 
     label.collapsible {
@@ -58,10 +61,6 @@ canvas {
     }
     label.collapsible:hover {
         background-color: var(--color-hover);
-    }
-
-    section {
-        margin: 0 0 0 40px;
     }
 
     input[type="text"],
@@ -80,6 +79,22 @@ canvas {
     input[type="submit"] {
         padding: 4px 6px;
         color: #000;
+    }
+
+/* PASS ********************************************************************* */
+    li.pass > section {
+        margin: 0 0 30px 30px;
+    }
+
+/* SHADER ******************************************************************* */
+    section.shader > pre {
+        margin: 0 0 30px 0;
+    }
+
+/* ACE EDITOR *************************************************************** */
+    .ace-error {
+        background-color: #800;
+        position: absolute;
     }
 }
 
