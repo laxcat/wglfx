@@ -46,37 +46,7 @@ export default class Pass {
         this.meshes.push(mesh);
         ++this.nMeshes;
 
-        // this.layout.attribs.forEach(attrib => {
-        //     attrib.createBuffer(this.nVerts);
-        // });
-
         this.setClearColor();
-
-        // this.createUI(el);
-
-        // this.setAttribDataForName(
-        //     "pos",
-        //     new Float32Array([
-        //          0.50,   1.00,   0.00,   1.00,
-        //          1.00,  -1.00,   0.00,   1.00,
-        //         -1.00,  -1.00,   0.00,   1.00,
-        //         -0.50,   1.00,   0.00,   1.00,
-        //          1.00,  -1.00,   0.00,   1.00,
-        //         -1.00,  -1.00,   0.00,   1.00,
-        //     ])
-        // );
-
-        // this.setAttribDataForName(
-        //     "color",
-        //     new Float32Array([
-        //         0.5,  0.0,  0.0,  1.0,
-        //         0.0,  0.0,  0.0,  1.0,
-        //         0.0,  0.0,  0.0,  1.0,
-        //         0.0,  0.5,  0.5,  1.0,
-        //         0.0,  0.0,  0.0,  1.0,
-        //         0.0,  0.0,  0.0,  1.0,
-        //     ])
-        // );
     }
 
     setClearColor(newColor = null) {
@@ -91,37 +61,6 @@ export default class Pass {
         );
     }
 
-    // setAttribDataAtIndex(index, data, offset=0) {
-    //     this.layout.attribs[index].setData(data, offset);
-    // }
-
-    // setAttribDataForName(name, data, offset=0) {
-    //     this.layout.attribs.forEach(attrib => {
-    //         if (attrib.name == name) {
-    //             attrib.setData(data, offset);
-    //             return;
-    //         }
-    //     })
-    // }
-
-    // bind() {
-    //     this.setClearColor();
-    //     let index = 0;
-    //     this.layout.attribs.forEach(attrib => {
-    //         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attrib.glBuffer);
-    //         this.gl.vertexAttribPointer(index, attrib.size, this.gl.FLOAT, false, 0, 0);
-    //         this.gl.enableVertexAttribArray(index);
-    //         ++index;
-    //     });
-    // }
-
-    // unbind() {
-    //     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, 0);
-    //     for (let index = 0; index < this.layout.attribs.length; ++i) {
-    //         this.gl.disableVertexAttribArray(index);
-    //     }
-    // }
-
     draw() {
         let i = 0;
         while(i < this.nMeshes) {
@@ -129,12 +68,6 @@ export default class Pass {
             ++i;
         }
     }
-
-    // deleteAttribBuffers() {
-    //     this.layout.attribs.forEach(attrib => {
-    //         attrib.deleteBuffer();
-    //     });
-    // }
 
     createUI(parentEl) {
         this.passEl = parentEl.appendHTML(
@@ -184,8 +117,6 @@ export default class Pass {
         const nVertsChanged = (this.nVerts !== newNVerts);
         this.nVerts = newNVerts;
 
-
-
         this.layout.attribs.forEach(attrib => {
             if (nVertsChanged) {
                 attrib.deleteBuffer();
@@ -198,6 +129,7 @@ export default class Pass {
 
     addAttrib(size, name) {
         name = name.trim();
+        
         // basic error checking
         if (!Number.isInteger(size) ||
             size < 1 ||

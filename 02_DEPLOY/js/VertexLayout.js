@@ -15,7 +15,6 @@ export default class VertexLayout {
         if (this.attribs.length) {
             this.clearAttribs();
         }
-        console.log("attribs", attribs);
         let index = 0;
         attribs.forEach(attrib => {
             const va = new VertexAttrib(
