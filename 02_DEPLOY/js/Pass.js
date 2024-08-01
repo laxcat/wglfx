@@ -11,42 +11,64 @@ export default class Pass {
     clearColor = [0.0, 0.0, 0.0, 1.0];
     el = null;
 
-    constructor(gl) {
+    constructor(gl, obj=null) {
         this.gl = gl;
+        if (obj) {
+            this.fromObject(obj);
+        }
+        // const layoutObj = [
+        //     {name: "pos", size: 4, data: new Float32Array([
+        //          0.50,   1.00,   0.00,   1.00,
+        //          1.00,  -1.00,   0.00,   1.00,
+        //         -1.00,  -1.00,   0.00,   1.00,
+        //         -0.50,   1.00,   0.00,   1.00,
+        //          1.00,  -1.00,   0.00,   1.00,
+        //         -1.00,  -1.00,   0.00,   1.00,
+        //     ])},
+        //     {name: "color", size: 4, data: new Float32Array([
+        //         0.5,  0.0,  0.0,  1.0,
+        //         0.0,  0.0,  0.0,  1.0,
+        //         0.0,  0.0,  0.0,  1.0,
+        //         0.0,  0.5,  0.5,  1.0,
+        //         0.0,  0.0,  0.0,  1.0,
+        //         0.0,  0.0,  0.0,  1.0,
+        //     ])},
+        // ];
 
-        this.layout = new VertexLayout(gl, [
-            {size: 4, name: "pos"},
-            {size: 4, name: "color"},
-        ]);
+        // this.layout = new VertexLayout(gl, layoutObj, true /* ignoreData */);
 
-        const mesh = new Mesh(this.gl, 6, this.layout, [
-            {
-                name: "pos",
-                data: new Float32Array([
-                     0.50,   1.00,   0.00,   1.00,
-                     1.00,  -1.00,   0.00,   1.00,
-                    -1.00,  -1.00,   0.00,   1.00,
-                    -0.50,   1.00,   0.00,   1.00,
-                     1.00,  -1.00,   0.00,   1.00,
-                    -1.00,  -1.00,   0.00,   1.00,
-                ])
-            },
-            {
-                name: "color",
-                data: new Float32Array([
-                    0.5,  0.0,  0.0,  1.0,
-                    0.0,  0.0,  0.0,  1.0,
-                    0.0,  0.0,  0.0,  1.0,
-                    0.0,  0.5,  0.5,  1.0,
-                    0.0,  0.0,  0.0,  1.0,
-                    0.0,  0.0,  0.0,  1.0,
-                ])
-            },
-        ]);
-        this.meshes.push(mesh);
-        ++this.nMeshes;
+        // this.addMesh({
+        //     nVerts: 6,
+        //     layout: layoutObj
+        // });
+
+        // this.setClearColor();
+    }
+
+    fromObject(obj) {
+        // set new pass layout. never has buffers.
+        this.layout = new VertexLayout(this.gl, obj.layout);
+        // make sure mesh buffers are destroyed
+        this.destroy();
+        // create new meshes
+        obj.meshes.forEach(mesh => {
+            mesh.layout = obj.layout;
+            this.addMesh(mesh);
+        });
 
         this.setClearColor();
+    }
+
+    destroy() {
+        this.meshes.forEach(mesh => mesh.destroy());
+        this.meshes = [];
+        this.nMeshes = 0;
+    }
+
+    addMesh(meshObj) {
+        const mesh = new Mesh(this.gl, meshObj);
+        this.meshes.push(mesh);
+        ++this.nMeshes;
     }
 
     setClearColor(newColor = null) {
@@ -70,7 +92,7 @@ export default class Pass {
     }
 
     createUI(parentEl) {
-        this.passEl = parentEl.appendHTML(
+        this.el = parentEl.appendHTML(
             `
             <li>
                 <label class="collapsible">Pass</label>
@@ -94,15 +116,15 @@ export default class Pass {
         );
 
         // create attributes list (layout)
-        const layoutEl = this.passEl.querySelector("section.layout > ul");
+        const layoutEl = this.el.querySelector("section.layout > ul");
         this.layout.attribs.forEach(attrib => attrib.createListUI(layoutEl));
 
         // create mesh list
-        const meshesEl = this.passEl.querySelector("ul.meshes");
+        const meshesEl = this.el.querySelector("ul.meshes");
         this.meshes.forEach(mesh => mesh.createUI(meshesEl));
 
         // add form handler
-        const form = this.passEl.querySelector("form");
+        const form = this.el.querySelector("form");
         const size = form.querySelectorAll("input")[0];
         const name = form.querySelectorAll("input")[1];
         form.addEventListener("submit", e => {
@@ -132,7 +154,7 @@ export default class Pass {
 
         const attrib = this.layout.addAttrib(size, name);
         // create list ui for new attrib in layout ul
-        attrib.createListUI(this.passEl.querySelector("section.layout > ul"));
+        attrib.createListUI(this.el.querySelector("section.layout > ul"));
         // create data ui for each mesh in mesh list
         this.meshes.forEach(mesh => {
             const meshAttrib = mesh.layout.addAttrib(size, name);
@@ -141,5 +163,16 @@ export default class Pass {
             meshAttrib.createDataUI(mesh.el.querySelector("ul.attribs"));
         });
         return true;
+    }
+
+    toObject() {
+        return {
+            layout: this.layout.toObject(),
+            meshes: this.meshes.map(mesh => mesh.toObject()),
+        }
+    }
+
+    toString() {
+        return JSON.stringify(this.toObject());
     }
 }

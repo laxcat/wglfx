@@ -7,24 +7,43 @@ export default class Mesh {
     el = null;
     editor = null;
 
-    constructor(gl, nVerts, layout, dataList=null) {
+    constructor(gl, obj=null) {
         this.gl = gl;
-        this.nVerts = nVerts;
-        this.layout = new VertexLayout(this.gl, layout.attribs);
-        this.layout.attribs.forEach(attrib => {
-            attrib.createBuffer(this.nVerts);
-        });
-        this.setDataFromList(dataList);
+        if (obj) {
+            this.fromObject(obj);
+        }
     }
 
-    setDataFromList(list) {
-        if (!list) {
-            return;
-        }
-        list.forEach(item => {
-            this.layout.setDataByName(item.name, item.data);
+    fromObject(obj) {
+        this.nVerts = obj.nVerts;
+        let layout = obj.layout.map(attrib => {
+            if (obj.data.hasOwnProperty(attrib.name)) {
+                attrib.data = obj.data[attrib.name];
+            }
+            return attrib;
         });
+
+        console.log("mesh layout", layout);
+
+        this.layout = new VertexLayout(this.gl, layout);
+
+        // this.nVerts = nVerts;
+        // this.layout = new VertexLayout(this.gl, layout.attribs);
+        // this.layout.attribs.forEach(attrib => {
+        //     attrib.createBuffer(this.nVerts);
+        // });
+        // this.setDataFromList(dataList);
+
     }
+
+    // setDataFromList(list) {
+    //     if (!list) {
+    //         return;
+    //     }
+    //     list.forEach(item => {
+    //         this.layout.setDataByName(item.name, item.data);
+    //     });
+    // }
 
     bind() {
         for(let index = 0; index < this.layout.attribs.length; ++index) {
@@ -79,4 +98,18 @@ export default class Mesh {
         this.layout.attribs.forEach(attrib => attrib.createDataUI(attribsEl));
     }
 
+    toObject() {
+        const obj = {
+            nVerts: this.nVerts,
+            data: {},
+        };
+        this.layout.attribs.forEach(attrib => {
+            obj.data[attrib.name] = attrib.toObject().data;
+        });
+        return obj;
+    }
+
+    toString() {
+        return JSON.stringify(this.toObject());
+    }
 }

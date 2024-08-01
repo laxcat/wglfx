@@ -8,6 +8,7 @@ export default class LiveShader {
     glObj = null;           // the webgl shader object
     glType = null;          // webgl shader type
     glTypeStr = null;       // string for shader type. frequently used as key.
+    tempSrc = null;         // holds source code when editor isn't set yet. should be null if editor is non null.
     el = null;              // reference to the primary HTML element of the UI
 
     constructor(gl, type) {
@@ -23,9 +24,27 @@ export default class LiveShader {
         // this.load();
     }
 
+    destroy() {
+        if (this.glObj) {
+            this.gl.deleteShader(this.glObj);
+            this.glObj = null;
+        }
+    }
 
-    get src() { return (this.editor) ? this.editor.getValue() : ""; }
-    set src(val) { this.editor.setValue(val, -1); }
+    get src() {
+        return  (this.editor)  ? this.editor.getValue() :
+                (this.tempSrc) ? this.tempSrc :
+                "";
+    }
+    set src(val) {
+        if (this.editor && val) {
+            this.editor.setValue(val, -1);
+            this.tempSrc = null;
+        }
+        else {
+            this.tempSrc = val;
+        }
+    }
 
     get defaultSrcPath() { return `./glsl/${this.glTypeStr}.glsl`; }
 
@@ -42,6 +61,7 @@ export default class LiveShader {
         if (!this.gl.getShaderParameter(this.glObj, this.gl.COMPILE_STATUS)) {
             console.log(`Could not compile ${this.glTypeStr} this.glObj.`);
             this.parseErrors(this);
+            this.destroy();
             return null;
         }
         return this.glObj;
@@ -111,22 +131,22 @@ export default class LiveShader {
         this.errors = [];
     }
 
-    load() {
-        // try to load from localStorage, otherwise load from defaultSrcPath
-        const localSrc = localStorage.getItem(this.glTypeStr);
-        this.src = (localSrc) ? localSrc : util.loadFileSync(this.defaultSrcPath);
-    }
+    // load() {
+    //     // try to load from localStorage, otherwise load from defaultSrcPath
+    //     const localSrc = localStorage.getItem(this.glTypeStr);
+    //     this.src = (localSrc) ? localSrc : util.loadFileSync(this.defaultSrcPath);
+    // }
 
-    save() {
-        console.log(`Saving ${this.glTypeStr} shader to localStorage.`);
-        localStorage.setItem(this.glTypeStr, this.src);
-    }
+    // save() {
+    //     console.log(`Saving ${this.glTypeStr} shader to localStorage.`);
+    //     localStorage.setItem(this.glTypeStr, this.src);
+    // }
 
     createUI(parentEl) {
         this.el = parentEl.appendHTML(
             `<li>
             <label class="collapsible">${this.glTypeStr.toStartCase()} Shader</label>
-            <pre></pre>
+            <pre>${this.src}</pre>
             </li>`
         );
         this.editor = ui.aceit(this.el.querySelector("pre"));
@@ -134,7 +154,8 @@ export default class LiveShader {
         this.editor.session.setWrapLimit(100);
         this.editor.addEventListener("change", () => {
             this.clearErrors();
-        })
+        });
+        this.tempSrc = null;
     }
 }
 

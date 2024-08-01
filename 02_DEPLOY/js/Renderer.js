@@ -6,10 +6,7 @@ export default class Renderer {
     gl = null;
     canDraw = false;
     pass = null;
-    vertPosBuffer = null;
     prog = null;
-
-    static initCounter;
 
     constructor() {
         // setup context
@@ -21,10 +18,16 @@ export default class Renderer {
             console.log("Error creating WebGL context.");
             return;
         }
-
-        this.pass = new Pass(this.gl);
-        this.prog = new LiveProgram(this.gl);
     }
+
+    fromObject(obj) {
+        if (this.pass) this.pass.destroy();
+        if (this.prog) this.prog.destroy();
+
+        this.pass = new Pass(this.gl, obj.pass);
+        this.prog = new LiveProgram(this.gl, obj.prog);
+    }
+
 
     compile() {
         this.prog.compile();
@@ -50,6 +53,31 @@ export default class Renderer {
 
         // add program ui
         this.prog.createUI(parentEl);
+    }
+
+    toObject() {
+        return {
+            pass: this.pass.toObject(),
+            prog: this.prog.toObject()
+        };
+
+        // const obj = this.pass.toObject();
+        // console.log("save obj", obj);
+
+        // this.pass.fromObject(obj);
+
+        // this.pass.meshes.forEach(mesh => {
+        //     console.log("mesh", mesh);
+        // })
+
+        // const saveStr = this.pass.toString();
+        // console.log("save object", this.pass.toObject());
+        // console.log("save str", this.pass.toString());
+        // console.log("parsed str", JSON.parse(this.pass.toString()));
+    }
+
+    toString() {
+        return JSON.stringify(this.toObject());
     }
 }
 

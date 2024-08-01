@@ -7,10 +7,27 @@ export default class LiveProgram {
     glObj = null;   // the webgl program object
     el = null;
 
-    constructor(gl) {
+    constructor(gl, obj=null) {
         this.gl = gl;
         this.vert = new LiveShader(gl, gl.VERTEX_SHADER);
         this.frag = new LiveShader(gl, gl.FRAGMENT_SHADER);
+        if (obj) {
+            this.fromObject(obj);
+        }
+    }
+
+    fromObject(obj) {
+        this.vert.src = obj.vert;
+        this.frag.src = obj.frag;
+    }
+
+    destroy() {
+        this.gl.deleteProgram(this.glObj);
+        this.glObj = null;
+        this.vert.destroy();
+        this.frag.destroy();
+        this.vert.clearErrors();
+        this.frag.clearErrors();
     }
 
     get valid() {
@@ -55,8 +72,8 @@ export default class LiveProgram {
         this.gl.detachShader(this.glObj, this.vert.glObj);
         this.gl.detachShader(this.glObj, this.frag.glObj);
 
-        this.gl.deleteShader(this.vert.glObj);
-        this.gl.deleteShader(this.frag.glObj);
+        this.vert.destroy();
+        this.frag.destroy();
 
         if (!this.gl.getProgramParameter(this.glObj, this.gl.LINK_STATUS)) {
             const info = this.gl.getProgramInfoLog(this.glObj);
@@ -70,5 +87,16 @@ export default class LiveProgram {
         this.el = parentEl.appendHTML(`<ul id="program"></ul>`);
         this.vert.createUI(this.el);
         this.frag.createUI(this.el);
+    }
+
+    toObject() {
+        return {
+            vert: this.vert.src,
+            frag: this.frag.src,
+        };
+    }
+
+    toString() {
+        return JSON.stringify(this.toObject());
     }
 }

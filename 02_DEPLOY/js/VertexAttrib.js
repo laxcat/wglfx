@@ -15,14 +15,37 @@ export default class VertexAttrib {
     uiDirty = false;      // ui data has changed, has not been set to local/gpu yet
     editor = null;      // ace editor, replaces dataEl
 
-    constructor(gl, index, size, name) {
+    constructor(gl, obj=null, ignoreData=false) {
         this.gl = gl;
-        this.index = index;
-        this.size = size;
-        this.name = name;
+        if (obj) {
+            this.fromObject(obj, ignoreData);
+        }
+    }
+
+    fromObject(obj, ignoreData=false) {
+        this.index = obj.index;
+        this.size = obj.size;
+        this.name = obj.name;
+
+        this.deleteBuffer();
+        this.data = null;
+        if (obj.data && ignoreData === false) {
+            console.log("type of attrib data", typeof obj.data);
+            if (typeof obj.data === "string") {
+                this.createBufferFromArrayBuffer(obj.data.base64ToArrayBuffer());
+            }
+            else {
+                this.createBufferFromArrayBuffer(obj.data.buffer);
+            }
+        }
     }
 
     createBuffer(nVerts) {
+        const emptyData = new Float32Array(nVerts * this.size);
+        this.createBufferFromArrayBuffer(emptyData.buffer);
+    }
+
+    createBufferFromArrayBuffer(arrayBuffer) {
         if (this.glBuffer || this.data) {
             throw `Unexpected call to createBuffer. Buffer already created.\n`+
                   `${this.glBuffer}\n`+
@@ -30,7 +53,7 @@ export default class VertexAttrib {
         }
         this.glBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.glBuffer);
-        this.data = new Float32Array(this.size * nVerts);
+        this.data = new Float32Array(arrayBuffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, this.data, this.gl.STATIC_DRAW);
         this.gl.vertexAttribPointer(this.index, this.size, this.gl.FLOAT, false, 0, 0);
         this.gl.enableVertexAttribArray(this.index);
@@ -159,5 +182,55 @@ export default class VertexAttrib {
         this.editor.addEventListener("change", e => {
             this.uiDirty = true;
         })
+    }
+
+    toObject() {
+        const obj = {
+            index: this.index,
+            size: this.size,
+            name: this.name
+        };
+        if (this.data) {
+            obj.data = this.data.buffer.toBase64String();
+
+            // console.log("this.data", this.data);
+            // console.log("decoded data", new Float32Array(obj.data.base64ToArrayBuffer()));
+
+            // let arr = new Uint8Array(this.data.buffer);
+            // console.log("arr", arr);
+            // let str = "";
+            // arr.forEach(byte => str += String.fromCodePoint(byte));
+            // // let str = (new TextDecoder('utf8')).decode(arr.buffer);
+            // console.log("str", str, str.length);
+            // // console.log("str 1", str, str.length);
+            // // str = unescape(encodeURIComponent(str));
+            // // console.log("str 2", str, str.length);
+            // obj.data = window.btoa(str);
+
+            // console.log("base64 str", obj.data);
+
+            // str = window.atob(obj.data);
+            // arr = str.split("");
+            // console.log("arr of string bytes", arr);
+            // arr = arr.map(byteStr => byteStr.codePointAt(0));
+            // console.log("arr of bytes", arr);
+            // arr = new Uint8Array(arr);
+            // console.log("Uint8Array", arr);
+            // arr = new Float32Array(arr.buffer);
+            // // arr = str.split("").map(c => c.charCodeAt(0));
+            // // console.log("decoded arr", arr);
+            // // const data = new Float32Array((new Uint8Array(arr)).buffer);
+            // console.log("data", this.data);
+            // // console.log("data str", obj.data);
+            // console.log("encoded/decoded data", arr);
+        }
+
+
+
+        return obj;
+    }
+
+    toString() {
+        return JSON.stringify(this.toObject());
     }
 }
