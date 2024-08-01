@@ -131,8 +131,16 @@ export default class Pass {
         }
 
         const attrib = this.layout.addAttrib(size, name);
-        attrib.createBuffer(this.nVerts);
-        attrib.createUI(this.passEl.querySelector("ul"));
+        // create list ui for new attrib in layout ul
+        attrib.createListUI(this.passEl.querySelector("section.layout > ul"));
+        // create data ui for each mesh in mesh list
+        this.meshes.forEach(mesh => {
+            const meshAttrib = mesh.layout.addAttrib(size, name);
+            // create webgl buffers
+            meshAttrib.createBuffer(mesh.nVerts);
+            console.log("mesh layout", mesh.layout);
+            meshAttrib.createDataUI(mesh.el.querySelector("ul.attribs"));
+        });
         return true;
     }
 }

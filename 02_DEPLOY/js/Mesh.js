@@ -75,7 +75,7 @@ export default class Mesh {
             </li>
             `
         );
-        const attribsEl = this.el.querySelector("ul");
+        const attribsEl = this.el.querySelector("ul.attribs");
         this.layout.attribs.forEach(attrib => attrib.createDataUI(attribsEl));
     }
 
