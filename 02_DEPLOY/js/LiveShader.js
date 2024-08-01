@@ -53,10 +53,10 @@ export default class LiveShader {
         // get the whole error string
         const info = this.gl.getShaderInfoLog(this.glObj);
         // split on lines
-        const errors = info.split("\n");
+        const lines = info.split("\n");
         // for each line, construct an error object
-        errors.forEach(item => {
-            const parts = item.split(":");
+        lines.forEach(line => {
+            const parts = line.split(":");
             if (parts[0] === "ERROR") {
                 const line = parseInt(parts[2]) - 1; // ace wants 0-index lines/cols
                 const part = parts[3].trim().replaceAll("'", "");

@@ -56,7 +56,7 @@ export default class VertexAttrib {
             this.data[i] = data[i];
         }
         // update ui from this.data
-        this.updateEditorValue();
+        this.updateUIFromData();
         // upload this.data to gpu
         this.uploadData();
     }
@@ -120,18 +120,19 @@ export default class VertexAttrib {
         // upload ALL of this.data to gpu (even parts not changed by uiData)
         this.uploadData();
         // set the data string again, to fix formatting, etc
-        this.updateEditorValue();
+        this.updateUIFromData();
         // this house is clean
         this.uiDirty = false;
     }
 
-    updateEditorValue() {
+    updateUIFromData() {
         if (!this.editor) {
             return;
         }
         const row = this.editor.session.selection.cursor.row;
         const col = this.editor.session.selection.cursor.column;
         this.editor.setValue(this.dataStr);
+        this.editor.clearSelection();
         this.editor.moveCursorTo(row, col);
     }
 
@@ -150,8 +151,8 @@ export default class VertexAttrib {
     createDataUI(parentEl) {
         const dataEl = parentEl.appendHTML(
             `<li>
-            <div>${this.name}</div>
-            <pre>${this.dataStr}</pre>
+                <div>${this.name}</div>
+                <pre>${this.dataStr}</pre>
             </li>`
         );
         this.editor = ui.aceit(dataEl.querySelector("pre"), "ace/mode/text");

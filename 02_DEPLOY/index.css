@@ -17,6 +17,10 @@ canvas {
     z-index: 0;
 }
 
+.hidden {
+    display: none !important;
+}
+
 /* UI GENERAL RULES ********************************************************* */
 #ui {
     position: absolute;
@@ -36,10 +40,6 @@ canvas {
     label, section, li, input {
         font-weight: bold;
         color: #fff;
-    }
-
-    .hidden {
-        display: none !important;
     }
 
     ul {
