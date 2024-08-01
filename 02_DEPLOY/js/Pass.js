@@ -138,7 +138,6 @@ export default class Pass {
             const meshAttrib = mesh.layout.addAttrib(size, name);
             // create webgl buffers
             meshAttrib.createBuffer(mesh.nVerts);
-            console.log("mesh layout", mesh.layout);
             meshAttrib.createDataUI(mesh.el.querySelector("ul.attribs"));
         });
         return true;
