@@ -23,7 +23,6 @@ canvas {
     overflow: scroll;
     overflow-x: hidden;
     z-index: 1;
-    width: 100%;
 
     --border:           1px solid rgba(255 255 255 / 0.4);
     --border-focus:     1px solid rgba(255 255 255 / 1.0);
@@ -87,11 +86,20 @@ canvas {
     }
 
 /* PASS / LAYOUT / MESHES *************************************************** */
-    ul#passes > li > section {
-        margin: 0 0 30px 30px;
+    ul#passes {
+        width: fit-content;
+        min-width: 780px;
+
+        > li > section {
+            margin: 0 0 30px 30px;
+        }
 
         section.layout {
             margin: 0 0 0 30px;
+
+            ul > li {
+                white-space: pre;
+            }
         }
 
         ul.meshes > li {
@@ -116,8 +124,13 @@ canvas {
     }
 
 /* SHADER ******************************************************************* */
-    section.shader > pre {
-        margin: 0 0 30px 0;
+    ul#program > li {
+        width: fit-content;
+        min-width: 780px;
+
+        > pre {
+            margin: 0 0 30px 0;
+        }
     }
 
 /* ACE EDITOR *************************************************************** */

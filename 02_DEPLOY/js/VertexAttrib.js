@@ -120,7 +120,7 @@ export default class VertexAttrib {
         // upload ALL of this.data to gpu (even parts not changed by uiData)
         this.uploadData();
         // set the data string again, to fix formatting, etc
-        this.updateEditorValue()
+        this.updateEditorValue();
         // this house is clean
         this.uiDirty = false;
     }
@@ -137,7 +137,13 @@ export default class VertexAttrib {
 
     createListUI(parentEl) {
         parentEl.appendHTML(
-            `<li>${this.index}: ${this.name.padEnd(12)}, ${this.size} float components, ${this.size * 4} bytes</li>`
+            // li set to white-space:pre, so string can't contain new lines
+            `<li>`+
+            `${this.index}: `+
+            `${this.name}, `.padEnd(13)+
+            `${this.size} float components, `+
+            `${(this.size * 4).toString().padStart(2)} bytes`+
+            `</li>`
         );
     }
 
