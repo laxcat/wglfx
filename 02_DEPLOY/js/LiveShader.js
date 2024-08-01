@@ -18,10 +18,6 @@ export default class LiveShader {
         this.glTypeStr = (type === this.gl.VERTEX_SHADER)    ? "vert" :
                          (type === this.gl.FRAGMENT_SHADER)  ? "frag" :
                          "unknown-type";
-
-        // this.createUI(el);
-
-        // this.load();
     }
 
     destroy() {

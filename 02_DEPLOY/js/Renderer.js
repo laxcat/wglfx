@@ -60,20 +60,6 @@ export default class Renderer {
             pass: this.pass.toObject(),
             prog: this.prog.toObject()
         };
-
-        // const obj = this.pass.toObject();
-        // console.log("save obj", obj);
-
-        // this.pass.fromObject(obj);
-
-        // this.pass.meshes.forEach(mesh => {
-        //     console.log("mesh", mesh);
-        // })
-
-        // const saveStr = this.pass.toString();
-        // console.log("save object", this.pass.toObject());
-        // console.log("save str", this.pass.toString());
-        // console.log("parsed str", JSON.parse(this.pass.toString()));
     }
 
     toString() {

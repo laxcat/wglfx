@@ -69,28 +69,3 @@ String.prototype.base64ToArrayBuffer = function() {
                 .map(byteStr => byteStr.codePointAt(0));
     return (new Uint8Array(arr)).buffer;
 }
-
-// input = new Float64Array([1,2,3,4])
-// encoded = Buffer.from(input.buffer).toString('base64')
-
-// buff = Buffer.from(encoded, 'base64');
-// decoded = new Float64Array(Uint8Array.from(buff).buffer)
-
-// export function bufferToBase64(buffer) {
-//      const binary = String.fromCharCode.apply(null, buffer);
-//      return window.btoa(binary);
-// }
-
-// // From:
-// // https://developer.chrome.com/blog/how-to-convert-arraybuffer-to-and-from-string
-// export function ab2str(buf) {
-//     return String.fromCharCode.apply(null, new Uint16Array(buf));
-// }
-// export function str2ab(str) {
-//     var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
-//     var bufView = new Uint16Array(buf);
-//     for (var i=0, strLen=str.length; i < strLen; i++) {
-//     bufView[i] = str.charCodeAt(i);
-//     }
-//     return buf;
-// }

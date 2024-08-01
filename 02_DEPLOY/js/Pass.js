@@ -16,38 +16,17 @@ export default class Pass {
         if (obj) {
             this.fromObject(obj);
         }
-        // const layoutObj = [
-        //     {name: "pos", size: 4, data: new Float32Array([
-        //          0.50,   1.00,   0.00,   1.00,
-        //          1.00,  -1.00,   0.00,   1.00,
-        //         -1.00,  -1.00,   0.00,   1.00,
-        //         -0.50,   1.00,   0.00,   1.00,
-        //          1.00,  -1.00,   0.00,   1.00,
-        //         -1.00,  -1.00,   0.00,   1.00,
-        //     ])},
-        //     {name: "color", size: 4, data: new Float32Array([
-        //         0.5,  0.0,  0.0,  1.0,
-        //         0.0,  0.0,  0.0,  1.0,
-        //         0.0,  0.0,  0.0,  1.0,
-        //         0.0,  0.5,  0.5,  1.0,
-        //         0.0,  0.0,  0.0,  1.0,
-        //         0.0,  0.0,  0.0,  1.0,
-        //     ])},
-        // ];
-
-        // this.layout = new VertexLayout(gl, layoutObj, true /* ignoreData */);
-
-        // this.addMesh({
-        //     nVerts: 6,
-        //     layout: layoutObj
-        // });
-
-        // this.setClearColor();
     }
 
     fromObject(obj) {
         // set new pass layout. never has buffers.
-        this.layout = new VertexLayout(this.gl, obj.layout);
+        if (this.layout) {
+            console.log("layout???", this.layout);
+            this.layout.fromObject(obj.layout);
+        }
+        else {
+            this.layout = new VertexLayout(this.gl, obj.layout);
+        }
         // make sure mesh buffers are destroyed
         this.destroy();
         // create new meshes
@@ -152,14 +131,16 @@ export default class Pass {
             return false;
         }
 
-        const attrib = this.layout.addAttrib(size, name);
+        const attrib = this.layout.addAttrib({size:size, name:name});
         // create list ui for new attrib in layout ul
         attrib.createListUI(this.el.querySelector("section.layout > ul"));
         // create data ui for each mesh in mesh list
         this.meshes.forEach(mesh => {
-            const meshAttrib = mesh.layout.addAttrib(size, name);
-            // create webgl buffers
-            meshAttrib.createBuffer(mesh.nVerts);
+            const meshAttrib = mesh.layout.addAttrib({
+                size: size,
+                name: name,
+                data: new Float32Array(mesh.nVerts * size),
+            });
             meshAttrib.createDataUI(mesh.el.querySelector("ul.attribs"));
         });
         return true;

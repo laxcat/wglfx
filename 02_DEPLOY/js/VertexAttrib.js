@@ -12,32 +12,33 @@ export default class VertexAttrib {
     name = "";          // friendly name to indicate nature of data. pos, norm, color, etc.
     glBuffer = null;    // when VertexLayout assigned to a pass, buffers get stored here
     data = null;        // when VertexLayout assigned to a pass, keep copy of buffer data here
-    uiDirty = false;      // ui data has changed, has not been set to local/gpu yet
+    uiDirty = false;    // ui data has changed, has not been set to local/gpu yet
     editor = null;      // ace editor, replaces dataEl
 
-    constructor(gl, obj=null, ignoreData=false) {
+    constructor(gl, obj=null) {
         this.gl = gl;
         if (obj) {
-            this.fromObject(obj, ignoreData);
+            this.fromObject(obj);
         }
     }
 
-    fromObject(obj, ignoreData=false) {
+    fromObject(obj) {
         this.index = obj.index;
         this.size = obj.size;
         this.name = obj.name;
 
         this.deleteBuffer();
         this.data = null;
-        if (obj.data && ignoreData === false) {
-            console.log("type of attrib data", typeof obj.data);
-            if (typeof obj.data === "string") {
-                this.createBufferFromArrayBuffer(obj.data.base64ToArrayBuffer());
-            }
-            else {
-                this.createBufferFromArrayBuffer(obj.data.buffer);
-            }
+        if (typeof obj.data === "string") {
+            this.createBufferFromArrayBuffer(obj.data.base64ToArrayBuffer());
         }
+        else if (obj.data instanceof Float32Array) {
+            this.createBufferFromArrayBuffer(obj.data.buffer);
+        }
+    }
+
+    destroy() {
+        this.deleteBuffer();
     }
 
     createBuffer(nVerts) {
@@ -60,11 +61,6 @@ export default class VertexAttrib {
     }
 
     deleteBuffer() {
-        // if (!this.glBuffer || !this.data) {
-        //     throw `Unexpected call to deleteBuffer. Buffer not created.\n`+
-        //           `${this.glBuffer}\n`+
-        //           `${this.data}\n`;
-        // }
         this.gl.disableVertexAttribArray(this.index);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         this.gl.deleteBuffer(this.glBuffer);
@@ -192,40 +188,7 @@ export default class VertexAttrib {
         };
         if (this.data) {
             obj.data = this.data.buffer.toBase64String();
-
-            // console.log("this.data", this.data);
-            // console.log("decoded data", new Float32Array(obj.data.base64ToArrayBuffer()));
-
-            // let arr = new Uint8Array(this.data.buffer);
-            // console.log("arr", arr);
-            // let str = "";
-            // arr.forEach(byte => str += String.fromCodePoint(byte));
-            // // let str = (new TextDecoder('utf8')).decode(arr.buffer);
-            // console.log("str", str, str.length);
-            // // console.log("str 1", str, str.length);
-            // // str = unescape(encodeURIComponent(str));
-            // // console.log("str 2", str, str.length);
-            // obj.data = window.btoa(str);
-
-            // console.log("base64 str", obj.data);
-
-            // str = window.atob(obj.data);
-            // arr = str.split("");
-            // console.log("arr of string bytes", arr);
-            // arr = arr.map(byteStr => byteStr.codePointAt(0));
-            // console.log("arr of bytes", arr);
-            // arr = new Uint8Array(arr);
-            // console.log("Uint8Array", arr);
-            // arr = new Float32Array(arr.buffer);
-            // // arr = str.split("").map(c => c.charCodeAt(0));
-            // // console.log("decoded arr", arr);
-            // // const data = new Float32Array((new Uint8Array(arr)).buffer);
-            // console.log("data", this.data);
-            // // console.log("data str", obj.data);
-            // console.log("encoded/decoded data", arr);
         }
-
-
 
         return obj;
     }

@@ -5,7 +5,6 @@ export default class Mesh {
     nVerts = 0;
     layout = null;
     el = null;
-    editor = null;
 
     constructor(gl, obj=null) {
         this.gl = gl;
@@ -23,27 +22,8 @@ export default class Mesh {
             return attrib;
         });
 
-        console.log("mesh layout", layout);
-
         this.layout = new VertexLayout(this.gl, layout);
-
-        // this.nVerts = nVerts;
-        // this.layout = new VertexLayout(this.gl, layout.attribs);
-        // this.layout.attribs.forEach(attrib => {
-        //     attrib.createBuffer(this.nVerts);
-        // });
-        // this.setDataFromList(dataList);
-
     }
-
-    // setDataFromList(list) {
-    //     if (!list) {
-    //         return;
-    //     }
-    //     list.forEach(item => {
-    //         this.layout.setDataByName(item.name, item.data);
-    //     });
-    // }
 
     bind() {
         for(let index = 0; index < this.layout.attribs.length; ++index) {
@@ -104,7 +84,9 @@ export default class Mesh {
             data: {},
         };
         this.layout.attribs.forEach(attrib => {
-            obj.data[attrib.name] = attrib.toObject().data;
+            if (attrib.data) {
+                obj.data[attrib.name] = attrib.toObject().data;
+            }
         });
         return obj;
     }

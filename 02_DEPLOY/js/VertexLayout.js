@@ -6,33 +6,36 @@ export default class VertexLayout {
     gl = null;          // webgl context object
     attribs = [];       // list of attributes
 
-    constructor(gl, attribs, ignoreData=false) {
+    constructor(gl, attribs) {
         this.gl = gl;
-        this.fromObject(attribs, ignoreData);
+        this.fromObject(attribs);
     }
 
-    fromObject(attribs, ignoreData=false) {
+    fromObject(attribs) {
         if (this.attribs.length) {
-            this.clearAttribs();
+            this.destroy();
         }
         if (!attribs) {
             return;
         }
         let index = 0;
         attribs.forEach(attrib => {
-            if (attrib.index !== undefined && attrib.index !== index) {
-                throw `Unexpected index. Expecting sequential indices. ${attrib.index}, ${index}`;
-            }
-            attrib.index = index;
-            const va = new VertexAttrib(this.gl, attrib, ignoreData);
-            this.attribs.push(va);
+            this.addAttrib(attrib);
             ++index;
         });
     }
 
+    destroy() {
+        this.attribs.forEach(attrib => attrib.destroy());
+        this.attribs = [];
+    }
 
-    addAttrib(size, name) {
-        const attrib = new VertexAttrib(this.gl, this.attribs.length, size, name);
+    addAttrib(obj) {
+        if (obj.index !== undefined && obj.index !== this.attribs.length) {
+            throw `Unexpected index. Expecting sequential indices. ${obj.index}, ${this.attribs.length}`;
+        }
+        obj.index = this.attribs.length;
+        const attrib = new VertexAttrib(this.gl, obj);
         this.attribs.push(attrib);
         return attrib;
     }
@@ -44,13 +47,6 @@ export default class VertexLayout {
             }
         }
         return false;
-    }
-
-    clearAttribs() {
-        this.attribs.forEach(attrib => {
-            attrib.deleteBuffer();
-        });
-        this.attribs = [];
     }
 
     setDataByName(name, data, offset=0) {

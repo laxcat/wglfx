@@ -79,11 +79,7 @@ export default class App {
 
     load() {
         let obj = JSON.parse(localStorage.getItem("main"));
-        // obj = null;
-        if (obj) {
-            console.log("loading", obj);
-        }
-        else {
+        if (!obj) {
             obj = {
                 prog: {
                     vert: util.loadFileSync("./glsl/vert.glsl"),
@@ -119,27 +115,13 @@ export default class App {
                     ],
                 },
             };
-            console.log("no save found, loading default", obj);
         }
         this.renderer.fromObject(obj);
-        // this.renderer.prog.vert.load();
-        // this.renderer.prog.frag.load();
     }
 
     save() {
         console.log("SAVE START -----------------------------------------------------")
-        // console.log("TEST SAVE ------------------------------------------------------")
-        // this.renderer.save();
-        // // compile shaders
-        // this.renderer.compile();
-        // // update vertex data from ui
-        // this.renderer.pass.updateDataFromUI();
-        // // save shader src to localStorage
-        // this.renderer.prog.vert.save();
-        // this.renderer.prog.frag.save();
-
         this.renderer.pass.updateDataFromUI();
-        console.log("saving", this.renderer.toObject());
         localStorage.setItem("main", this.renderer.toString());
         console.log("------------------------------------------------------- SAVE END");
     }
