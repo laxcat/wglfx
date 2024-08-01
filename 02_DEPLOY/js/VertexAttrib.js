@@ -56,7 +56,7 @@ export default class VertexAttrib {
             this.data[i] = data[i];
         }
         // update ui from this.data
-        this.updateEditorValue()
+        this.updateEditorValue();
         // upload this.data to gpu
         this.uploadData();
     }
