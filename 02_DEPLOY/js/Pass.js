@@ -84,7 +84,7 @@ export default class Pass {
     }
 
     setClearColor(newColor = null) {
-        this.clearColor = new Color(newColor);
+        this.clearColor.set(newColor);
         this.gl.clearColor(...this.clearColor.data);
     }
 
@@ -114,7 +114,7 @@ export default class Pass {
             <label class="collapsible">Pass</label>
             <section>
                 <label>Clear Color</label>
-                <input type="color" value="#${this.clearColor.toRGB()}">
+                <input type="color" value="${this.clearColor.toCSSStr()}">
                 <label class="collapsible">Layout</label>
                 <section class="layout">
                     <ul></ul>
@@ -201,7 +201,7 @@ export default class Pass {
 
     toObject() {
         return {
-            clear: this.clearColor.toRGB(),
+            clear: this.clearColor.toRGBAStr(),
             layout: this.layout.toObject(),
             meshes: this.meshes.map(mesh => mesh.toObject()),
         }
