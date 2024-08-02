@@ -15,14 +15,14 @@ export default class Mesh {
 
     fromObject(obj) {
         this.nVerts = obj.nVerts;
-        let layout = obj.layout.map(attrib => {
+
+        let layoutWithData = obj.layout.map(attrib => {
             if (obj.data.hasOwnProperty(attrib.name)) {
                 attrib.data = obj.data[attrib.name];
             }
             return attrib;
         });
-
-        this.layout = new VertexLayout(this.gl, layout);
+        this.layout = new VertexLayout(this.gl, layoutWithData);
     }
 
     bind() {
@@ -67,7 +67,7 @@ export default class Mesh {
             <li>
                 <label class="collapsible">Mesh</label>
                 <section>
-                    <label for="pass_vertCount">Count</label>
+                    <label>Count</label>
                     <input type="number" value="${this.nVerts}">
                     <ul class="attribs"></ul>
                 </section>

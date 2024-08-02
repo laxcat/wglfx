@@ -11,6 +11,36 @@ export default class Pass {
     clearColor = [0.0, 0.0, 0.0, 1.0];
     el = null;
 
+    static default = {
+        layout: [
+            {name: "pos",   size: 4},
+            {name: "color", size: 4},
+        ],
+        meshes: [
+            {
+                nVerts: 6,
+                data: {
+                    pos: new Float32Array([
+                         0.50,   1.00,   0.00,   1.00,
+                         1.00,  -1.00,   0.00,   1.00,
+                        -1.00,  -1.00,   0.00,   1.00,
+                        -0.50,   1.00,   0.00,   1.00,
+                         1.00,  -1.00,   0.00,   1.00,
+                        -1.00,  -1.00,   0.00,   1.00,
+                    ]),
+                    color: new Float32Array([
+                        0.5,  0.0,  0.0,  1.0,
+                        0.0,  0.0,  0.0,  1.0,
+                        0.0,  0.0,  0.0,  1.0,
+                        0.0,  0.5,  0.5,  1.0,
+                        0.0,  0.0,  0.0,  1.0,
+                        0.0,  0.0,  0.0,  1.0,
+                    ]),
+                },
+            },
+        ],
+    };
+
     constructor(gl, obj=null) {
         this.gl = gl;
         if (obj) {
@@ -21,7 +51,6 @@ export default class Pass {
     fromObject(obj) {
         // set new pass layout. never has buffers.
         if (this.layout) {
-            console.log("layout???", this.layout);
             this.layout.fromObject(obj.layout);
         }
         else {
@@ -39,7 +68,7 @@ export default class Pass {
     }
 
     destroy() {
-        this.meshes.forEach(mesh => mesh.destroy());
+        this.meshes.forEach(mesh => mesh.layout.destroy());
         this.meshes = [];
         this.nMeshes = 0;
     }
@@ -71,26 +100,37 @@ export default class Pass {
     }
 
     createUI(parentEl) {
-        this.el = parentEl.appendHTML(
+        this.el = parentEl.appendHTML(`<li></li>`);
+        this.#fillUI();
+    }
+
+    resetUI() {
+        // clear contents and listeners
+        this.el.innerHTML = "";
+        this.#fillUI();
+        ui.parse(this.el);
+    }
+
+    #fillUI() {
+        this.el.appendHTML(
             `
-            <li>
-                <label class="collapsible">Pass</label>
-                <section>
-                    <label class="collapsible">Layout</label>
-                    <section class="layout">
-                        <ul></ul>
-                        <form>
-                            <label>Size</label>
-                            <input type="number" min="1" max="4">
-                            <label>Name</label>
-                            <input type="text" pattern="[a-z]{3,12}" placeholder="[a-z]{3,12}">
-                            <input type="submit" value="Add Attribute">
-                        </form>
-                    </section>
-                    <label class="collapsible">Meshes</label>
-                    <ul class="meshes"></ul>
+            <label class="collapsible">Pass</label>
+            <section>
+                <label class="collapsible">Layout</label>
+                <section class="layout">
+                    <ul></ul>
+                    <form>
+                        <label>Size</label>
+                        <input type="number" min="1" max="4">
+                        <label>Name</label>
+                        <input type="text" pattern="[a-z]{3,12}" placeholder="[a-z]{3,12}">
+                        <input type="submit" value="Add Attribute">
+                    </form>
                 </section>
-            </li>
+                <label class="collapsible">Meshes</label>
+                <ul class="meshes"></ul>
+                <button>Restore Default</button>
+            </section>
             `
         );
 
@@ -109,6 +149,14 @@ export default class Pass {
         form.addEventListener("submit", e => {
             if (this.addAttrib(parseInt(size.value), name.value)) {
                 form.reset();
+            }
+        });
+
+        this.el.querySelector("button").addEventListener("click", e => {
+            e.preventDefault();
+            if (confirm("Really restore pass to default?")) {
+                this.fromObject(Pass.default);
+                this.resetUI();
             }
         });
     }

@@ -37,7 +37,7 @@ canvas {
         font-family: 'Menlo', monospace;
     }
 
-    label, section, li, input {
+    label, section, li, input, button {
         font-weight: bold;
         color: #fff;
     }
@@ -79,6 +79,7 @@ canvas {
         outline: none;
     }
 
+    button,
     input[type="button"],
     input[type="submit"] {
         padding: 4px 6px;

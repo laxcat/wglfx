@@ -1,5 +1,6 @@
 import Time from "./Time.js"
 import Renderer from "./Renderer.js"
+import Pass from "./Pass.js"
 import * as util from "./util.js"
 import * as ui from "./util-ui.js"
 
@@ -85,35 +86,7 @@ export default class App {
                     vert: util.loadFileSync("./glsl/vert.glsl"),
                     frag: util.loadFileSync("./glsl/frag.glsl"),
                 },
-                pass: {
-                    layout: [
-                        {name: "pos",   size: 4},
-                        {name: "color", size: 4},
-                    ],
-                    meshes: [
-                        {
-                            nVerts: 6,
-                            data: {
-                                pos: new Float32Array([
-                                     0.50,   1.00,   0.00,   1.00,
-                                     1.00,  -1.00,   0.00,   1.00,
-                                    -1.00,  -1.00,   0.00,   1.00,
-                                    -0.50,   1.00,   0.00,   1.00,
-                                     1.00,  -1.00,   0.00,   1.00,
-                                    -1.00,  -1.00,   0.00,   1.00,
-                                ]),
-                                color: new Float32Array([
-                                    0.5,  0.0,  0.0,  1.0,
-                                    0.0,  0.0,  0.0,  1.0,
-                                    0.0,  0.0,  0.0,  1.0,
-                                    0.0,  0.5,  0.5,  1.0,
-                                    0.0,  0.0,  0.0,  1.0,
-                                    0.0,  0.0,  0.0,  1.0,
-                                ]),
-                            },
-                        },
-                    ],
-                },
+                pass: Pass.default,
             };
         }
         this.renderer.fromObject(obj);

@@ -28,7 +28,7 @@ Element.prototype.appendHTML = function(html) {
     }
 
     // otherwise, return an array, maybe an empty array if nothing added
-    return this.children.slice(oldLen, newLen);
+    return [...this.children].slice(oldLen, newLen);
 }
 
 export function aceit(idOrEl, mode="ace/mode/glsl") {
