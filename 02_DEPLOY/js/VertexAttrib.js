@@ -30,7 +30,7 @@ export default class VertexAttrib {
         this.deleteBuffer();
         this.data = null;
         if (typeof obj.data === "string") {
-            this.createBufferFromArrayBuffer(obj.data.base64ToArrayBuffer());
+            this.createBufferFromArrayBuffer(obj.data.fromBase64());
         }
         else if (obj.data instanceof Float32Array) {
             this.createBufferFromArrayBuffer(obj.data.buffer);
@@ -187,9 +187,8 @@ export default class VertexAttrib {
             name: this.name
         };
         if (this.data) {
-            obj.data = this.data.buffer.toBase64String();
+            obj.data = this.data.toBase64();
         }
-
         return obj;
     }
 

@@ -56,14 +56,27 @@ HTMLCollection.prototype.last = function() {
     return this[this.length - 1];
 }
 
-ArrayBuffer.prototype.toBase64String = function() {
+ArrayBuffer.prototype.toBase64 = function() {
     let arr = new Uint8Array(this);
     let str = "";
     arr.forEach(byte => str += String.fromCodePoint(byte));
     return window.btoa(str);
 }
+Int8Array.prototype.toBase64 =
+Uint8Array.prototype.toBase64 =
+Uint8ClampedArray.prototype.toBase64 =
+Int16Array.prototype.toBase64 =
+Uint16Array.prototype.toBase64 =
+Int32Array.prototype.toBase64 =
+Uint32Array.prototype.toBase64 =
+Float32Array.prototype.toBase64 =
+Float64Array.prototype.toBase64 =
+BigInt64Array.prototype.toBase64 =
+BigUint64Array.prototype.toBase64 = function() {
+    return this.buffer.toBase64();
+}
 
-String.prototype.base64ToArrayBuffer = function() {
+String.prototype.fromBase64 = function() {
     const arr = window.atob(this)
                 .split("")
                 .map(byteStr => byteStr.codePointAt(0));
