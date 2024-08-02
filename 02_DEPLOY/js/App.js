@@ -95,6 +95,7 @@ export default class App {
     save() {
         console.log("SAVE START -----------------------------------------------------")
         this.renderer.pass.updateDataFromUI();
+        console.log(this.renderer.toObject());
         localStorage.setItem("main", this.renderer.toString());
         console.log("------------------------------------------------------- SAVE END");
     }

@@ -1,5 +1,6 @@
 import VertexLayout from "./VertexLayout.js"
 import VertexAttrib from "./VertexAttrib.js"
+import Color from "./Color.js"
 import Mesh from "./Mesh.js"
 import * as ui from "./util-ui.js"
 
@@ -8,10 +9,11 @@ export default class Pass {
     layout = null;
     meshes = [];
     nMeshes = 0;
-    clearColor = [0.0, 0.0, 0.0, 1.0];
+    clearColor = new Color();
     el = null;
 
     static default = {
+        clear: "000000",
         layout: [
             {name: "pos",   size: 4},
             {name: "color", size: 4},
@@ -49,6 +51,9 @@ export default class Pass {
     }
 
     fromObject(obj) {
+        // set clear color
+        this.setClearColor(obj.clear);
+
         // set new pass layout. never has buffers.
         if (this.layout) {
             this.layout.fromObject(obj.layout);
@@ -56,15 +61,14 @@ export default class Pass {
         else {
             this.layout = new VertexLayout(this.gl, obj.layout);
         }
+
+        // create new meshes
         // make sure mesh buffers are destroyed
         this.destroy();
-        // create new meshes
         obj.meshes.forEach(mesh => {
             mesh.layout = obj.layout;
             this.addMesh(mesh);
         });
-
-        this.setClearColor();
     }
 
     destroy() {
@@ -80,15 +84,8 @@ export default class Pass {
     }
 
     setClearColor(newColor = null) {
-        if (newColor) {
-            this.clearColor = newColor;
-        }
-        this.gl.clearColor(
-            this.clearColor[0],
-            this.clearColor[1],
-            this.clearColor[2],
-            this.clearColor[3]
-        );
+        this.clearColor = new Color(newColor);
+        this.gl.clearColor(...this.clearColor.data);
     }
 
     draw() {
@@ -116,6 +113,8 @@ export default class Pass {
             `
             <label class="collapsible">Pass</label>
             <section>
+                <label>Clear Color</label>
+                <input type="color" value="#${this.clearColor.toRGB()}">
                 <label class="collapsible">Layout</label>
                 <section class="layout">
                     <ul></ul>
@@ -133,6 +132,12 @@ export default class Pass {
             </section>
             `
         );
+
+        // add clear color handler
+        const colorEl = this.el.querySelector(`input[type="color"]`);
+        colorEl.addEventListener("change", e => {
+            this.setClearColor(colorEl.value);
+        })
 
         // create attributes list (layout)
         const layoutEl = this.el.querySelector("section.layout > ul");
@@ -196,6 +201,7 @@ export default class Pass {
 
     toObject() {
         return {
+            clear: this.clearColor.toRGB(),
             layout: this.layout.toObject(),
             meshes: this.meshes.map(mesh => mesh.toObject()),
         }
