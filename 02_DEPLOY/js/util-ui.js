@@ -17,7 +17,7 @@ export function makeCollapsible(el) {
     }
 }
 
-Element.prototype.appendHTML = function(html) {
+HTMLElement.prototype.appendHTML = function(html) {
     const oldLen = this.children.length;
     this.insertAdjacentHTML("beforeend", html);
     const newLen = this.children.length;

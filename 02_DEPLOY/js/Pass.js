@@ -113,8 +113,10 @@ export default class Pass {
             `
             <label class="collapsible">Pass</label>
             <section>
+
                 <label>Clear Color</label>
-                <input type="color" value="${this.clearColor.toCSSStr()}">
+                <input type="text" class="color" value="#${this.clearColor.toRGBAStr()}">
+
                 <label class="collapsible">Layout</label>
                 <section class="layout">
                     <ul></ul>
@@ -126,18 +128,23 @@ export default class Pass {
                         <input type="submit" value="Add Attribute">
                     </form>
                 </section>
+
                 <label class="collapsible">Meshes</label>
                 <ul class="meshes"></ul>
-                <button>Restore Default</button>
+
+                <button class="action">Restore Default</button>
             </section>
             `
         );
 
         // add clear color handler
-        const colorEl = this.el.querySelector(`input[type="color"]`);
-        colorEl.addEventListener("change", e => {
-            this.setClearColor(colorEl.value);
-        })
+        const colorEl = this.el.querySelector(`input.color`);
+        colorEl.addEventListener("input", e => this.setClearColor(colorEl.value));
+        Coloris({
+            forceAlpha: true,
+        });
+        Coloris.wrap(colorEl);
+        Coloris(colorEl);
 
         // create attributes list (layout)
         const layoutEl = this.el.querySelector("section.layout > ul");
@@ -157,9 +164,11 @@ export default class Pass {
             }
         });
 
-        this.el.querySelector("button").addEventListener("click", e => {
+        // add
+        const defaultButtonEl = this.el.querySelector("button.action");
+        defaultButtonEl.addEventListener("click", e => {
             e.preventDefault();
-            if (confirm("Really restore pass to default?")) {
+            if (confirm("Really DELETE ALL CHANGES and restore pass settings and data to default?")) {
                 this.fromObject(Pass.default);
                 this.resetUI();
             }

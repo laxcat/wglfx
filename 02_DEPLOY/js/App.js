@@ -94,6 +94,7 @@ export default class App {
 
     save() {
         console.log("SAVE START -----------------------------------------------------")
+        Coloris.close();
         this.renderer.pass.updateDataFromUI();
         console.log(this.renderer.toObject());
         localStorage.setItem("main", this.renderer.toString());

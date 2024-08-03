@@ -37,7 +37,7 @@ canvas {
         font-family: 'Menlo', monospace;
     }
 
-    label, section, li, input, button {
+    label, section, li, input, button.action {
         font-weight: bold;
         color: #fff;
     }
@@ -79,15 +79,7 @@ canvas {
         outline: none;
     }
 
-    input[type="color"] {
-        outline: 1px solid #fff;
-        padding: 0;
-        margin: 0;
-        width: 40px;
-        height: 25px;
-    }
-
-    button,
+    button.action,
     input[type="button"],
     input[type="submit"] {
         padding: 4px 6px;
@@ -147,137 +139,10 @@ canvas {
         background-color: #800;
         position: absolute;
     }
-}
 
+/* COLORIS ****************************************************************** */
+    .clr-field > button {
+        border: var(--border-focus);
+    }
 
-/*
-#ui {
-    position: absolute;
-    overflow: scroll;
-    overflow-x: hidden;
-    z-index: 1;
-    width: 100%;
-
-    --border:       1px solid rgba(255 255 255 / 0.4);
-    --border-focus: 1px solid rgba(255 255 255 / 0.8);
-    --color-bg:     rgba(0 0 0 / 0.5);
-    --color-hover:  rgba(255 255 255 / 0.3);
-}
-
-#ui > section {
-    width: fit-content;
-    min-width: 780px;
-}
-
-#ui label {
-    font-family: 'Menlo', monospace;
-    font-weight: bold;
-    color: #fff;
-    margin: 10px 0 0 0;
-    display: inline-block;
-}
-
-#ui > section > label {
-    font-size: 15px;
-    padding: 0;
-    margin: 15px 0 0 0;
-    display: block;
-    width: 100%;
-    -webkit-user-select: none;
-    user-select: none;
-    cursor: ns-resize;
-}
-
-#ui > section > label:hover {
-    background-color: var(--color-hover);
-}
-
-#vertEditor,
-#fragEditor {
-    margin: 0;
-    position: relative;
-    width: 780px;
-    border: var(--border);
-    background-color: var(--color-bg);
-}
-#vertEditor.ace_focus,
-#fragEditor.ace_focus {
-    border: var(--border-focus);
-}
-
-#vertDataContainer > label {
-    font-size: 13px;
-}
-
-#attribs li {
-    font-family: 'Menlo', monospace;
-    font-weight: bold;
-    font-size: 13px;
-    white-space: pre;
-    color: #fff;
-}
-
-label[for="pass_vertCount"] {
-    display: inline-block;
-}
-input#pass_vertCount {
-    display: inline-block;
-    border: var(--border);
-    background-color: var(--color-bg);
-    color: #fff;
-    font-size: 13px;
-    width: 60px;
-    text-align: right;
-}
-input#pass_vertCount:focus {
-    outline: none;
-    border: var(--border-focus);
-}
-
-label[for="attribData"] {
-    display: block !important;
-}
-
-#attribData::after {
-   content: " ";
-   display: block;
-   height: 0;
-   clear: both;
-}
-
-.attrib {
-    font-family: 'Menlo', monospace;
-    font-size: 13px;
-    color: #fff;
-    width: 300px;
-    float: left;
-}
-
-.attrib > pre {
-    font-family: 'Menlo', monospace;
-    font-size: 13px;
-    color: #fff;
-    border: var(--border);
-    width: 100%;
-    background-color: var(--color-bg);
-    margin: 0;
-}
-.attrib > pre.ace_focus {
-    border: var(--border-focus);
-}
-
-#vertDataContainer > form > label {
-    font-size: 13px;
-}
-
-#vertDataContainer > form > input[type="text"] {
-    border: var(--border);
-    background-color: var(--color-bg);
-    color: #fff;
-    font-size: 13px;
-}
-#vertDataContainer > form > input[type="text"]:focus {
-    border: var(--border-focus);
-    outline: none;
-}
-*/
+} /* #id */
