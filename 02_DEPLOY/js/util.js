@@ -8,18 +8,57 @@ export function loadFileSync(path) {
     return null;
 }
 
-WebGLRenderingContext.prototype.throwError =
-WebGL2RenderingContext.prototype.throwError = function() {
-    const err = this.getError();
-    switch(err) {
-    case this.INVALID_ENUM:                   throw "INVALID_ENUM";
-    case this.INVALID_VALUE:                  throw "INVALID_VALUE";
-    case this.INVALID_OPERATION:              throw "INVALID_OPERATION";
-    case this.INVALID_FRAMEBUFFER_OPERATION:  throw "INVALID_FRAMEBUFFER_OPERATION";
-    case this.OUT_OF_MEMORY:                  throw "OUT_OF_MEMORY";
-    case this.CONTEXT_LOST_WEBGL:             throw "CONTEXT_LOST_WEBGL";
-    default: return;
+WebGLRenderingContext.prototype.throwErrors =
+WebGL2RenderingContext.prototype.throwErrors = function() {
+    const errs = this.getErrorsStrings();
+    errs.forEach(err => { throw err; });
+}
+
+WebGLRenderingContext.prototype.logErrors =
+WebGL2RenderingContext.prototype.logErrors = function(msg) {
+    const errs = this.getErrorsStrings();
+    if (errs.length) {
+        console.log(`%c`+
+            `${msg} errors found in ${this}:\n`+
+            `\t${Error().stack.replaceAll("\n", "\n\t")}\n\n`+
+            `\t${errs.join("\n\t")}`,
+            "color:red;"
+        );
     }
+    return errs;
+}
+
+WebGLRenderingContext.prototype.getErrorsStrings =
+WebGL2RenderingContext.prototype.getErrorsStrings = function() {
+    let errs = [];
+    let err;
+    while ((err = this.getError())) {
+        switch(err) {
+        case this.INVALID_ENUM:                   errs.push("INVALID_ENUM");
+        case this.INVALID_VALUE:                  errs.push("INVALID_VALUE");
+        case this.INVALID_OPERATION:              errs.push("INVALID_OPERATION");
+        case this.INVALID_FRAMEBUFFER_OPERATION:  errs.push("INVALID_FRAMEBUFFER_OPERATION");
+        case this.OUT_OF_MEMORY:                  errs.push("OUT_OF_MEMORY");
+        case this.CONTEXT_LOST_WEBGL:             errs.push("CONTEXT_LOST_WEBGL");
+        default: {};
+        }
+    }
+    return errs;
+}
+
+WebGLRenderingContext.prototype.framebufferStatusString =
+WebGL2RenderingContext.prototype.framebufferStatusString = function() {
+    const status = this.checkFramebufferStatus(this.FRAMEBUFFER);
+    switch(status) {
+    case this.FRAMEBUFFER_COMPLETE:                         return "FRAMEBUFFER_COMPLETE";
+    case this.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:            return "FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+    case this.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:    return "FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+    case this.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:            return "FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
+    case this.FRAMEBUFFER_UNSUPPORTED:                      return "FRAMEBUFFER_UNSUPPORTED";
+    case this.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:           return "FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
+    default:                                                return "FRAMEBUFFER_UNKNOWN_STATUS";
+    }
+    return status;
 }
 
 String.prototype.toStartCase = function() {
