@@ -1,5 +1,125 @@
 import * as ui from "./util-ui.js"
 
+class Slot {
+    // ubo = null;
+    index = 0;
+    name = "";
+    offset = 0;
+    size = 1;
+    values = [0.0];
+    slotEl = null;
+
+    updateFromUI = {};
+
+    constructor(ubo, i, slotEl, obj) {
+        this.index = i;
+        this.name = obj.name;
+        this.offset = obj.offset;
+        this.size = obj.size;
+        this.values = obj.values;
+        this.slotEl = slotEl;
+
+        this.slotEl.appendHTML(
+            `
+            <td><input type="text" class="name" value="${this.name}"></td>
+            <td>
+                <input
+                    type="number"
+                    class="offset"
+                    step="4"
+                    min="0"
+                    max="${ubo.size - this.values.length * 4}"
+                    value="${this.offset}"
+                >
+            </td>
+            <td>
+                <select class="size">
+                    <option  value="1"${this.size== 1?" selected":""}>float</option>
+                    <option  value="2"${this.size== 2?" selected":""}>vec2</option>
+                    <option  value="3"${this.size== 3?" selected":""}>vec3</option>
+                    <option  value="4"${this.size== 4?" selected":""}>vec4</option>
+                    <option value="12"${this.size==12?" selected":""}>mat3</option>
+                    <option value="16"${this.size==16?" selected":""}>mat4</option>
+                </select>
+            </td>
+            `
+        );
+        let valueInputs = "";
+        this.values.forEach(value => {
+            valueInputs += `<input type="text" value="${value}" class="value">`;
+        });
+        this.slotEl.appendHTML(`<td>${valueInputs}</td>`);
+
+        const nameEl   = slotEl.querySelector("input.name");
+        const offsetEl = slotEl.querySelector("input.offset");
+        const selectEl = slotEl.querySelector("select");
+        const valueEls = slotEl.querySelectorAll("input.value");
+
+        this.updateFromUI = {
+            name: () => {
+                this.name = nameEl.value.trim();
+            },
+
+            offset: () => {
+                const newOffset = parseInt(offsetEl.value);
+
+                if (newOffset > parseInt(offsetEl.max)) {
+                    offsetEl.value = offsetEl.max;
+                }
+                if (newOffset < parseInt(offsetEl.min)) {
+                    offsetEl.value = offsetEl.min;
+                }
+
+                // set all data at prev offset to 0
+                this.values.forEach((val, i) => ubo.setFloatAtOffset(this.offset + i * 4, 0));
+                // update our data object
+                this.offset = newOffset;
+                // set all data for new offset
+                this.values.forEach((val, i) => ubo.setFloatAtOffset(newOffset + i * 4, val));
+            },
+
+            select: () => {
+
+            },
+
+            values: this.values.map((_, vi) => () => {
+                this.values[vi] = parseFloat(valueEls[vi].value);
+                ubo.setFloatAtOffset(this.offset + vi * 4, this.values[vi]);
+            }),
+        };
+
+        // name event listener
+        nameEl.addEventListener("change", e => this.updateFromUI.name());
+
+        // offset event listener (updates whole value when changed)
+        offsetEl.addEventListener("change", e => this.updateFromUI.offset());
+
+        // size event listener (changes number of floats in slot (float, vec2, vec3, vec4, etc))
+        selectEl.addEventListener("change", e => this.updateFromUI.select());
+
+        // values event listeners
+        valueEls.forEach((el, vi) =>
+            el.addEventListener("change", e => this.updateFromUI.values[vi]())
+        );
+    }
+
+    updateSlotFromUI() {
+        this.updateFromUI.name();
+        this.updateFromUI.offset();
+        this.updateFromUI.select();
+        this.updateFromUI.values.forEach(fn => fn());
+    }
+
+    toObject() {
+        return {
+            name: this.name,
+            offset: this.offset,
+            size: this.size,
+            values: this.values
+        };
+    }
+}
+
 export default class UniformBuffer {
     gl = null;
     el = null;
@@ -44,7 +164,7 @@ export default class UniformBuffer {
         this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null);
         this.gl.bindBufferBase(this.gl.UNIFORM_BUFFER, 0, this.glBuffer);
 
-        this.setAllValues();
+        this.setAllData();
     }
 
     destroy() {
@@ -70,27 +190,12 @@ export default class UniformBuffer {
         }
     }
 
-    setSlotValue(slotIndex, valueIndex, value) {
-        const slot = this.slots[slotIndex];
-        slot.values[valueIndex] = value;
-        this.setFloatAtOffset(slot.offset + valueIndex * 4, value);
-    }
-
-    resetSlotValues(slotIndex) {
-        const nValues = this.slots[slotIndex].values.length;
-        for (let vi = 0; vi < nValues; ++vi) {
-            this.setSlotValue(slotIndex, vi, 0);
-        }
-    }
-
-    setAllValues() {
-        const nSlots = this.slots.length;
-        for (let si = 0; si < nSlots; ++si) {
-            const nValues = this.slots[si].values.length;
-            for (let vi = 0; vi < nValues; ++vi) {
-                this.setSlotValue(si, vi, this.slots[si].values[vi]);
-            }
-        }
+    setAllData() {
+        this.slots.forEach((slot, si) =>
+            slot.values.forEach((value, vi) =>
+                this.setFloatAtOffset(slot.offset + vi * 4, value)
+            )
+        );
     }
 
     getFloatAtOffset(offset, valueIndex=0) {
@@ -117,19 +222,7 @@ export default class UniformBuffer {
     }
 
     updateDataFromUI() {
-        const nSlots = this.slots.length;
-        const rows = this.el.getElementsByTagName("tr");
-        for (let i = 0; i < nSlots; ++i) {
-            const valueEls = rows[i+1].querySelectorAll("input.value");
-            this.updateSlotFromUI(i, valueEls);
-        }
-    }
-
-    updateSlotFromUI(slotIndex, valueEls) {
-        const slot = this.slots[slotIndex];
-        for (let i = 0; i < slot.size; ++i) {
-            this.setSlotValue(slotIndex, i, parseFloat(valueEls[i].value));
-        }
+        this.slots.forEach(slot => slot.updateSlotFromUI());
     }
 
     createUI(parentEl) {
@@ -157,119 +250,17 @@ export default class UniformBuffer {
         );
         const tbodyEl = this.el.querySelector("table > tbody");
         const slotCount = this.slots.length;
-        for (let slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
+        for (let si = 0; si < slotCount; ++si) {
             const slotEl = tbodyEl.appendHTML(`<tr></tr>`);
-            this.#fillSlotUI(slotIndex, slotEl);
+            this.slots[si] = new Slot(this, si, slotEl, this.slots[si]);
         }
-    }
-
-    #fillSlotUI(slotIndex, slotEl=null) {
-        if (!slotEl && !(slotEl = this.#getTableRowEl(slotIndex))) {
-            return;
-        }
-
-        const slot = this.slots[slotIndex];
-
-        let valueInputs = "";
-        for (let valueIndex = 0; valueIndex < slot.size; ++valueIndex) {
-            valueInputs +=
-                `<input
-                type="text"
-                class="value"
-                value="${this.getFloatAtOffset(slot.offset, valueIndex)}"
-                >`;
-        }
-
-        slotEl.appendHTML(
-            `
-            <td><input type="text" class="name" value="${slot.name}"></td>
-            <td>
-                <input
-                    type="number"
-                    class="offset"
-                    step="4"
-                    min="0"
-                    max="${this.size - slot.values.length * 4}"
-                    value="${slot.offset}"
-                >
-            </td>
-            <td>
-                <select class="size">
-                    <option  value="1"${slot.size== 1?" selected":""}>float</option>
-                    <option  value="2"${slot.size== 2?" selected":""}>vec2</option>
-                    <option  value="3"${slot.size== 3?" selected":""}>vec3</option>
-                    <option  value="4"${slot.size== 4?" selected":""}>vec4</option>
-                    <option value="12"${slot.size==12?" selected":""}>mat3</option>
-                    <option value="16"${slot.size==16?" selected":""}>mat4</option>
-                </select>
-            </td>
-            <td>${valueInputs}</td>
-            `
-        );
-
-        const nameEl   = slotEl.querySelector("input.name");
-        const offsetEl = slotEl.querySelector("input.offset");
-        const selectEl = slotEl.querySelector("select");
-        const valueEls = slotEl.querySelectorAll("input.value");
-
-        // name event listener
-        nameEl.addEventListener("change", e => {
-            slot.name = nameEl.value.trim();
-        });
-
-        // offset event listener (updates whole value when changed)
-        offsetEl.addEventListener("change", e => {
-            if (parseInt(offsetEl.value) > parseInt(offsetEl.max)) {
-                offsetEl.value = offsetEl.max;
-            }
-            if (parseInt(offsetEl.value) < parseInt(offsetEl.min)) {
-                offsetEl.value = offsetEl.min;
-            }
-            if (offsetEl.value === offsetEl.dataset.prevValue) {
-                return;
-            }
-
-            this.resetSlotValues(slotIndex);
-            slot.offset = parseInt(offsetEl.value);
-            this.updateSlotFromUI(slotIndex, valueEls);
-
-            offsetEl.dataset.prevValue = offsetEl.value;
-        });
-        offsetEl.dataset.prevValue = offsetEl.value;
-
-        // size event listener (changes number of floats in slot (float, vec2, vec3, vec4, etc))
-        selectEl.addEventListener("change", e => {
-
-        });
-
-        // values event listeners
-        for (let valueIndex = 0; valueIndex < slot.size; ++valueIndex) {
-            const valueEl = valueEls[valueIndex];
-            valueEl.addEventListener("change", e => {
-                this.setSlotValue(slotIndex, valueIndex, parseFloat(valueEl.value));
-            });
-        }
-    }
-
-    #resetSlotUI(slotIndex, slotEl=null) {
-        if (!slotEl && !(slotEl = this.#getTableRowEl(slotIndex))) {
-            return;
-        }
-        slotEl.innerHTML = "";
-        this.#fillSlotUI(slotIndex, slotEl);
-        ui.parse(slotEl);
-    }
-
-    #getTableRowEl(slotIndex) {
-         // slotIndex+1 to ignore table header row
-        return this.el.getElementsByTagName("tr")[slotIndex + 1];
     }
 
     toObject() {
         return {
             name: this.name,
             size: this.size,
-            slots: this.slots,
+            slots: this.slots.map(slot => slot.toObject()),
         };
     }
 
