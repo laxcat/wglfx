@@ -96,6 +96,10 @@ export default class Pass {
         }
     }
 
+    updateDataFromUI() {
+        this.meshes.forEach(mesh => mesh.updateDataFromUI());
+    }
+
     createUI(parentEl) {
         this.el = parentEl.appendHTML(`<li></li>`);
         this.#fillUI();
@@ -173,10 +177,6 @@ export default class Pass {
                 this.resetUI();
             }
         });
-    }
-
-    updateDataFromUI() {
-        this.meshes.forEach(mesh => mesh.updateDataFromUI());
     }
 
     addAttrib(size, name) {
