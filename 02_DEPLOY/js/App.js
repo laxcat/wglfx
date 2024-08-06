@@ -1,6 +1,7 @@
 import Time from "./Time.js"
 import Renderer from "./Renderer.js"
 import Pass from "./Pass.js"
+import UniformBuffer from "./UniformBuffer.js"
 import * as util from "./util.js"
 import * as ui from "./util-ui.js"
 
@@ -20,6 +21,9 @@ export default class App {
 
         // compile the shader program
         this.renderer.compile();
+
+        // setup the simulations
+        this.time.isRunning = true;
 
         // start the run loop
         this.loop(0);
@@ -74,8 +78,8 @@ export default class App {
         if (!this.time.isRunning) {
             return;
         }
-        // console.log("global", this.time.global, this.time.dt);
-        // console.log("now", this.time.now);
+
+        this.renderer.unib.update();
     }
 
     load() {
@@ -87,6 +91,7 @@ export default class App {
                     frag: util.loadFileSync("./glsl/frag.glsl"),
                 },
                 pass: Pass.default,
+                unib: UniformBuffer.default,
             };
         }
         this.renderer.fromObject(obj);
@@ -96,6 +101,8 @@ export default class App {
         console.log("SAVE START -----------------------------------------------------")
         Coloris.close();
         this.renderer.pass.updateDataFromUI();
+        this.renderer.unib.updateDataFromUI();
+        this.renderer.unib.update();
         this.renderer.compile();
         console.log(this.renderer.toObject());
         localStorage.setItem("main", this.renderer.toString());

@@ -34,8 +34,9 @@ export default class LiveProgram {
         return (this.glObj !== null);
     }
 
-    compile() {
-        console.log("program compile");
+    compile(uboBlockName=null) {
+        console.log("program compile", uboBlockName);
+
         this.gl.deleteProgram(this.glObj);
         this.glObj = null;
         this.vert.clearErrors();
@@ -53,6 +54,17 @@ export default class LiveProgram {
 
         this.gl.useProgram(this.glObj);
         console.log(`Shader glObj compiled/linked successfully.`);
+
+        if (uboBlockName) {
+            const uboBlockIndex = this.gl.getUniformBlockIndex(this.glObj, uboBlockName);
+            // when index not found, returning 0xffffffff (or -1?),
+            // but i couldn't find documentation for it
+            if (uboBlockIndex !== 0xffffffff) {
+                this.gl.uniformBlockBinding(this.glObj, uboBlockIndex, 0);
+                console.log(`Attaching uniform block "${uboBlockName}" to UBO index 0.`);
+            }
+        }
+
         return true;
     }
 

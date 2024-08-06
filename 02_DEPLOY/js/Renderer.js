@@ -36,7 +36,7 @@ export default class Renderer {
 
 
     compile() {
-        this.prog.compile();
+        this.prog.compile(this.unib.name);
         this.#glErrors = this.gl.logErrors("COMPILE");
         if (this.prog.valid && this.gl.getError() === 0) {
             this.canDraw = true;
