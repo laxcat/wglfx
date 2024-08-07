@@ -1,0 +1,43 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title></title>
+</head>
+<body>
+<script type="module">
+
+    const memory = new WebAssembly.Memory({ initial: 100, maximum: 1000 })
+    const heap = new Uint8Array(memory.buffer);
+
+    const imports = {
+        env: {
+            console_log: function(arg) { console.log(arg); },
+            memory: memory,
+        }
+    };
+
+    let wasm;
+
+    WebAssembly.instantiateStreaming(fetch("test.wasm"), imports).then(obj => {
+        console.log(obj.instance.exports);
+        wasm = obj.instance.exports;
+        const res = wasm.add(1, 2);
+        console.log(res, wasm.add);
+        // console.log();
+    });
+
+    // const request = new XMLHttpRequest();
+    // request.responseType = "arraybuffer";
+    // request.open("GET", "test.wasm", false);
+    // request.send();
+    // if (request.status == 200) {
+    //     const wasmSource = request.response;
+    //     const wasmModule = new WebAssembly.Module(wasmSource);
+    //     const wasmInstance = new WebAssembly.Instance(wasmModule, imports);
+    //     wasm = wasmInstance.exports;
+    // }
+
+</script>
+</body>
+</html>
+
