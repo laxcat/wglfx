@@ -6,38 +6,48 @@
 <body>
 <script type="module">
 
-    const memory = new WebAssembly.Memory({ initial: 100, maximum: 1000 })
+    const memory = new WebAssembly.Memory({ initial: 2, maximum: 2 })
     const heap = new Uint8Array(memory.buffer);
+    console.log("heap size", heap.length);
+    let wasm = null;
+
+    WebAssembly.Memory.prototype.decodeCStr = function (ptr, size) {
+        return (new TextDecoder()).decode(new Uint8Array(this.buffer, ptr, size));
+    };
+
+    WebAssembly.Memory.prototype.encodeCStr = function (str) {
+        const size = str.length;
+        const ptr = wasm.request_str_ptr(size);
+        (new TextEncoder()).encodeInto(str, new Uint8Array(memory.buffer, ptr, size));
+        return [ptr, size];
+    };
+
+    const logCStr = (ptr, size) => {
+        console.log(memory.decodeCStr(ptr, size));
+    };
 
     const imports = {
         env: {
-            console_log: function(arg) { console.log(arg); },
             memory: memory,
+            print_val: console.log,
+            print_str: logCStr,
+            print_err: logCStr,
         }
     };
 
-    let wasm;
-
     WebAssembly.instantiateStreaming(fetch("test.wasm"), imports).then(obj => {
-        console.log(obj.instance.exports);
         wasm = obj.instance.exports;
-        const res = wasm.add(1, 2);
-        console.log(res, wasm.add);
-        // console.log();
+        wasm.test();
+        const caps = str => {
+            const [ptr, size] = memory.encodeCStr(str);
+            wasm.caps(ptr);
+            return memory.decodeCStr(ptr, size);
+        }
+        console.log("from js", caps("fart"));
+        console.log("heap at", ptr, heap.slice(ptr, ptr+8));
+        // console.log("caps", memory.decodeCStr(wasm.caps()));
     });
-
-    // const request = new XMLHttpRequest();
-    // request.responseType = "arraybuffer";
-    // request.open("GET", "test.wasm", false);
-    // request.send();
-    // if (request.status == 200) {
-    //     const wasmSource = request.response;
-    //     const wasmModule = new WebAssembly.Module(wasmSource);
-    //     const wasmInstance = new WebAssembly.Instance(wasmModule, imports);
-    //     wasm = wasmInstance.exports;
-    // }
 
 </script>
 </body>
 </html>
-

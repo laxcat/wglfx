@@ -1,60 +1,27 @@
-#!/usr/bin/env python3
+#!/usr/bin/env bash
+set -ex
 
-from subprocess import run
-from os.path import dirname, abspath
+# USE HOMEBREW VERSION OF LLVM/CLANG!
 
-DIR = dirname(abspath(__file__))
-def RUN(cmd, path=DIR):
-    print("========================")
-    print(cmd.replace("\\", "\n"), end="")
-    print("========================")
-    run(cmd, shell=True, cwd=path)
+CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+# LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib -lunwind"
+PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 
-RUN(
-    "emcc                                       \\"
-    "test.c                                     \\"
-    "-v                                         \\"
-    "--no-entry                                 \\"
-    "-s EXPORTED_FUNCTIONS=\"['_add']\"         \\"
-    # "-Os                                        \\"
-    "-o test.wasm                               \\"
-)
+clang \
+    --target=wasm32 \
+    -nostdlib \
+    -mbulk-memory \
+    -O3 \
+    -Wl,--no-entry \
+    -Wl,--allow-undefined \
+    -Wl,--import-memory \
+    -Wl,--stack-first \
+    -o test.wasm \
+    test.c
 
+{ set +x; } 2> /dev/null
+echo "SUCCESS:"
+wasm2wat test.wasm
 
-
-
-
-
-
-# RUN("""
-# clang \
-#     --target=wasm32 \
-#     -nostdlib \
-#     -O3 \
-#     -o test.wasm \
-#     test.c
-# """)
-
-
-# #!/bin/bash
-# set -e
-
-# clang++ \
-#     --target=wasm32 \
-#     -nostdlib \
-#     -O3 \
-#     -o /tmp/inc.o \
-#     -c \
-#     inc.cpp
-
-# wasm-ld \
-#     --no-entry \
-#     --export-all \
-#     --lto-O3 \
-#     --allow-undefined \
-#     --import-memory \
-#     /tmp/inc.o \
-#     -o inc.wasm
-
-# rm -rf inc.wasm.tmp*
-# hexdump inc.wasm | head -n 1
+    # -Wl,--lto-O3 \
