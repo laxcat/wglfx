@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -ex
 
+IN="test.c"
+OUT="../../02_DEPLOY/wasm/test.wasm"
+
 # USE HOMEBREW VERSION OF LLVM/CLANG!
 
 CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
@@ -17,11 +20,11 @@ clang \
     -Wl,--allow-undefined \
     -Wl,--import-memory \
     -Wl,--stack-first \
-    -o test.wasm \
-    test.c
+    -o $OUT \
+    $IN
 
 { set +x; } 2> /dev/null
 echo "SUCCESS:"
-wasm2wat test.wasm
+wasm2wat $OUT
 
     # -Wl,--lto-O3 \

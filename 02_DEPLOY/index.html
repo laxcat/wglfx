@@ -15,8 +15,24 @@
     <script src="./lib/ace/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="./lib/coloris/coloris.js"></script>
     <script type="module">
-        import App from "./js/App.js";
-        new App();
+        // import App from "./js/App.js";
+        import WASM from "./js/WASM.js";
+        // new App();
+        const wasm = new WASM("./wasm/test.wasm");
+
+        wasm.onReady = () => {
+            wasm.exports.test();
+
+            const caps = str => {
+                const [ptr, size] = wasm.encodeCStr(str);
+                console.log("heap at", ptr, wasm.heap.slice(ptr, ptr+size));
+                wasm.exports.caps(ptr);
+                console.log("heap at", ptr, wasm.heap.slice(ptr, ptr+size));
+                return wasm.decodeCStr(ptr, size);
+            }
+            console.log("string round trip", caps("fart"));
+        };
+
     </script>
 
 </body>
