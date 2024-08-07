@@ -1,4 +1,5 @@
 import LiveShader from "./LiveShader.js"
+import * as util from "./util.js"
 
 export default class LiveProgram {
     gl = null;      // webgl context object
@@ -7,18 +8,21 @@ export default class LiveProgram {
     glObj = null;   // the webgl program object
     el = null;
 
-    constructor(gl, obj=null) {
+    static default = {
+        vert: () => util.loadFileSync("./glsl/vert.glsl"),
+        frag: () => util.loadFileSync("./glsl/frag.glsl"),
+    };
+
+    constructor(gl, obj=LiveProgram.default) {
         this.gl = gl;
         this.vert = new LiveShader(gl, gl.VERTEX_SHADER);
         this.frag = new LiveShader(gl, gl.FRAGMENT_SHADER);
-        if (obj) {
-            this.fromObject(obj);
-        }
+        this.fromObject(obj);
     }
 
     fromObject(obj) {
-        this.vert.src = obj.vert;
-        this.frag.src = obj.frag;
+        this.vert.src = (typeof obj.vert === "function") ? obj.vert() : obj.vert;
+        this.frag.src = (typeof obj.frag === "function") ? obj.frag() : obj.frag;
     }
 
     destroy() {

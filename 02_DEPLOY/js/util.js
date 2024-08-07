@@ -1,4 +1,5 @@
 export function loadFileSync(path) {
+    console.log("loadFileSync", path);
     let request = new XMLHttpRequest();
     request.open("GET", path, false);
     request.send();

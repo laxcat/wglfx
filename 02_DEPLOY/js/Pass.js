@@ -6,10 +6,10 @@ import * as ui from "./util-ui.js"
 
 export default class Pass {
     gl = null;
+    clearColor = new Color();
     layout = null;
     meshes = [];
     nMeshes = 0;
-    clearColor = new Color();
     el = null;
 
     static default = {
@@ -43,11 +43,9 @@ export default class Pass {
         ],
     };
 
-    constructor(gl, obj=null) {
+    constructor(gl, obj=Pass.default) {
         this.gl = gl;
-        if (obj) {
-            this.fromObject(obj);
-        }
+        this.fromObject(obj);
     }
 
     fromObject(obj) {

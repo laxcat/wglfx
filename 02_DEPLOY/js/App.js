@@ -83,17 +83,8 @@ export default class App {
     }
 
     load() {
+        // if obj is null (no save data found), classes will use built-in default object
         let obj = JSON.parse(localStorage.getItem("main"));
-        if (!obj) {
-            obj = {
-                prog: {
-                    vert: util.loadFileSync("./glsl/vert.glsl"),
-                    frag: util.loadFileSync("./glsl/frag.glsl"),
-                },
-                pass: Pass.default,
-                unib: UniformBuffer.default,
-            };
-        }
         this.renderer.fromObject(obj);
     }
 

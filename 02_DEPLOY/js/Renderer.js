@@ -25,15 +25,19 @@ export default class Renderer {
     }
 
     fromObject(obj) {
+        if (!obj) obj = {};
+
         if (this.pass) this.pass.destroy();
         if (this.prog) this.prog.destroy();
         if (this.unib) this.unib.destroy();
 
+        // obj children might be undefined. if so defaults will get used.
+        // it should be noted, this works specifically if "undefined".
+        // passing a null object will prevent default from being used.
         this.pass = new Pass(this.gl, obj.pass);
         this.prog = new LiveProgram(this.gl, obj.prog);
         this.unib = new UniformBuffer(this.gl, obj.unib);
     }
-
 
     compile() {
         this.prog.compile(this.unib.name);
