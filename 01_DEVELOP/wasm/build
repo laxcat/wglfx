@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #
 # Build C code to WebAssembly
 #
@@ -6,7 +7,6 @@
 # Optional: (for wasm2wat, showing wasm text format)
 #     brew install wabt
 #
-#!/usr/bin/env bash
 set -ex
 
 # SETUP
@@ -32,7 +32,6 @@ clang \
     -Wl,--stack-first \
     -o $OUT \
     $IN
-
 
 # SUCCESS AND OUTPUT
 { set +x; } 2> /dev/null
