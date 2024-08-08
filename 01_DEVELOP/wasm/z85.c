@@ -34,7 +34,6 @@
 
 //  Basic language taken from CZMQ's prelude
 typedef unsigned char byte;
-typedef unsigned int uint;
 #define streq(s1,s2) (!strcmp ((s1), (s2)))
 
 //  Maps base 256 to base 85
