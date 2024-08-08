@@ -21,8 +21,12 @@ export default class WASM {
         WebAssembly.instantiateStreaming(fetch(path), imports).then(obj => {
             this.exports = obj.instance.exports;
             this.ready = true;
+            this.afterReady();
             if (this.onReady) this.onReady();
         });
+    }
+
+    afterReady() {
     }
 
     encodeCStr(str) {
