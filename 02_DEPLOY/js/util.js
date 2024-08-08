@@ -1,3 +1,5 @@
+// UTILITY ////////////////////////////////////////////////////////////////// //
+
 export function loadFileSync(path) {
     console.log("loadFileSync", path);
     let request = new XMLHttpRequest();
@@ -8,6 +10,11 @@ export function loadFileSync(path) {
     }
     return null;
 }
+
+
+// BUILT-IN CLASS PROTOTYPE ADDITIONS /////////////////////////////////////// //
+
+// WebGL -------------------------------------------------------------------- //
 
 WebGLRenderingContext.prototype.throwErrors =
 WebGL2RenderingContext.prototype.throwErrors = function() {
@@ -62,6 +69,8 @@ WebGL2RenderingContext.prototype.framebufferStatusString = function() {
     return status;
 }
 
+// String ------------------------------------------------------------------- //
+
 String.prototype.toStartCase = function() {
     let str = "";
     const len = this.length;
@@ -71,10 +80,10 @@ String.prototype.toStartCase = function() {
     for (let i = 0; i < len; ++i) {
         // is this char whitespace?
         const isWS = (
-            this[i] === " " ||
+            this[i] === " "  ||
             this[i] === "\n" ||
             this[i] === "\t" ||
-            this[i] === "-" ||
+            this[i] === "-"  ||
             this[i] === "_"
         );
         // this char mets requirements to be upper cased
@@ -91,10 +100,14 @@ String.prototype.toStartCase = function() {
     return str;
 }
 
+// Array/Iterable ----------------------------------------------------------- //
+
 Array.prototype.last =
 HTMLCollection.prototype.last = function() {
     return this[this.length - 1];
 }
+
+// Base64 Encoding/Decoding ------------------------------------------------- //
 
 ArrayBuffer.prototype.toBase64 = function() {
     let arr = new Uint8Array(this);
@@ -122,3 +135,40 @@ String.prototype.fromBase64 = function() {
                 .map(byteStr => byteStr.codePointAt(0));
     return (new Uint8Array(arr)).buffer;
 }
+
+
+// 3RD PARTY //////////////////////////////////////////////////////////////// //
+
+// https://stackoverflow.com/a/34749873 ------------------------------------- //
+/**
+ * Simple object check.
+ * @param item
+ * @returns {boolean}
+ */
+export function isObject(item) {
+  return (item && typeof item === 'object' && !Array.isArray(item));
+}
+
+/**
+ * Deep merge two objects.
+ * @param target
+ * @param ...sources
+ */
+export function mergeDeep(target, ...sources) {
+  if (!sources.length) return target;
+  const source = sources.shift();
+
+  if (isObject(target) && isObject(source)) {
+    for (const key in source) {
+      if (isObject(source[key])) {
+        if (!target[key]) Object.assign(target, { [key]: {} });
+        mergeDeep(target[key], source[key]);
+      } else {
+        Object.assign(target, { [key]: source[key] });
+      }
+    }
+  }
+
+  return mergeDeep(target, ...sources);
+}
+// --------------------------------- end https://stackoverflow.com/a/34749873 //

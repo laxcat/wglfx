@@ -15,13 +15,13 @@ export default class WASMTest extends WASM {
 
         // simple fn that takes no args, returns number. doesn't really need
         // any convenience code wrapping, but still nice to be consistent
-        this.test = this.exports.test;
+        this.test = this.fns.test;
 
         // anything that deals with strings requires a bit of work before/after,
         // so this becomes much more noticeably convenient.
         this.caps = str => {
             const [ptr, size] = this.encodeCStr(str);
-            this.exports.caps(ptr);
+            this.fns.caps(ptr);
             return this.decodeCStr(ptr, size);
         }
     }

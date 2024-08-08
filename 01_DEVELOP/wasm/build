@@ -1,18 +1,28 @@
+#
+# Build C code to WebAssembly
+#
+# Prerequisite: (Xcode clang doesn't have wasm32 target)
+#     brew install llvm
+# Optional: (for wasm2wat, showing wasm text format)
+#     brew install wabt
+#
 #!/usr/bin/env bash
 set -ex
 
+# SETUP
 IN="test.c"
 OUT="../../02_DEPLOY/wasm/test.wasm"
 
 # USE HOMEBREW VERSION OF LLVM/CLANG!
-
-CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
-# LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
-LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib -lunwind"
+CFLAGS="${CFLAGS} -I/opt/homebrew/opt/llvm/include"
+CPPFLAGS="${CPPFLAGS} -I/opt/homebrew/opt/llvm/include"
+LDFLAGS="${LDFLAGS} -L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib -lunwind"
 PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 
+# BUILD IT!
 clang \
     --target=wasm32 \
+    -fcolor-diagnostics \
     -nostdlib \
     -mbulk-memory \
     -O3 \
@@ -23,8 +33,14 @@ clang \
     -o $OUT \
     $IN
 
+
+# SUCCESS AND OUTPUT
 { set +x; } 2> /dev/null
+# printf "\x1b[0m"  # reset
+printf "\x1b[32m" # set green
 echo "SUCCESS:"
+printf "\x1b[0m"  # reset
 wasm2wat $OUT
 
+# DISCARDED OPTIONS
     # -Wl,--lto-O3 \
