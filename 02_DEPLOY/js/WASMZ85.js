@@ -3,7 +3,7 @@ import WASM from "./WASM.js"
 export default class WASMZ85 extends WASM {
 
     test = null;
-    // encode = null;
+    encode = null;
     // decode = null;
 
     constructor() {
@@ -13,26 +13,26 @@ export default class WASMZ85 extends WASM {
     afterReady() {
         super.afterReady();
 
-        this.fns.init();
-
-        console.log("heap", this.heap.slice(0x20000, 0x20020));
+        const [ptr, size] = this.encodeCStr("fart");
+        console.log("ptr", ptr);
+        console.log("str", this.decodeCStr(ptr));
 
         this.test = this.fns.test;
 
-        // this.encode = buffer => {
-        //     // request encoding buffer location
-        //     const offset = 0;
+        this.encode = buffer => {
+            if (buffer.length > 0xcb50) { // TODO: make this dynamic
+                console.log("buffer too big");
+                return "";
+            }
+            const offset = 0x30000;
 
-        //     // copy buffer into wasm buffer
+            const memView = new Uint8Array(this.memory.buffer, offset, buffer.length);
+            memView.set(buffer);
 
-        //     // encoded size is knowable
-        //     const size = buffer.length * 5 / 4;
+            const ptr = this.fns.Z85_encode(offset, buffer.length);
 
-        //     // allocate output string
-        //     const ptr = this.fns.Z85_encode(offset, size);
-
-        //     // free or handle string
-        // }
+            // decodeCStr(ptr);
+        }
 
         // this.decode = str => {
 

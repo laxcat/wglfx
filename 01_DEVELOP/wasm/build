@@ -33,14 +33,18 @@ clang \
     -Wl,--stack-first \
     -o $OUT \
     $IN
+# ...
+    # -Wl,--lto-O3 \
 
 # SUCCESS AND OUTPUT
 { set +x; } 2> /dev/null
-# printf "\x1b[0m"  # reset
-printf "\x1b[32m" # set green
-echo "SUCCESS:"
-printf "\x1b[0m"  # reset
+
+printf "\x1b[0;34m" # set blue
+echo "WAT:"
+printf "\x1b[0;2;37m" # set gray
 wasm2wat $OUT
 
-# DISCARDED OPTIONS
-    # -Wl,--lto-O3 \
+printf "\x1b[0;32m" # set green
+echo "SUCCESS!"
+printf "\x1b[0m"  # reset
+

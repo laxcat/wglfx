@@ -26,17 +26,22 @@ extern void print_err(void * ptr, uint32_t len);
 
 // CONSTANTS ///////////////////////////////////////////////////////////
 
+// WASM.js will configure memory with a special block, defined as follows
+// Mirror these settings in WASM.js
+// Space for 12 special 4-byte blocks here
+#define MEM_SPECIAL_S 0x00010
+#define MEM_SPECIAL_E 0x00040
+// Reserved memory locations (4/12)
+#define MEM_SPECIAL_STR_S   (MEM_SPECIAL_S+0x00)
+#define MEM_SPECIAL_STR_E   (MEM_SPECIAL_S+0x04)
+#define MEM_SPECIAL_HEAP_S  (MEM_SPECIAL_S+0x08)
+#define MEM_SPECIAL_HEAP_E  (MEM_SPECIAL_S+0x0c)
+
 // MEMORY LAYOUT ------------------------------------ //
-// define block of memory for dynamic string creation
-#define MEM_STR_S   0x00400
-#define MEM_STR_E   0x10000
-// the stack gets put here. TODO: find out why / configure
-// there is a setting to put rodata after stack, which is set, so rodata goes here too
-#define MEM_STACK_S 0x10000
-#define MEM_STACK_E 0x20000
-// we'll use range for heap
-#define MEM_HEAP_S      0x20000
-#define MEM_HEAP_E      0x40000
+#define MEM_STR_S  (*((uint32_t *)MEM_SPECIAL_STR_S))
+#define MEM_STR_E  (*((uint32_t *)MEM_SPECIAL_STR_E))
+#define MEM_HEAP_S (*((uint32_t *)MEM_SPECIAL_HEAP_S))
+#define MEM_HEAP_E (*((uint32_t *)MEM_SPECIAL_HEAP_E))
 // -------------------------------- END MEMORY LAYOUT //
 
 
@@ -53,6 +58,12 @@ inline uint32_t len(char const * str) {
 inline void prints(char * str) {
     // print_val(str);
     print_str(str, len(str));
+}
+
+// shotcut for print_err export
+inline void printe(char * err) {
+    // print_val(err);
+    print_err(err, len(err));
 }
 
 // shotcut for print_val export
@@ -78,7 +89,10 @@ char * WASM_EXPORT(request_str_ptr)(uint32_t size) {
     if (size + 1 > MEM_STR_E - MEM_STR_S) return 0;
 
     // ptr to next available location in string block
-    static uint32_t next = MEM_STR_S;
+    static uint32_t next = 0;
+    if (!next) {
+        next = MEM_STR_S;
+    }
 
     // set start and end
     uint32_t start = next;

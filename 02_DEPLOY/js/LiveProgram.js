@@ -39,7 +39,7 @@ export default class LiveProgram {
     }
 
     compile(uboBlockName=null) {
-        console.log("program compile", uboBlockName);
+        console.log(`program compile, UBO Block Name:"${uboBlockName}"`);
 
         this.gl.deleteProgram(this.glObj);
         this.glObj = null;
