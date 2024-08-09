@@ -10,8 +10,8 @@
 set -ex
 
 # SETUP
-IN="test.c"
-OUT="../../02_DEPLOY/wasm/test.wasm"
+IN="z85.c"
+OUT="../../02_DEPLOY/wasm/z85.wasm"
 
 # USE HOMEBREW VERSION OF LLVM/CLANG!
 CFLAGS="${CFLAGS} -I/opt/homebrew/opt/llvm/include"
@@ -22,6 +22,7 @@ PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 # BUILD IT!
 clang \
     --target=wasm32 \
+    -std=c23 \
     -fcolor-diagnostics \
     -nostdlib \
     -mbulk-memory \

@@ -5,13 +5,17 @@
 #pragma once
 #include <stdint.h>
 
+// TYPE DEFS ///////////////////////////////////////////////////////////////////
+
+typedef unsigned char byte;
+
+
 // EXPORTS /////////////////////////////////////////////////////////////////////
 
 extern uint8_t memory;
 extern void print_val(void * value);
 extern void print_str(void * ptr, uint32_t len);
 extern void print_err(void * ptr, uint32_t len);
-
 
 // WASM MACROS /////////////////////////////////////////////////////////////////
 
@@ -24,8 +28,15 @@ extern void print_err(void * ptr, uint32_t len);
 
 // MEMORY LAYOUT ------------------------------------ //
 // define block of memory for dynamic string creation
-#define MEM_STR_S 0x0400
-#define MEM_STR_E 0xf400
+#define MEM_STR_S   0x00400
+#define MEM_STR_E   0x10000
+// the stack gets put here. TODO: find out why / configure
+// there is a setting to put rodata after stack, which is set, so rodata goes here too
+#define MEM_STACK_S 0x10000
+#define MEM_STACK_E 0x20000
+// we'll use range for heap
+#define MEM_HEAP_S      0x20000
+#define MEM_HEAP_E      0x40000
 // -------------------------------- END MEMORY LAYOUT //
 
 
@@ -40,13 +51,13 @@ inline uint32_t len(char const * str) {
 
 // shotcut for print_str export
 inline void prints(char * str) {
-    print_val(str);
+    // print_val(str);
     print_str(str, len(str));
 }
 
 // shotcut for print_val export
 inline void printv(uint32_t value) {
-    print_val(&value);
+    // print_val(&value);
     print_val((void *)value);
 }
 
