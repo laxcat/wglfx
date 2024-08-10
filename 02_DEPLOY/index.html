@@ -24,7 +24,7 @@
             const bufIn = new Uint8Array([99]);
             const z85Str = z85.encode(bufIn);
             console.log("z85 encoded:", z85Str);
-            const bufOut = z85.decode(z85Str);
+            const bufOut = z85.decode(z85Str, bufIn.length);
             console.log("z85 decoded:", bufOut);
         };
 

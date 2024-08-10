@@ -64,12 +64,14 @@ export default class WASMZ85 extends WASM {
             return "";
 
         }
-        // decodedSize might be known,
+        // decodedSize might be known, and passed in. if not we can assume the algo
         if (decodedSize === undefined) {
             decodedSize = str.length * 4 / 5;
         }
-        this.encodeCStrInto(str, this.encodedDataPtr);
+        // write data size to buffer
         this.dataSize = decodedSize;
+        // write encoded bytes to buffer
+        this.encodeCStrInto(str, this.encodedDataPtr);
     }
 
     // call without buffer to decode bytes already filled at decodedDataPtr
@@ -92,13 +94,13 @@ export default class WASMZ85 extends WASM {
         );
     }
 
-    decode(str) {
+    decode(str, decodedSize) {
         if (!this.ready) {
             throw `z85 wasm not read.`;
         }
 
         if (str !== undefined) {
-            this.fillEncodedBytes(str);
+            this.fillEncodedBytes(str, decodedSize);
         }
 
         if (!this.fns.Z85_decode()) {

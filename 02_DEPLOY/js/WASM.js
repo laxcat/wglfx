@@ -101,7 +101,7 @@ export default class WASM {
 
     // returns VIEW
     bytesAt(ptr, size) {
-        return new Uint8Array(this.memory);
+        return new Uint8Array(this.memory.buffer, ptr, size);
     }
 
     // returns COPY
