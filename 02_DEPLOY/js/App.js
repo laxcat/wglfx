@@ -2,6 +2,7 @@ import Time from "./Time.js"
 import Renderer from "./Renderer.js"
 import Pass from "./Pass.js"
 import UniformBuffer from "./UniformBuffer.js"
+import WASM from "./WASM.js";
 import WASMZ85 from "./WASMZ85.js";
 import * as util from "./util.js"
 import * as ui from "./util-ui.js"
@@ -21,7 +22,7 @@ export default class App {
 
         // setup z85 encoder/decoder
         this.z85 = new WASMZ85();
-        this.z85.onReady = this.z85Ready.bind(this);
+        this.z85.addEventListener(WASM.READY, () => { this.z85Ready(); });
     }
 
     z85Ready() {

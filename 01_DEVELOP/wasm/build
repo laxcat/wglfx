@@ -39,10 +39,7 @@ clang \
 # SUCCESS AND OUTPUT
 { set +x; } 2> /dev/null
 
-printf "\x1b[0;34m" # set blue
-echo "WAT:"
-printf "\x1b[0;2;37m" # set gray
-wasm2wat $OUT
+# wasm2wat $OUT
 
 printf "\x1b[0;32m" # set green
 echo "SUCCESS!"

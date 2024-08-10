@@ -1,6 +1,7 @@
 import WASM from "./WASM.js"
 
 export default class WASMZ85 extends WASM {
+
     // set once on init, so we cache
     decodedDataSizeMax = 0;
     encodedDataSizeMax = 0;
@@ -16,10 +17,10 @@ export default class WASMZ85 extends WASM {
 
     constructor() {
         super("./wasm/z85.wasm", 4);
+        this.addEventListener(WASM.READY, () => { this.#onReady(); })
     }
 
-    afterReady() {
-        super.afterReady();
+    #onReady() {
         this.fns.Z85_init();
         // cache after getting set once on init
         this.cacheGlobals();
@@ -41,16 +42,16 @@ export default class WASMZ85 extends WASM {
 
     // fill un-encoded bytes at decodedDataPtr
     fillDecodedBytes(buffer) {
-        if (buffer.length > this.decodedDataSizeMax) {
+        if (buffer.byteLength > this.decodedDataSizeMax) {
             console.log(
-                `Fill decoded bytes request (buffer size: ${buffer.length}) `+
+                `Fill decoded bytes request (buffer.byteLength: ${buffer.byteLength}) `+
                 `is too big for wasm module (decodedDataSizeMax: ${this.decodedDataSizeMax}).`
             );
             return "";
         }
 
         // set byte size to decodedDataSizePtr in buffer
-        this.dataSize = buffer.length;
+        this.dataSize = buffer.byteLength;
 
         // set bytes to decodedDataPtr
         this.setBytesAt(this.decodedDataPtr, buffer);
@@ -67,7 +68,12 @@ export default class WASMZ85 extends WASM {
             return "";
 
         }
-        // decodedSize might be known, and passed in. if not we can assume the algo
+        // empty string, write 0 to dataSize and bail
+        else if (str.length === 0) {
+            this.dataSize = 0;
+            return;
+        }
+        // decodedSize might be known, and passed in. if not we can assume the algo (no padding)
         if (decodedSize === undefined) {
             decodedSize = str.length * 4 / 5;
         }
@@ -80,9 +86,7 @@ export default class WASMZ85 extends WASM {
     // encode buffer, or
     // call without buffer to
     encode(buffer) {
-        if (!this.ready) {
-            throw `z85 wasm not ready.`;
-        }
+        this.throwIfNotReady();
         if (buffer !== undefined) {
             this.fillDecodedBytes(buffer);
         }
@@ -98,7 +102,10 @@ export default class WASMZ85 extends WASM {
 
     // encode dataSize bytes already filled at decodedDataPtr
     #encode() {
-        if (!this.fns.Z85_encode()) {
+        // if no bytes to encode...
+        if (this.dataSize === 0 ||
+            // ...or if encode fails
+            !this.fns.Z85_encode()) {
             return "";
         }
         return this.decodeCStr(this.encodedDataPtr, this.encodedDataSize);
@@ -106,9 +113,7 @@ export default class WASMZ85 extends WASM {
 
     // decode z85 string to buffer
     decode(str, decodedSize, copy=false) {
-        if (!this.ready) {
-            throw `z85 wasm not read.`;
-        }
+        this.throwIfNotReady();
         if (str !== undefined) {
             this.fillEncodedBytes(str, decodedSize);
         }
@@ -125,6 +130,17 @@ export default class WASMZ85 extends WASM {
         const arr = this.#decode(str, false);
         // return string with null bytes trimmed off the end
         return this.decodeCStrArr(arr, true);
+    }
+
+    // Example:
+    // decodeTo(Float32Array, "Q&n:*Xe]cDAxQV}");
+    decodeTo(TyArr, str, copy=false) {
+        this.throwIfNotReady();
+        if (str !== undefined) {
+            this.fillEncodedBytes(str);
+        }
+        const arr = this.#decode(str, copy);
+        return new TyArr(arr.buffer, arr.byteOffset, arr.byteLength/TyArr.BYTES_PER_ELEMENT);
     }
 
     // decode encodedDataSize
@@ -144,7 +160,7 @@ export default class WASMZ85 extends WASM {
             console.log("input buffer", bufIn);
             const z85Str = this.encode(bufIn);
             console.log("z85 encoded:", z85Str);
-            const bufOut = this.decode(z85Str, bufIn.length);
+            const bufOut = this.decode(z85Str, bufIn.byteLength);
             console.log("z85 decoded:", bufOut);
         }
 
@@ -171,6 +187,27 @@ export default class WASMZ85 extends WASM {
             console.log("z85 decoded:", bufOut);
             const valOut = this.getFloat64At(this.decodedDataPtr);
             console.log("z85 decoded:", valOut);
+        }
+
+        // write float buffer
+        {
+            const bufIn = new Float32Array([12.34, 56.78, 90.12]);
+            console.log("input buffer", bufIn);
+            const z85Str = this.encode(bufIn);
+            console.log("z85 encoded:", z85Str);
+            const bufOut = this.decodeTo(Float32Array, z85Str);
+            console.log("z85 decoded:", bufOut);
+            console.log("z85 decoded again:", this.decodeTo(Float32Array, "Q&n:*Xe]cDAxQV}"));
+        }
+
+
+        // write float buffer
+        {
+            const bufIn = new Uint8Array([61, 62, 63, 0]);
+            console.log("string array", bufIn)
+            this.setBytesAt(this.decodedDataPtr, bufIn);
+            const strOut = this.decodeCStr(this.decodedDataPtr);
+            console.log("string decoded:", strOut);
         }
     }
 }
