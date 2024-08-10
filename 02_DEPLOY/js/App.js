@@ -2,16 +2,31 @@ import Time from "./Time.js"
 import Renderer from "./Renderer.js"
 import Pass from "./Pass.js"
 import UniformBuffer from "./UniformBuffer.js"
+import WASMZ85 from "./WASMZ85.js";
 import * as util from "./util.js"
 import * as ui from "./util-ui.js"
 
 export default class App {
     renderer = new Renderer();
     time = new Time();
+    z85 = null;
+
+    static instance = null;
 
     constructor() {
+        if (!App.instance) App.instance = this;
+
         // create keyboard shortcuts and anything that opperates on whole App
         this.setupGlobalHandlers();
+
+        // setup z85 encoder/decoder
+        this.z85 = new WASMZ85();
+        this.z85.onReady = this.z85Ready.bind(this);
+    }
+
+    z85Ready() {
+        // test z85 encoder/decoder
+        this.z85.test();
 
         // load settings/src from user's localStorage. will set defaults if none found.
         this.load();

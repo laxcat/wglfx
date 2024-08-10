@@ -16,13 +16,13 @@
     <script src="./lib/coloris/coloris.js"></script>
     <script type="module">
         import App from "./js/App.js";
-        import WASMZ85 from "./js/WASMZ85.js";
-        const z85 = new WASMZ85();
+        App.instance = new App();
+        // import WASMZ85 from "./js/WASMZ85.js";
+        // const z85 = new WASMZ85();
 
-        z85.onReady = () => {
-            new App();
-            z85.test();
-        };
+        // z85.onReady = () => {
+        //     z85.test();
+        // };
 
     </script>
 
