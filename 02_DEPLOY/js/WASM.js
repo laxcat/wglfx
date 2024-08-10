@@ -140,7 +140,7 @@ export default class WASM {
         return [ptr, written];
     };
 
-    decodeCStr(ptr, size) {
+    decodeCStr(ptr, size, trimNullBytes=false) {
         if (size === undefined) {
             console.log("WARNING: Automatically scanning for string size in decodeCStr...");
             const strToEndOfBuffer = new Uint8Array(this.memory.buffer, ptr);
@@ -156,8 +156,21 @@ export default class WASM {
                 console.log(`term-byte found; size set: ${size}`);
             }
         }
-        return (new TextDecoder()).decode(this.bytesAt(ptr, size));
+        return this.decodeCStrArr(this.bytesAt(ptr, size), trimNullBytes);
     };
+
+    decodeCStrArr(arr, trimNullBytes=false) {
+        if (trimNullBytes) {
+            let size = arr.length;
+            // reducing size to exclude trailing null bytes
+            while (arr[size-1] === 0) {
+                --size;
+            }
+            // make new smaller slice (be careful to not use TOO small a slice)
+            arr = arr.subarray(0, size);
+        }
+        return (new TextDecoder()).decode(arr);
+    }
 
     logCStr(ptr, size) {
         console.log(this.decodeCStr(ptr, size));

@@ -39,7 +39,7 @@ export default class WASMZ85 extends WASM {
         // console.log("this.dataSizePtr",          this.dataSizePtr);
     }
 
-    // fill bytes at decodedDataPtr
+    // fill un-encoded bytes at decodedDataPtr
     fillDecodedBytes(buffer) {
         if (buffer.length > this.decodedDataSizeMax) {
             console.log(
@@ -56,7 +56,7 @@ export default class WASMZ85 extends WASM {
         this.setBytesAt(this.decodedDataPtr, buffer);
     }
 
-    // fill bytes at encodedDataPtr from string
+    // fill encoded bytes at encodedDataPtr from string
     // size is true data size, which might be less than padded size
     fillEncodedBytes(str, decodedSize) {
         if (str.length > this.encodedDataSizeMax) {
@@ -77,68 +77,100 @@ export default class WASMZ85 extends WASM {
         this.encodeCStrInto(str, this.encodedDataPtr);
     }
 
-    // call without buffer to decode bytes already filled at decodedDataPtr
+    // encode buffer, or
+    // call without buffer to
     encode(buffer) {
         if (!this.ready) {
             throw `z85 wasm not ready.`;
         }
-
         if (buffer !== undefined) {
             this.fillDecodedBytes(buffer);
         }
+        return this.#encode();
+    }
 
+    // encode string
+    encodeString(str) {
+        this.dataSize = str.length;
+        this.encodeCStrInto(str, this.decodedDataPtr);
+        return this.#encode();
+    }
+
+    // encode dataSize bytes already filled at decodedDataPtr
+    #encode() {
         if (!this.fns.Z85_encode()) {
             return "";
         }
-
         return this.decodeCStr(this.encodedDataPtr, this.encodedDataSize);
     }
 
+    // decode z85 string to buffer
     decode(str, decodedSize, copy=false) {
         if (!this.ready) {
             throw `z85 wasm not read.`;
         }
-
         if (str !== undefined) {
             this.fillEncodedBytes(str, decodedSize);
         }
-
-        if (!this.fns.Z85_decode()) {
-            return null;
-        }
-
-        if (copy)
-            return this.copyBytesAt(this.decodedDataPtr, this.dataSize);
-        else
-            return this.bytesAt(this.decodedDataPtr, this.dataSize);
+        return this.#decode(str, copy);
     }
 
-    encodeString(str) {
-        this.encodeCStrInto(str, this.decodedDataPtr);
-        this.dataSize = str.length;
-        if (!this.fns.Z85_encode()) {
-            return "";
-        }
-        return this.decodeCStr(this.encodedDataPtr, this.encodedDataSize);
-    }
-
+    // decode z85 string to string, and trim end null bytes
     decodeToString(str) {
         this.encodeCStrInto(str, this.encodedDataPtr);
         let size = str.length * 4 / 5;
         // set padded for now, to decode
         this.dataSize = size;
+        // decode string bytes
+        const arr = this.#decode(str, false);
+        // return string with null bytes trimmed off the end
+        return this.decodeCStrArr(arr, true);
+    }
+
+    // decode encodedDataSize
+    #decode(str, copy) {
         if (!this.fns.Z85_decode()) {
-            return "";
+            return null;
         }
-        // view padded decoded bytes
-        const arr = this.bytesAt(this.decodedDataPtr, size);
-        // reducing size to exclude trailing null bytes
-        while (arr[size-1] === 0) {
-            --size;
+        return (copy) ?
+            this.copyBytesAt(this.decodedDataPtr, this.dataSize):
+            this.bytesAt    (this.decodedDataPtr, this.dataSize);
+    }
+
+    test() {
+        // buffer
+        {
+            const bufIn = new Uint8Array([99]);
+            console.log("input buffer", bufIn);
+            const z85Str = this.encode(bufIn);
+            console.log("z85 encoded:", z85Str);
+            const bufOut = this.decode(z85Str, bufIn.length);
+            console.log("z85 decoded:", bufOut);
         }
-        // true data size back into buffer for consistency
-        this.dataSize = size;
-        // return string that excludes padded bytes
-        return this.decodeCStr(this.decodedDataPtr, size);
+
+        // string
+        {
+            const strIn = "farts";
+            console.log("input string", strIn);
+            const z85Str = this.encodeString(strIn);
+            console.log("z85 encoded:", z85Str);
+            const strOut = this.decodeToString(z85Str);
+            console.log("z85 decoded:", strOut);
+        }
+
+        // write arbitrary data
+        {
+            const valIn = 1234.5678;
+            console.log("z85 encoded:", valIn);
+            this.setFloat64At(this.decodedDataPtr, valIn);
+            this.dataSize = 8;
+            const z85Str = this.encode();
+            console.log("z85 encoded:", z85Str);
+            this.setFloat64At(this.decodedDataPtr, 0);
+            const bufOut = this.decode(z85Str);
+            console.log("z85 decoded:", bufOut);
+            const valOut = this.getFloat64At(this.decodedDataPtr);
+            console.log("z85 decoded:", valOut);
+        }
     }
 }

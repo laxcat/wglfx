@@ -21,46 +21,7 @@
 
         z85.onReady = () => {
             new App();
-
-            // buffer
-            {
-                const bufIn = new Uint8Array([99]);
-                console.log("input buffer", bufIn);
-                const z85Str = z85.encode(bufIn);
-                console.log("z85 encoded:", z85Str);
-                const bufOut = z85.decode(z85Str, bufIn.length);
-                console.log("z85 decoded:", bufOut);
-            }
-
-            // string
-            {
-                const strIn = "farts";
-                console.log("input string", strIn);
-                const z85Str = z85.encodeString(strIn);
-                console.log("z85 encoded:", z85Str);
-                const strOut = z85.decodeToString(z85Str);
-                console.log("z85 decoded:", strOut);
-            }
-
-            // write arbitrary data
-            {
-                const valIn = 1234.5678;
-                console.log("z85 encoded:", valIn);
-                z85.setFloat64At(z85.decodedDataPtr, valIn);
-                z85.dataSize = 8;
-                const z85Str = z85.encode();
-                console.log("z85 encoded:", z85Str);
-                const bufOut = z85.decode(z85Str);
-                console.log("z85 decoded:", bufOut);
-                const valOut = z85.getFloat64At(z85.decodedDataPtr);
-                console.log("z85 decoded:", valOut);
-
-                // const strIn = "farts";
-                // console.log("input string", strIn);
-                // const z85Str = z85.encodeString(strIn);
-                // const strOut = z85.decodeToString(z85Str);
-                // console.log("z85 decoded:", strOut);
-            }
+            z85.test();
         };
 
     </script>
