@@ -3,6 +3,7 @@ import * as util from "./util.js"
 export default class WASM {
     memory = null;
     heap = null;
+    view = null;
     instance = null;
     exports = null;
     ready = false;
@@ -30,7 +31,7 @@ export default class WASM {
         return {
             env: {
                 memory: t.memory,
-                print_val: console.log,
+                print_val: val => console.log(val, `(0x${val.toString(16)})`),
                 print_str: t.logCStr.bind(t),
                 print_err: t.logCStr.bind(t),
             }
@@ -71,6 +72,7 @@ export default class WASM {
         }
         // convenience memory access
         this.heap = new Uint8Array(this.memory.buffer);
+        this.view = new DataView(this.memory.buffer);
 
         // deep merge imports with defaultImports (passed imports take precedence)
         imports = util.mergeDeep(WASM.defaultImports(this), imports);
@@ -81,11 +83,10 @@ export default class WASM {
 
             // do some special memory configuration
             // special memory locations configured by wasm.h.
-            const view = new DataView(this.memory.buffer);
-            view.setUint32(WASM.MEM_SPECIAL_STR_S , this.memStrBufS, true);
-            view.setUint32(WASM.MEM_SPECIAL_STR_E , this.memStrBufE, true);
-            view.setUint32(WASM.MEM_SPECIAL_HEAP_S, this.memHeapS  , true);
-            view.setUint32(WASM.MEM_SPECIAL_HEAP_E, this.memHeapE  , true);
+            this.view.setUint32(WASM.MEM_SPECIAL_STR_S , this.memStrBufS, true);
+            this.view.setUint32(WASM.MEM_SPECIAL_STR_E , this.memStrBufE, true);
+            this.view.setUint32(WASM.MEM_SPECIAL_HEAP_S, this.memHeapS  , true);
+            this.view.setUint32(WASM.MEM_SPECIAL_HEAP_E, this.memHeapE  , true);
 
             this.afterReady();
             if (this.onReady) this.onReady();
@@ -94,6 +95,25 @@ export default class WASM {
 
     afterReady() {}
 
+    setBytesAt(ptr, buffer) {
+        (new Uint8Array(this.memory.buffer, ptr, buffer.length)).set(buffer);
+    }
+
+    // returns VIEW
+    bytesAt(ptr, size) {
+        return new Uint8Array(this.memory);
+    }
+
+    // returns COPY
+    copyBytesAt(ptr, size) {
+        const buffer = new Uint8Array(this.dataSize);
+        buffer.set(this.bytesAt(ptr, size));
+        return buffer;
+    }
+
+    getUint32At(ptr) { return this.view.getUint32(ptr, true); }
+    setUint32At(ptr, value) { this.view.setUint32(ptr, value, true); }
+
     encodeCStr(str) {
         if (!this.ready) {
             throw `exports not ready`;
@@ -101,8 +121,18 @@ export default class WASM {
         const size = str.length;
         const ptr = this.fns.request_str_ptr(size);
         const bytes = new Uint8Array(this.memory.buffer, ptr, size);
-        (new TextEncoder()).encodeInto(str, bytes);
-        return [ptr, size];
+        const {read, written} = (new TextEncoder()).encodeInto(str, bytes);
+        return [ptr, written];
+    };
+
+    encodeCStrInto(str, ptr) {
+        if (!this.ready) {
+            throw `exports not ready`;
+        }
+        const size = str.length;
+        const bytes = new Uint8Array(this.memory.buffer, ptr, size);
+        const {read, written} = (new TextEncoder()).encodeInto(str, bytes);
+        return [ptr, written];
     };
 
     decodeCStr(ptr, size) {

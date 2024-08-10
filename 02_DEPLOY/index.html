@@ -17,11 +17,15 @@
     <script type="module">
         import App from "./js/App.js";
         import WASMZ85 from "./js/WASMZ85.js";
-        const wasm = new WASMZ85();
+        const z85 = new WASMZ85();
 
-        wasm.onReady = () => {
+        z85.onReady = () => {
             new App();
-            wasm.test();
+            const bufIn = new Uint8Array([99]);
+            const z85Str = z85.encode(bufIn);
+            console.log("z85 encoded:", z85Str);
+            const bufOut = z85.decode(z85Str);
+            console.log("z85 decoded:", bufOut);
         };
 
     </script>

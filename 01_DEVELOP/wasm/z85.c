@@ -3,6 +3,12 @@
 
 #define streq(s1,s2) (!strcmp ((s1), (s2)))
 
+static uint32_t   DecodedDataSizeMax    = 0;
+static uint32_t   EncodedDataSizeMax    = 0;
+static byte     * DecodedDataPtr        = NULL;
+static byte     * EncodedDataPtr        = NULL;
+static uint32_t * DataSizePtr           = NULL;
+
 //  Maps base 256 to base 85
 static char encoder[85 + 1] = {
     "0123456789"
@@ -33,41 +39,66 @@ static byte decoder[96] = {
     0x21, 0x22, 0x23, 0x4F, 0x00, 0x50, 0x00, 0x00
 };
 
-void WASM_EXPORT(test)() {
-    prints("testing z85 wasm module");
-
-    prints("MEM_STR_S");
-    printv(MEM_STR_S);
-
-    prints("MEM_STR_E");
-    printv(MEM_STR_E);
-
-    prints("MEM_HEAP_S");
-    printv(MEM_HEAP_S);
-
-    prints("MEM_HEAP_E");
-    printv(MEM_HEAP_E);
+void WASM_EXPORT(Z85_init)() {
+    if (MEM_HEAP_E - MEM_HEAP_S <= 8) {
+        printe("not enought dynamic memory for z85 wasm module. did not init.");
+        return;
+    }
+    prints("init z85 wasm module");
+    // For every 4 bytes we want to encode, we need 9 bytes available in the heap:
+    // 4 to read from, 5 to encode to.
+    // So we can calculate max encoding size by figuing how many 9-byte blocks we can fit
+    uint32_t codecSize = MEM_HEAP_E - MEM_HEAP_S - sizeof(uint32_t);
+    uint32_t blockCount = 1 + ((codecSize - 1) / 9);
+    DecodedDataSizeMax = blockCount * 4;
+    EncodedDataSizeMax = blockCount * 5;
+    DataSizePtr = (uint32_t *)MEM_HEAP_S;
+    DecodedDataPtr = (byte *)(MEM_HEAP_S + sizeof(uint32_t));
+    EncodedDataPtr = DecodedDataPtr + DecodedDataSizeMax;
 }
 
-char * WASM_EXPORT(Z85_encode)(byte * data, size_t size) {
-    //  Accepts only byte arrays bounded to 4 bytes
-    if (size % 4)
-        return NULL;
+uint32_t   WASM_EXPORT(Z85_getDecodedDataSizeMax)()   { return DecodedDataSizeMax; }
+uint32_t   WASM_EXPORT(Z85_getEncodedDataSizeMax)()   { return EncodedDataSizeMax; }
+byte     * WASM_EXPORT(Z85_getDecodedDataPtr)()       { return DecodedDataPtr; }
+byte     * WASM_EXPORT(Z85_getEncodedDataPtr)()       { return EncodedDataPtr; }
+uint32_t * WASM_EXPORT(Z85_getDataSizePtr)()          { return DataSizePtr; }
+
+uint32_t WASM_EXPORT(Z_85_getPaddedDataSize)() {
+    uint32_t size = *DataSizePtr;
+    uint32_t m = size % 4;
+    uint32_t padding = (m) ? 4 - m : 0;
+    size += padding;
+    return size;
+}
+
+uint32_t WASM_EXPORT(Z85_encode)() {
+    uint32_t size = Z_85_getPaddedDataSize();
+    uint32_t padding = size - *DataSizePtr;
+
+    if (size > DecodedDataSizeMax) {
+        printe("ERROR IN Z85");
+        return 0;
+    }
+
+    while (padding) {
+        // prints("ZEROING BYTE AT");
+        // print_val(DecodedDataPtr + size - padding);
+        DecodedDataPtr[size-padding] = 0x00;
+        --padding;
+    }
 
     size_t encoded_size = size * 5 / 4;
-    // char *encoded = malloc (encoded_size + 1);
-    char * encoded = (char *)MEM_HEAP_S;
     uint32_t char_nbr = 0;
     uint32_t byte_nbr = 0;
     uint32_t value = 0;
     while (byte_nbr < size) {
         //  Accumulate value in base 256 (binary)
-        value = value * 256 + data[byte_nbr++];
+        value = value * 256 + DecodedDataPtr[byte_nbr++];
         if (byte_nbr % 4 == 0) {
             //  Output value in base 85
             uint32_t divisor = 85 * 85 * 85 * 85;
             while (divisor) {
-                encoded[char_nbr++] = encoder[value / divisor % 85];
+                EncodedDataPtr[char_nbr++] = encoder[value / divisor % 85];
                 divisor /= 85;
             }
             value = 0;
@@ -75,11 +106,39 @@ char * WASM_EXPORT(Z85_encode)(byte * data, size_t size) {
     }
     if (char_nbr != encoded_size) {
         printe("ERROR IN Z85");
+        return 0;
     }
-    encoded[char_nbr] = 0;
-    return encoded;
+    // always return the "real" byte count, if known, not padded
+    return *DataSizePtr;
 }
 
-byte * WASM_EXPORT(Z85_decode)(char * str) {
-    return NULL;
+uint32_t WASM_EXPORT(Z85_decode)() {
+    uint32_t decoded_size = Z_85_getPaddedDataSize();
+    uint32_t encoded_size = decoded_size * 5 / 4;
+
+    // size_t decoded_size = size * 4 / 5;
+    // byte *decoded = malloc (decoded_size);
+
+    uint32_t byte_nbr = 0;
+    uint32_t char_nbr = 0;
+    uint32_t value = 0;
+    while (char_nbr < encoded_size) {
+        //  Accumulate value in base 85
+        value = value * 85 + decoder[EncodedDataPtr[char_nbr++] - 32];
+        if (char_nbr % 5 == 0) {
+            //  Output value in base 256
+            uint32_t divisor = 256 * 256 * 256;
+            while (divisor) {
+                DecodedDataPtr[byte_nbr++] = value / divisor % 256;
+                divisor /= 256;
+            }
+            value = 0;
+        }
+    }
+    if (byte_nbr != decoded_size) {
+        printe("ERROR IN Z85");
+        return 0;
+    }
+    // always return the "real" byte count, if known, not padded
+    return *DataSizePtr;
 }
