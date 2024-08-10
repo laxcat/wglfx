@@ -116,9 +116,6 @@ uint32_t WASM_EXPORT(Z85_decode)() {
     uint32_t decoded_size = Z_85_getPaddedDataSize();
     uint32_t encoded_size = decoded_size * 5 / 4;
 
-    // size_t decoded_size = size * 4 / 5;
-    // byte *decoded = malloc (decoded_size);
-
     uint32_t byte_nbr = 0;
     uint32_t char_nbr = 0;
     uint32_t value = 0;

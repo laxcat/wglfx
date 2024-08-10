@@ -114,13 +114,18 @@ export default class WASM {
     getUint32At(ptr) { return this.view.getUint32(ptr, true); }
     setUint32At(ptr, value) { this.view.setUint32(ptr, value, true); }
 
+    getFloat32At(ptr) { return this.view.getFloat32(ptr, true); }
+    setFloat32At(ptr, value) { this.view.setFloat32(ptr, value, true); }
+    getFloat64At(ptr) { return this.view.getFloat64(ptr, true); }
+    setFloat64At(ptr, value) { this.view.setFloat64(ptr, value, true); }
+
     encodeCStr(str) {
         if (!this.ready) {
             throw `exports not ready`;
         }
         const size = str.length;
         const ptr = this.fns.request_str_ptr(size);
-        const bytes = new Uint8Array(this.memory.buffer, ptr, size);
+        const bytes = this.bytesAt(ptr, size);
         const {read, written} = (new TextEncoder()).encodeInto(str, bytes);
         return [ptr, written];
     };
@@ -130,7 +135,7 @@ export default class WASM {
             throw `exports not ready`;
         }
         const size = str.length;
-        const bytes = new Uint8Array(this.memory.buffer, ptr, size);
+        const bytes = this.bytesAt(ptr, size);
         const {read, written} = (new TextEncoder()).encodeInto(str, bytes);
         return [ptr, written];
     };
@@ -151,8 +156,7 @@ export default class WASM {
                 console.log(`term-byte found; size set: ${size}`);
             }
         }
-        const bytes = new Uint8Array(this.memory.buffer, ptr, size);
-        return (new TextDecoder()).decode(bytes);
+        return (new TextDecoder()).decode(this.bytesAt(ptr, size));
     };
 
     logCStr(ptr, size) {

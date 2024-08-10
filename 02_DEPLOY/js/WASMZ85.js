@@ -11,6 +11,9 @@ export default class WASMZ85 extends WASM {
     get dataSize() { return this.getUint32At(this.dataSizePtr); };
     set dataSize(size) { this.setUint32At(this.dataSizePtr, size); };
 
+    get paddedDataSize() { return this.fns.Z_85_getPaddedDataSize(); }
+    get encodedDataSize() { return this.paddedDataSize * 5 / 4; }
+
     constructor() {
         super("./wasm/z85.wasm", 4);
     }
@@ -88,13 +91,10 @@ export default class WASMZ85 extends WASM {
             return "";
         }
 
-        return this.decodeCStr(
-            this.encodedDataPtr,
-            this.fns.Z_85_getPaddedDataSize() / 4 * 5
-        );
+        return this.decodeCStr(this.encodedDataPtr, this.encodedDataSize);
     }
 
-    decode(str, decodedSize) {
+    decode(str, decodedSize, copy=false) {
         if (!this.ready) {
             throw `z85 wasm not read.`;
         }
@@ -107,7 +107,38 @@ export default class WASMZ85 extends WASM {
             return null;
         }
 
-        console.log(this.decodedDataPtr, this.dataSize);
-        return this.copyBytesAt(this.decodedDataPtr, this.dataSize);
+        if (copy)
+            return this.copyBytesAt(this.decodedDataPtr, this.dataSize);
+        else
+            return this.bytesAt(this.decodedDataPtr, this.dataSize);
+    }
+
+    encodeString(str) {
+        this.encodeCStrInto(str, this.decodedDataPtr);
+        this.dataSize = str.length;
+        if (!this.fns.Z85_encode()) {
+            return "";
+        }
+        return this.decodeCStr(this.encodedDataPtr, this.encodedDataSize);
+    }
+
+    decodeToString(str) {
+        this.encodeCStrInto(str, this.encodedDataPtr);
+        let size = str.length * 4 / 5;
+        // set padded for now, to decode
+        this.dataSize = size;
+        if (!this.fns.Z85_decode()) {
+            return "";
+        }
+        // view padded decoded bytes
+        const arr = this.bytesAt(this.decodedDataPtr, size);
+        // reducing size to exclude trailing null bytes
+        while (arr[size-1] === 0) {
+            --size;
+        }
+        // true data size back into buffer for consistency
+        this.dataSize = size;
+        // return string that excludes padded bytes
+        return this.decodeCStr(this.decodedDataPtr, size);
     }
 }
