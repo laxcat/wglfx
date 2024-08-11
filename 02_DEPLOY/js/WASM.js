@@ -80,9 +80,9 @@ export default class WASM extends EventTarget {
                     maximum: memory,
                 };
             }
-            // deep merge imports with defaultImports (passed imports take precedence)
-            memory  = Object.assign (WASM.defaultMemory, memory);
-            // setup memory objects. javascript provides memory buffer to wasm.
+            // merge memory with defaultMemory (passed memory settings take precedence)
+            memory = Object.assign(WASM.defaultMemory, memory);
+            // setup memory object. javascript provides memory buffer to wasm.
             this.memory = new WebAssembly.Memory(memory);
         }
         // convenience memory access

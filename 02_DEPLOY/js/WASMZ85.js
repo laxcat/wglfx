@@ -12,7 +12,7 @@ export default class WASMZ85 extends WASM {
     get dataSize() { return this.getUint32At(this.dataSizePtr); };
     set dataSize(size) { this.setUint32At(this.dataSizePtr, size); };
 
-    get paddedDataSize() { return this.fns.Z_85_getPaddedDataSize(); }
+    get paddedDataSize() { return this.fns.Z85_getPaddedDataSize(); }
     get encodedDataSize() { return this.paddedDataSize * 5 / 4; }
 
     constructor() {
@@ -83,8 +83,8 @@ export default class WASMZ85 extends WASM {
         this.encodeStrInto(str, this.encodedDataPtr);
     }
 
-    // encode buffer, or
-    // call without buffer to
+    // encode bytes in buffer into z85 string, or
+    // call without buffer to encode bytes already in decoded buffer
     encode(buffer) {
         this.throwIfNotReady();
         if (buffer !== undefined) {
@@ -93,14 +93,15 @@ export default class WASMZ85 extends WASM {
         return this.#encode();
     }
 
-    // encode string
+    // write string as data decoded buffer, then encode into z85 string
     encodeString(str) {
         this.dataSize = str.length;
         this.encodeStrInto(str, this.decodedDataPtr);
         return this.#encode();
     }
 
-    // encode dataSize bytes already filled at decodedDataPtr
+    // internal use only
+    // encode dataSize bytes already filled at decodedDataPtr into z85 string
     #encode() {
         // if no bytes to encode...
         if (this.dataSize === 0 ||
@@ -111,7 +112,7 @@ export default class WASMZ85 extends WASM {
         return this.decodeCStr(this.encodedDataPtr, this.encodedDataSize);
     }
 
-    // decode z85 string to buffer
+    // decode z85 string to Uint8Array of bytes, either view or copy
     decode(str, decodedSize, copy=false) {
         this.throwIfNotReady();
         if (str !== undefined) {
@@ -132,15 +133,16 @@ export default class WASMZ85 extends WASM {
         return WASM.decodeCStrArr(arr, true);
     }
 
+    // decode to TypedArray
     // Example:
     // decodeTo(Float32Array, "Q&n:*Xe]cDAxQV}");
-    decodeTo(TyArr, str, copy=false) {
+    decodeTo(TypedArray, str, copy=false) {
         this.throwIfNotReady();
         if (str !== undefined) {
             this.fillEncodedBytes(str);
         }
         const arr = this.#decode(str, copy);
-        return new TyArr(arr.buffer, arr.byteOffset, arr.byteLength/TyArr.BYTES_PER_ELEMENT);
+        return new TypedArray(arr.buffer, arr.byteOffset, arr.byteLength/TypedArray.BYTES_PER_ELEMENT);
     }
 
     // decode encodedDataSize

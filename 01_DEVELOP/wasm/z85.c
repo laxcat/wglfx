@@ -63,7 +63,7 @@ byte     * WASM_EXPORT(Z85_getDecodedDataPtr)()       { return DecodedDataPtr; }
 byte     * WASM_EXPORT(Z85_getEncodedDataPtr)()       { return EncodedDataPtr; }
 uint32_t * WASM_EXPORT(Z85_getDataSizePtr)()          { return DataSizePtr; }
 
-uint32_t WASM_EXPORT(Z_85_getPaddedDataSize)() {
+uint32_t WASM_EXPORT(Z85_getPaddedDataSize)() {
     uint32_t size = *DataSizePtr;
     uint32_t m = size % 4;
     uint32_t padding = (m) ? 4 - m : 0;
@@ -72,7 +72,7 @@ uint32_t WASM_EXPORT(Z_85_getPaddedDataSize)() {
 }
 
 uint32_t WASM_EXPORT(Z85_encode)() {
-    uint32_t size = Z_85_getPaddedDataSize();
+    uint32_t size = Z85_getPaddedDataSize();
     uint32_t padding = size - *DataSizePtr;
 
     if (size > DecodedDataSizeMax) {
@@ -113,7 +113,7 @@ uint32_t WASM_EXPORT(Z85_encode)() {
 }
 
 uint32_t WASM_EXPORT(Z85_decode)() {
-    uint32_t decoded_size = Z_85_getPaddedDataSize();
+    uint32_t decoded_size = Z85_getPaddedDataSize();
     uint32_t encoded_size = decoded_size * 5 / 4;
 
     uint32_t byte_nbr = 0;
