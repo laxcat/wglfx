@@ -80,7 +80,7 @@ export default class WASMZ85 extends WASM {
         // write data size to buffer
         this.dataSize = decodedSize;
         // write encoded bytes to buffer
-        this.encodeCStrInto(str, this.encodedDataPtr);
+        this.encodeStrInto(str, this.encodedDataPtr);
     }
 
     // encode buffer, or
@@ -96,7 +96,7 @@ export default class WASMZ85 extends WASM {
     // encode string
     encodeString(str) {
         this.dataSize = str.length;
-        this.encodeCStrInto(str, this.decodedDataPtr);
+        this.encodeStrInto(str, this.decodedDataPtr);
         return this.#encode();
     }
 
@@ -122,14 +122,14 @@ export default class WASMZ85 extends WASM {
 
     // decode z85 string to string, and trim end null bytes
     decodeToString(str) {
-        this.encodeCStrInto(str, this.encodedDataPtr);
+        this.encodeStrInto(str, this.encodedDataPtr);
         let size = str.length * 4 / 5;
         // set padded for now, to decode
         this.dataSize = size;
         // decode string bytes
         const arr = this.#decode(str, false);
         // return string with null bytes trimmed off the end
-        return this.decodeCStrArr(arr, true);
+        return WASM.decodeCStrArr(arr, true);
     }
 
     // Example:
@@ -162,6 +162,7 @@ export default class WASMZ85 extends WASM {
             console.log("z85 encoded:", z85Str);
             const bufOut = this.decode(z85Str, bufIn.byteLength);
             console.log("z85 decoded:", bufOut);
+            if (bufIn[0] !== bufOut[0]) throw "test failed";
         }
 
         // string
@@ -172,6 +173,7 @@ export default class WASMZ85 extends WASM {
             console.log("z85 encoded:", z85Str);
             const strOut = this.decodeToString(z85Str);
             console.log("z85 decoded:", strOut);
+            if (strIn !== strOut) throw "test failed";
         }
 
         // write arbitrary data
@@ -187,6 +189,7 @@ export default class WASMZ85 extends WASM {
             console.log("z85 decoded:", bufOut);
             const valOut = this.getFloat64At(this.decodedDataPtr);
             console.log("z85 decoded:", valOut);
+            if (valIn !== valOut) throw "test failed";
         }
 
         // write float buffer
@@ -198,16 +201,26 @@ export default class WASMZ85 extends WASM {
             const bufOut = this.decodeTo(Float32Array, z85Str);
             console.log("z85 decoded:", bufOut);
             console.log("z85 decoded again:", this.decodeTo(Float32Array, "Q&n:*Xe]cDAxQV}"));
+            let i = 0;
+            let e = bufIn.length;
+            while (i < e) {
+                if (bufIn[i] != bufOut[i]) throw "test failed";
+                ++i;
+            }
         }
 
-
-        // write float buffer
+        // basic string access
         {
-            const bufIn = new Uint8Array([61, 62, 63, 0]);
+            const bufIn = new Uint8Array([0x61, 0x62, 0x63, 0x00]); // "abc"(\0)
             console.log("string array", bufIn)
             this.setBytesAt(this.decodedDataPtr, bufIn);
-            const strOut = this.decodeCStr(this.decodedDataPtr);
-            console.log("string decoded:", strOut);
+            // no size given, scans for null-byte
+            const strA = this.decodeCStr(this.decodedDataPtr);
+            console.log("string decoded:", strA);
+            // convenience decoding function that skips memory buffer altogether (used under the hood)
+            const strB = WASM.decodeCStrArr(bufIn, true);
+            console.log("string decoded:", strB);
+            if (strA !== strB || strA !== "abc") throw "test failed";
         }
     }
 }

@@ -1,7 +1,7 @@
 import * as util from "./util.js"
 
 export default class WASM extends EventTarget {
-    // STATICS -------------------------------------------------------------- //
+    // STATICS VARS --------------------------------------------------------- //
 
     static defaultMemory = {
         initial: 4,
@@ -20,9 +20,10 @@ export default class WASM extends EventTarget {
     };
 
     // messages
-    static MSG_NOT_READY = "wasm not ready!";
+    static MSG_NOT_READY        = "wasm not ready!";
     // events
-    static READY = "ready"
+    static READY                = "ready"
+    static MEMORY_OUT_OF_RANGE  = "memory_out_of_range"
 
     // SPECIAL MEMORY BLOCK CONFIG
     // inform wasm runtime code of string buffer and heap limits
@@ -109,9 +110,43 @@ export default class WASM extends EventTarget {
     // ERROR CHECKING ------------------------------------------------------- //
 
     // throws if NOT ready!
-    throwIfNotReady() { if (!this.ready) throw WASM.MSG_NOT_READY; }
+    throwIfNotReady() {
+        if (!this.ready)  {
+            throw WASM.MSG_NOT_READY;
+        }
+    }
     // returns true if NOT ready!
-    warnIfNotReady() { if (!this.ready) console.log(WASM.MSG_NOT_READY); return !this.ready; }
+    warnIfNotReady() {
+        if (!this.ready) {
+            console.log(WASM.MSG_NOT_READY);
+        }
+        return !this.ready;
+    }
+
+    // throws if out of ranage
+    throwIfOutOfRange(ptr, size) {
+        if (!this.isInRange(ptr, size)) {
+            console.log(ptr, size);
+            throw WASM.MEMORY_OUT_OF_RANGE;
+        }
+    }
+    // returns true if out of range
+    warnIfOutOfRange(ptr, size) {
+        const inRange = this.isInRange(ptr, size);
+        if (!inRange) {
+            console.log(WASM.MEMORY_OUT_OF_RANGE);
+        }
+        return !inRange;
+    }
+
+    // ptr+size in range?
+    isInRange(ptr, size) {
+        return (
+            ptr > 0 &&
+            size > 0 &&
+            ptr + size <= this.memory.buffer.byteLength
+        );
+    }
 
     // MEMORY ACCESS, GENERIC ----------------------------------------------- //
 
@@ -126,6 +161,7 @@ export default class WASM extends EventTarget {
             buffer = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
         }
         // buffer should be a Uint8Array at this point
+        this.throwIfOutOfRange(ptr, buffer.byteLength);
         (new Uint8Array(this.memory.buffer, ptr, buffer.byteLength)).set(buffer);
     }
 
@@ -137,6 +173,7 @@ export default class WASM extends EventTarget {
 
     // returns COPY
     copyBytesAt(ptr, size) {
+        this.throwIfOutOfRange(ptr, size);
         const buffer = new Uint8Array(this.dataSize);
         buffer.set(this.bytesAt(ptr, size));
         return buffer;
@@ -155,23 +192,24 @@ export default class WASM extends EventTarget {
     // MEMORY ACCESS, STRING ------------------------------------------------ //
 
     // encode js-string to c-string in UTF-8 into memory buffer
-    encodeCStr(str) {
+    encodeStr(str) {
         this.throwIfNotReady();
         const size = str.length;
         const ptr = this.fns.request_str_ptr(size);
-        const bytes = this.bytesAt(ptr, size);
-        const {read, written} = (new TextEncoder()).encodeInto(str, bytes);
-        return [ptr, written];
+        return WASM.encodeStrInto(str, this.bytesAt(ptr, size));
     };
 
-    // same as encodeCStr specifying specific memory location
-    encodeCStrInto(str, ptr) {
+    // same as encodeStr specifying specific memory location
+    encodeStrInto(str, ptr) {
         this.throwIfNotReady();
-        const size = str.length;
-        const bytes = this.bytesAt(ptr, size);
-        const {read, written} = (new TextEncoder()).encodeInto(str, bytes);
-        return [ptr, written];
+        return WASM.encodeStrInto(str, this.bytesAt(ptr, str.length));
     };
+
+    static te = new TextEncoder();
+    static encodeStrInto(str, view) {
+        const {read, written} = WASM.te.encodeInto(str, view)
+        return [view.byteOffset, written]
+    }
 
     // decode c-style UTF-8 string in memory into js-string.
     // if size not defined, c-style string rules will apply and will
@@ -200,6 +238,7 @@ export default class WASM extends EventTarget {
 
     // same as decodeCStr, but arr could be data from anywhere
     // arr is c-string in Uint8Array format, possibly with trailing null-byte(s)
+    static td = new TextDecoder();
     static decodeCStrArr(arr, trimNullBytes=false) {
         if (!(arr instanceof Uint8Array)) {
             throw `arr should be Uint8Array`;
@@ -216,10 +255,11 @@ export default class WASM extends EventTarget {
             // make new smaller slice (be careful to not use TOO small a slice)
             arr = arr.subarray(0, size);
         }
-        return (new TextDecoder()).decode(arr);
+        return WASM.td.decode(arr);
     }
 
     logCStr(ptr, size) {
+        this.throwIfOutOfRange(ptr, size);
         console.log(this.decodeCStr(ptr, size));
     }
 }
