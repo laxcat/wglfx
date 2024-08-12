@@ -13,9 +13,10 @@ typedef unsigned char byte;
 // EXPORTS /////////////////////////////////////////////////////////////////////
 
 extern uint8_t memory;
-extern void print_val(void * value);
-extern void print_str(void * ptr, uint32_t len);
-extern void print_err(void * ptr, uint32_t len);
+extern void print(
+    void * str, uint32_t strLen, uint8_t isErr,
+    uint8_t valType, uint8_t valCount, void * valPtr
+);
 
 // WASM MACROS /////////////////////////////////////////////////////////////////
 
@@ -44,33 +45,60 @@ extern void print_err(void * ptr, uint32_t len);
 #define MEM_HEAP_E (*((uint32_t *)MEM_SPECIAL_HEAP_E))
 // -------------------------------- END MEMORY LAYOUT //
 
+// TYPES -------------------------------------------- //
+#define T_NONE 0x00
+#define T_BYTE 0x10
+#define T_PTR  0x12
+#define T_U8   0x20
+#define T_U16  0x21
+#define T_U32  0x22
+#define T_U64  0x23
+#define T_I8   0x30
+#define T_I16  0x31
+#define T_I32  0x32
+#define T_I64  0x33
+#define T_F32  0x42
+#define T_F64  0x43
 
 // UTILITY FUNCTIONS ///////////////////////////////////////////////////////////
 
 // strlen, limits to 32bit
 inline uint32_t len(char const * str) {
+    if (!str) return 0;
     uint32_t len = 0;
     while(*str && len < 0xffffffff) ++str, ++len;
     return len;
 }
 
-// shotcut for print_str export
+// shortcut for print, single string
 inline void prints(char * str) {
-    // print_val(str);
-    print_str(str, len(str));
+    print(str, len(str), 0, T_NONE, 0, NULL);
 }
 
-// shotcut for print_err export
+// shortcut for print, single string as error
 inline void printe(char * err) {
-    // print_val(err);
-    print_err(err, len(err));
+    print(err, len(err), 1, T_NONE, 0, NULL);
 }
 
-// shotcut for print_val export
-inline void printv(uint32_t value) {
-    // print_val(&value);
-    print_val((void *)value);
+// shortcut for print, string with u32 value
+inline void printu32(char * str, uint32_t value) {
+    print(str, len(str), 0, T_U32, 1, &value);
 }
+
+// shortcut for print, string with value of type
+inline void printv(char * str, uint8_t valType, void * ptr) {
+    print(str, len(str), 0, valType, 1, ptr);
+}
+
+// shortcut for print, string with value of type
+inline void printvs(char * str, uint8_t valType, uint8_t valCount, void * ptr) {
+    print(str, len(str), 0, valType, valCount, ptr);
+}
+
+// shortcut for print, string with multiple values of type
+// inline void printv(char * str, uint8_t valType, uint8_t valCount, void * ptr) {
+//     print(str, len(str), 0, valType, valCount, ptr);
+// }
 
 // UTILITY EXPORTS /////////////////////////////////////////////////////////////
 // use in conjunction with WASM.js

@@ -92,8 +92,7 @@ void * WASM_EXPORT(Z85_init)() {
     info.decodedDataPtr = (byte *)(MEM_HEAP_S + sizeof(uint32_t));
     info.encodedDataPtr = info.decodedDataPtr + info.decodedDataSizeMax;
 
-    prints("INIT Z85. Buffer size:");
-    printv(info.decodedDataSizeMax);
+    printu32("INIT Z85. Buffer size:", info.decodedDataSizeMax);
 
     return &info;
 }

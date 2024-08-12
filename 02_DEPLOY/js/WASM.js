@@ -12,9 +12,7 @@ export default class WASM extends EventTarget {
         return {
             env: {
                 memory: t.memory,
-                print_val: val => console.log(val, `(0x${val.toString(16)})`),
-                print_str: t.logCStr.bind(t),
-                print_err: t.logCStrErr.bind(t),
+                print: t.print.bind(t),
             }
         };
     };
@@ -35,6 +33,21 @@ export default class WASM extends EventTarget {
     static MEM_SPECIAL_STR_E   = WASM.MEM_SPECIAL_S+0x04;
     static MEM_SPECIAL_HEAP_S  = WASM.MEM_SPECIAL_S+0x08;
     static MEM_SPECIAL_HEAP_E  = WASM.MEM_SPECIAL_S+0x0c;
+
+    // types. see wasm.h
+    static T_NONE = 0x00;
+    static T_BYTE = 0x10;
+    static T_PTR  = 0x12;
+    static T_U8   = 0x20;
+    static T_U16  = 0x21;
+    static T_U32  = 0x22;
+    static T_U64  = 0x23;
+    static T_I8   = 0x30;
+    static T_I16  = 0x31;
+    static T_I32  = 0x32;
+    static T_I64  = 0x33;
+    static T_F32  = 0x42;
+    static T_F64  = 0x43;
 
     // MEMBER VARS ---------------------------------------------------------- //
 
@@ -179,6 +192,24 @@ export default class WASM extends EventTarget {
         return buffer;
     }
 
+    static getArrayByType(type) {
+        switch(type) {
+        case WASM.T_U8:
+        case WASM.T_BYTE:   return Uint8Array;
+        case WASM.T_U16:    return Uint16Array;
+        case WASM.T_U32:
+        case WASM.T_PTR:    return Uint32Array;
+        case WASM.T_U64:    return BigUint64Array;
+        case WASM.T_I8:     return Int8Array;
+        case WASM.T_I16:    return Int16Array;
+        case WASM.T_I32:    return Int32Array;
+        case WASM.T_I64:    return BigInt64Array;
+        case WASM.T_F32:    return Float32Array;
+        case WASM.T_F64:    return Float64Array;
+        default:            return null;
+        }
+    }
+
     // MEMORY ACCESS, INTS/FLOATS ------------------------------------------- //
 
     getUint32At(ptr) { return this.view.getUint32(ptr, true); }
@@ -258,13 +289,50 @@ export default class WASM extends EventTarget {
         return WASM.td.decode(arr);
     }
 
-    logCStr(ptr, size) {
+    logCStr(ptr, size, isError) {
         this.throwIfOutOfRange(ptr, size);
-        console.log(this.decodeCStr(ptr, size));
+        const msg = this.decodeCStr(ptr, size);
+        if (isError)
+            console.log(`%c${msg}`, "color:red;");
+        else
+            console.log(msg);
     }
 
-    logCStrErr(ptr, size) {
-        this.throwIfOutOfRange(ptr, size);
-        console.log(`%c${this.decodeCStr(ptr, size)}`, "color:red;");
+    // Unified print statement from wasm.
+    // Can (optionally) print a string, then n number of values.
+    // Values must be of same type.
+    // valueType: See WASM.T_* statics
+    // valCount: number of values to expect
+    // valPtr: starting memory location (values are assumed to be tight packed)
+    print(strPtr, strLen, isErr, valType, valCount, valPtr) {
+        let msg = [];
+        if (strLen) {
+            const str = this.decodeCStr(strPtr, strLen);
+            if (isErr) {
+                msg.push(`%c${str}`);
+                msg.push("color:red;");
+            }
+            else {
+                msg.push(str);
+            }
+        }
+        if (valType && valCount && valPtr) {
+            const TypedArray = WASM.getArrayByType(valType);
+            if (TypedArray) {
+                let vals = new TypedArray(this.memory.buffer, valPtr, valCount);
+                // convert to hex
+                if (valType == WASM.T_PTR || valType == WASM.T_BYTE) {
+                    const pad = (valType == WASM.T_PTR) ? 8 : 2;
+                    // copy array, map to string, add leading zeros, join to single string
+                    vals = [...vals].map(v => v.toString(16).padStart(pad, '0')).join("  ");
+                }
+                // reduce from array to single value
+                if (valCount == 1) {
+                    vals = vals[0];
+                }
+                msg.push(vals);
+            }
+        }
+        console.log(...msg);
     }
 }
