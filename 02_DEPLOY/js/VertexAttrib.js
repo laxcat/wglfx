@@ -31,10 +31,13 @@ export default class VertexAttrib {
         this.deleteBuffer();
         this.data = null;
         if (typeof obj.data === "string") {
-            this.createBufferFromArrayBuffer(obj.data.fromBase64());
+            // copy=true because otherwise the Float32Array remains attached
+            // to underlying buffer based on wasm memory.
+            const arr = App.z85.decodeTo(Float32Array, obj.data, true);
+            this.createBufferFromFloats(arr);
         }
         else if (obj.data instanceof Float32Array) {
-            this.createBufferFromArrayBuffer(obj.data.buffer);
+            this.createBufferFromFloats(obj.data);
         }
     }
 
@@ -44,10 +47,10 @@ export default class VertexAttrib {
 
     createBuffer(nVerts) {
         const emptyData = new Float32Array(nVerts * this.size);
-        this.createBufferFromArrayBuffer(emptyData.buffer);
+        this.createBufferFromFloats(emptyData);
     }
 
-    createBufferFromArrayBuffer(arrayBuffer) {
+    createBufferFromFloats(floatArray) {
         if (this.glBuffer || this.data) {
             throw `Unexpected call to createBuffer. Buffer already created.\n`+
                   `${this.glBuffer}\n`+
@@ -55,7 +58,7 @@ export default class VertexAttrib {
         }
         this.glBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.glBuffer);
-        this.data = new Float32Array(arrayBuffer);
+        this.data = floatArray;
         this.gl.bufferData(this.gl.ARRAY_BUFFER, this.data, this.gl.STATIC_DRAW);
         this.gl.vertexAttribPointer(this.index, this.size, this.gl.FLOAT, false, 0, 0);
         this.gl.enableVertexAttribArray(this.index);
@@ -188,7 +191,7 @@ export default class VertexAttrib {
             name: this.name
         };
         if (this.data) {
-            obj.data = this.data.toBase64();
+            obj.data = App.z85.encode(this.data);
         }
         return obj;
     }

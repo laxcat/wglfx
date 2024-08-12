@@ -7,27 +7,33 @@ import WASMZ85 from "./WASMZ85.js";
 import * as util from "./util.js"
 import * as ui from "./util-ui.js"
 
+// App is a simple singleton
 export default class App {
     renderer = new Renderer();
     time = new Time();
-    z85 = null;
 
+    // single instance
     static instance = null;
+    // single point of interface with z85 coder
+    static z85 = null;
 
     constructor() {
-        if (!App.instance) App.instance = this;
+        if (App.instance) {
+            throw `App should be instantiated only once.`;
+        }
+        App.instance = this;
 
         // create keyboard shortcuts and anything that opperates on whole App
         this.setupGlobalHandlers();
 
         // setup z85 encoder/decoder
-        this.z85 = new WASMZ85();
-        this.z85.addEventListener(WASM.READY, () => { this.z85Ready(); });
+        App.z85 = new WASMZ85();
+        App.z85.addEventListener(WASM.READY, () => { this.z85Ready(); });
     }
 
     z85Ready() {
         // test z85 encoder/decoder
-        this.z85.test();
+        // App.z85.test();
 
         // load settings/src from user's localStorage. will set defaults if none found.
         this.load();
@@ -111,8 +117,9 @@ export default class App {
         this.renderer.unib.updateDataFromUI();
         this.renderer.unib.update();
         this.renderer.compile();
-        console.log(this.renderer.toObject());
-        localStorage.setItem("main", this.renderer.toString());
+        let saveObj = this.renderer.toObject();
+        console.log(saveObj);
+        localStorage.setItem("main", JSON.stringify(saveObj));
         console.log("------------------------------------------------------- SAVE END");
     }
 
