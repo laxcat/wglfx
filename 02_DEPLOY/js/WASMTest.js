@@ -8,17 +8,19 @@ export default class WASMTest extends WASM {
 
     constructor() {
         super("./wasm/test.wasm");
+        this.addEventListener(WASM.READY, () => { this.#onReady(); })
     }
 
-    afterReady() {
-        super.afterReady();
+    #onReady() {
+        // setup convenience access here.
+        // sometimes you can call wasm functions directly to be useful, but
+        // usually they need a little wrapping code to handle strings and other
+        // memory access issues.
 
-        // simple fn that takes no args, returns number. doesn't really need
-        // any convenience code wrapping, but still nice to be consistent
+        // simple fn that takes no args, returns number. easy to call directly.
         this.test = this.fns.test;
 
-        // anything that deals with strings requires a bit of work before/after,
-        // so this becomes much more noticeably convenient.
+        // sending and recieving strings requires a little work before and after
         this.caps = str => {
             const [ptr, size] = this.encodeStr(str);
             this.fns.caps(ptr);

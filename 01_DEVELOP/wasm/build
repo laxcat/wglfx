@@ -26,7 +26,8 @@ clang \
     -fcolor-diagnostics \
     -nostdlib \
     -mbulk-memory \
-    -O3 \
+    -Os \
+    -flto \
     -Wl,--no-entry \
     -Wl,--allow-undefined \
     -Wl,--import-memory \
@@ -34,14 +35,13 @@ clang \
     -o $OUT \
     $IN
 # ...
-    # -Wl,--lto-O3 \
 
 # SUCCESS AND OUTPUT
 { set +x; } 2> /dev/null
-
-# wasm2wat $OUT
 
 printf "\x1b[0;32m" # set green
 echo "SUCCESS!"
 printf "\x1b[0m"  # reset
 
+wasm2wat $OUT
+llvm-size $OUT

@@ -14,7 +14,7 @@ export default class WASM extends EventTarget {
                 memory: t.memory,
                 print_val: val => console.log(val, `(0x${val.toString(16)})`),
                 print_str: t.logCStr.bind(t),
-                print_err: t.logCStr.bind(t),
+                print_err: t.logCStrErr.bind(t),
             }
         };
     };
@@ -261,5 +261,10 @@ export default class WASM extends EventTarget {
     logCStr(ptr, size) {
         this.throwIfOutOfRange(ptr, size);
         console.log(this.decodeCStr(ptr, size));
+    }
+
+    logCStrErr(ptr, size) {
+        this.throwIfOutOfRange(ptr, size);
+        console.log(`%c${this.decodeCStr(ptr, size)}`, "color:red;");
     }
 }

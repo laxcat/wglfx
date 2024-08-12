@@ -1,7 +1,40 @@
+/*
+
+//  --------------------------------------------------------------------------
+//  WebAssembly version of Z85 encoder/decoder based on reference
+//  implementation for rfc.zeromq.org/spec:32/Z85
+//
+//  https://github.com/zeromq/rfc/blob/master/src/spec_32.c
+//
+//  Lots of superficial and memory-related changes were made for the wasm
+//  environment, but the algoritm itself remains unchanged from reference
+//  implementation. -tm,2024-08-12
+
+//  --------------------------------------------------------------------------
+//  Copyright (c) 2010-2013 iMatix Corporation and Contributors
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a
+//  copy of this software and associated documentation files (the "Software"),
+//  to deal in the Software without restriction, including without limitation
+//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//  and/or sell copies of the Software, and to permit persons to whom the
+//  Software is furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//  DEALINGS IN THE SOFTWARE.
+//  --------------------------------------------------------------------------
+
+*/
 #include <stddef.h>
 #include "wasm.h"
-
-#define streq(s1,s2) (!strcmp ((s1), (s2)))
 
 // INIT INFO
 typedef struct {
@@ -10,7 +43,6 @@ typedef struct {
     byte     * decodedDataPtr;
     byte     * encodedDataPtr;
     uint32_t * dataSizePtr;
-    float      test;
 } InitInfo;
 static InitInfo info;
 
@@ -46,10 +78,9 @@ static byte decoder[96] = {
 
 void * WASM_EXPORT(Z85_init)() {
     if (MEM_HEAP_E - MEM_HEAP_S <= 8) {
-        printe("not enought dynamic memory for z85 wasm module. did not init.");
+        printe("ERROR IN Z85");
         return NULL;
     }
-    prints("init z85 wasm module");
     // For every 4 bytes we want to encode, we need 9 bytes available in the heap:
     // 4 to read from, 5 to encode to.
     // So we can calculate max encoding size by figuing how many 9-byte blocks we can fit
@@ -60,7 +91,10 @@ void * WASM_EXPORT(Z85_init)() {
     info.dataSizePtr = (uint32_t *)MEM_HEAP_S;
     info.decodedDataPtr = (byte *)(MEM_HEAP_S + sizeof(uint32_t));
     info.encodedDataPtr = info.decodedDataPtr + info.decodedDataSizeMax;
-    info.test = 47.89;
+
+    prints("INIT Z85. Buffer size:");
+    printv(info.decodedDataSizeMax);
+
     return &info;
 }
 

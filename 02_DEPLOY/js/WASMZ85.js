@@ -9,7 +9,6 @@ class InitInfo extends Struct {
             decodedDataPtr:     {type:Uint32Array, offset: 8, size:1},
             encodedDataPtr:     {type:Uint32Array, offset:12, size:1},
             dataSizePtr:        {type:Uint32Array, offset:16, size:1},
-            test:               {type:Float32Array, offset:20, size:1},
         }, buffer, ptr);
     }
 }
@@ -30,12 +29,7 @@ export default class WASMZ85 extends WASM {
 
     #onReady() {
         const infoPtr = this.fns.Z85_init();
-        this.info = new InitInfo();
-        this.info.setPtr(this.memory.buffer, infoPtr);
-        console.log("this.info.test", this.info.test);
-        this.info.test = 0;
-        // this.info.setPtr = () => { console.log("donk"); }
-        console.log("this.info.test", this.info.test);
+        this.info = new InitInfo(this.memory.buffer, infoPtr);
     }
 
     // fill un-encoded bytes at decodedDataPtr
