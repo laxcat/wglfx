@@ -174,7 +174,7 @@ export default class WASM extends EventTarget {
     // returns COPY
     copyBytesAt(ptr, size) {
         this.throwIfOutOfRange(ptr, size);
-        const buffer = new Uint8Array(this.dataSize);
+        const buffer = new Uint8Array(size);
         buffer.set(this.bytesAt(ptr, size));
         return buffer;
     }

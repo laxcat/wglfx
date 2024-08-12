@@ -3,11 +3,16 @@
 
 #define streq(s1,s2) (!strcmp ((s1), (s2)))
 
-static uint32_t   DecodedDataSizeMax    = 0;
-static uint32_t   EncodedDataSizeMax    = 0;
-static byte     * DecodedDataPtr        = NULL;
-static byte     * EncodedDataPtr        = NULL;
-static uint32_t * DataSizePtr           = NULL;
+// INIT INFO
+typedef struct {
+    uint32_t   decodedDataSizeMax;
+    uint32_t   encodedDataSizeMax;
+    byte     * decodedDataPtr;
+    byte     * encodedDataPtr;
+    uint32_t * dataSizePtr;
+    float      test;
+} InitInfo;
+static InitInfo info;
 
 //  Maps base 256 to base 85
 static char encoder[85 + 1] = {
@@ -39,10 +44,10 @@ static byte decoder[96] = {
     0x21, 0x22, 0x23, 0x4F, 0x00, 0x50, 0x00, 0x00
 };
 
-void WASM_EXPORT(Z85_init)() {
+void * WASM_EXPORT(Z85_init)() {
     if (MEM_HEAP_E - MEM_HEAP_S <= 8) {
         printe("not enought dynamic memory for z85 wasm module. did not init.");
-        return;
+        return NULL;
     }
     prints("init z85 wasm module");
     // For every 4 bytes we want to encode, we need 9 bytes available in the heap:
@@ -50,21 +55,17 @@ void WASM_EXPORT(Z85_init)() {
     // So we can calculate max encoding size by figuing how many 9-byte blocks we can fit
     uint32_t codecSize = MEM_HEAP_E - MEM_HEAP_S - sizeof(uint32_t);
     uint32_t blockCount = 1 + ((codecSize - 1) / 9);
-    DecodedDataSizeMax = blockCount * 4;
-    EncodedDataSizeMax = blockCount * 5;
-    DataSizePtr = (uint32_t *)MEM_HEAP_S;
-    DecodedDataPtr = (byte *)(MEM_HEAP_S + sizeof(uint32_t));
-    EncodedDataPtr = DecodedDataPtr + DecodedDataSizeMax;
+    info.decodedDataSizeMax = blockCount * 4;
+    info.encodedDataSizeMax = blockCount * 5;
+    info.dataSizePtr = (uint32_t *)MEM_HEAP_S;
+    info.decodedDataPtr = (byte *)(MEM_HEAP_S + sizeof(uint32_t));
+    info.encodedDataPtr = info.decodedDataPtr + info.decodedDataSizeMax;
+    info.test = 47.89;
+    return &info;
 }
 
-uint32_t   WASM_EXPORT(Z85_getDecodedDataSizeMax)()   { return DecodedDataSizeMax; }
-uint32_t   WASM_EXPORT(Z85_getEncodedDataSizeMax)()   { return EncodedDataSizeMax; }
-byte     * WASM_EXPORT(Z85_getDecodedDataPtr)()       { return DecodedDataPtr; }
-byte     * WASM_EXPORT(Z85_getEncodedDataPtr)()       { return EncodedDataPtr; }
-uint32_t * WASM_EXPORT(Z85_getDataSizePtr)()          { return DataSizePtr; }
-
 uint32_t WASM_EXPORT(Z85_getPaddedDataSize)() {
-    uint32_t size = *DataSizePtr;
+    uint32_t size = *info.dataSizePtr;
     uint32_t m = size % 4;
     uint32_t padding = (m) ? 4 - m : 0;
     size += padding;
@@ -73,17 +74,17 @@ uint32_t WASM_EXPORT(Z85_getPaddedDataSize)() {
 
 uint32_t WASM_EXPORT(Z85_encode)() {
     uint32_t size = Z85_getPaddedDataSize();
-    uint32_t padding = size - *DataSizePtr;
+    uint32_t padding = size - *info.dataSizePtr;
 
-    if (size > DecodedDataSizeMax) {
+    if (size > info.decodedDataSizeMax) {
         printe("ERROR IN Z85");
         return 0;
     }
 
     while (padding) {
         // prints("ZEROING BYTE AT");
-        // print_val(DecodedDataPtr + size - padding);
-        DecodedDataPtr[size-padding] = 0x00;
+        // print_val(info.decodedDataPtr + size - padding);
+        info.decodedDataPtr[size-padding] = 0x00;
         --padding;
     }
 
@@ -93,12 +94,12 @@ uint32_t WASM_EXPORT(Z85_encode)() {
     uint32_t value = 0;
     while (byte_nbr < size) {
         //  Accumulate value in base 256 (binary)
-        value = value * 256 + DecodedDataPtr[byte_nbr++];
+        value = value * 256 + info.decodedDataPtr[byte_nbr++];
         if (byte_nbr % 4 == 0) {
             //  Output value in base 85
             uint32_t divisor = 85 * 85 * 85 * 85;
             while (divisor) {
-                EncodedDataPtr[char_nbr++] = encoder[value / divisor % 85];
+                info.encodedDataPtr[char_nbr++] = encoder[value / divisor % 85];
                 divisor /= 85;
             }
             value = 0;
@@ -109,7 +110,7 @@ uint32_t WASM_EXPORT(Z85_encode)() {
         return 0;
     }
     // always return the "real" byte count, if known, not padded
-    return *DataSizePtr;
+    return *info.dataSizePtr;
 }
 
 uint32_t WASM_EXPORT(Z85_decode)() {
@@ -121,12 +122,12 @@ uint32_t WASM_EXPORT(Z85_decode)() {
     uint32_t value = 0;
     while (char_nbr < encoded_size) {
         //  Accumulate value in base 85
-        value = value * 85 + decoder[EncodedDataPtr[char_nbr++] - 32];
+        value = value * 85 + decoder[info.encodedDataPtr[char_nbr++] - 32];
         if (char_nbr % 5 == 0) {
             //  Output value in base 256
             uint32_t divisor = 256 * 256 * 256;
             while (divisor) {
-                DecodedDataPtr[byte_nbr++] = value / divisor % 256;
+                info.decodedDataPtr[byte_nbr++] = value / divisor % 256;
                 divisor /= 256;
             }
             value = 0;
@@ -137,5 +138,5 @@ uint32_t WASM_EXPORT(Z85_decode)() {
         return 0;
     }
     // always return the "real" byte count, if known, not padded
-    return *DataSizePtr;
+    return *info.dataSizePtr;
 }
