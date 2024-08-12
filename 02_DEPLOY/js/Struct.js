@@ -28,13 +28,11 @@
     });
     info.setPtr(memory.buffer, wasm.getInfo());
 
-    // info would now be live, structured view into wasm memory, also
+    // info would now be a live, structured view into wasm memory, also
     // modifiable from wasm runtime.
-
-    info.pos[0] = 4.5;
-    info.pos[1] = 6.7;
-    info.pos[2] = 0;
-    console.log(info.size);
+    info.pos.set([4.5, 6.7]);
+    info.pos[2] = 8.9;
+    console.log(info); // {pos:[4.5, 6.7, 8.9], ...
 
     // Proxy set to bypass subscript[0] for size=1 properties
     info.ptr = 0x10000;
