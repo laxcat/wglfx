@@ -100,9 +100,17 @@ export default class LiveProgram {
     }
 
     createUI(parentEl) {
-        this.el = parentEl.appendHTML(`<ul id="program"></ul>`);
-        this.vert.createUI(this.el);
-        this.frag.createUI(this.el);
+        this.el = parentEl.appendHTML(
+            `
+            <section id="program">
+                <label class="collapsible">Program</label>
+                <ul></ul>
+            </section>
+            `
+        );
+        const ul = this.el.children[1];
+        this.vert.createUI(ul);
+        this.frag.createUI(ul);
     }
 
     toObject() {

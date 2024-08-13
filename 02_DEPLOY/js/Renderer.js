@@ -64,9 +64,16 @@ export default class Renderer {
 
     createUI(parentEl) {
         // add pass ui
-        const listEl = parentEl.appendHTML(`<ul id="passes"></ul>`);
+        const listEl = parentEl.appendHTML(
+            `
+            <section id="passes">
+                <label class="collapsible">Passes</label>
+                <ul></ul>
+            </section>
+            `
+        );
         // pass will be an array eventually, making this a loop
-        this.pass.createUI(listEl);
+        this.pass.createUI(listEl.children[1]);
 
         // add uniform buffer ui
         this.unib.createUI(parentEl);

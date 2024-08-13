@@ -113,7 +113,7 @@ export default class Pass {
     #fillUI() {
         this.el.appendHTML(
             `
-            <label class="collapsible">Pass</label>
+            <label class="collapsible">Main</label>
             <section>
 
                 <label>Clear Color</label>

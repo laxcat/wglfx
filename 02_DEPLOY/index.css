@@ -89,43 +89,68 @@ canvas {
         color: #000;
     }
 
-/* PASS / LAYOUT / MESHES *************************************************** */
-    ul#passes {
+/* STRUCTURE **************************************************************** */
+
+    /* top level sections */
+    > section {
         width: fit-content;
         min-width: 780px;
+        margin: 0 0 30px 0;
+        border: 1px solid var(--color-text);
 
-        > li {
-            border: 1px solid var(--color-text);
+        > label:first-child {
+            padding: 3px 5px;
+        }
+    }
+
+/* PASS / LAYOUT / MESHES *************************************************** */
+    section#passes > ul > li {
+        border-top: 1px solid var(--color-text);
+
+        > label:first-child {
+            padding: 3px 5px;
         }
 
-        > li > section {
-            margin: 0 0 30px 30px;
-        }
+        > section {
+            margin: 0 0 20px 30px;
 
-        section.layout {
-            margin: 0 0 0 30px;
+            > section.layout {
+                margin: 0 0 15px 30px;
 
-            ul > li {
-                white-space: pre;
-            }
-        }
-
-        ul.meshes > li {
-            margin: 0 0 30px 30px;
-
-            section {
-                margin: 0 0 30px 30px;
-
-                ul.attribs::after {
-                   content: " ";
-                   display: block;
-                   height: 0;
-                   clear: both;
+                ul > li {
+                    white-space: pre;
                 }
 
-                ul.attribs > li {
-                    width: 300px;
-                    float: left;
+                form {
+                    margin: 0;
+                }
+            }
+
+            > ul.meshes {
+                margin: 0 0 15px 0;
+
+                > li {
+                    margin: 0 0 0 30px;
+
+                    > section {
+                        margin: 0 0 0 30px;
+
+                        ul.attribs::after {
+                           content: " ";
+                           display: block;
+                           height: 0;
+                           clear: both;
+                        }
+
+                        ul.attribs > li {
+                            width: 300px;
+                            float: left;
+
+                            pre {
+                                margin: 0;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -133,10 +158,6 @@ canvas {
 
 /* UNIFORM ****************************************************************** */
     section#uniform-buffer {
-        width: fit-content;
-        min-width: 780px;
-        margin: 0 0 30px 0;
-
         div {
             margin: 0 0 10px 0;
         }
@@ -152,12 +173,23 @@ canvas {
     }
 
 /* SHADER ******************************************************************* */
-    ul#program > li {
-        width: fit-content;
-        min-width: 780px;
+    section#program {
+        > label {
 
-        > pre {
-            margin: 0 0 30px 0;
+        }
+
+        > ul {
+            > li {
+                margin: 10px 0 0 0;
+                > pre {
+                    margin: 0;
+                }
+            }
+            > li:first-child {
+                > pre {
+                    margin-bottom: 20px;
+                }
+            }
         }
     }
 
