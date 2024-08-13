@@ -1,7 +1,7 @@
 #include "wasm.h"
 
 void WASM_EXPORT(test)() {
-    printv(47);
+    printu32(NULL, 47);
     prints("fart");
     prints("dingus");
 }
@@ -15,5 +15,4 @@ char * WASM_EXPORT(caps)(char * str) {
         ++s;
     }
     return str;
-    // print_str(str, s - str);
 }

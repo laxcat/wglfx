@@ -10,8 +10,8 @@
 set -ex
 
 # SETUP
-IN="z85.c"
-OUT="../../02_DEPLOY/wasm/z85.wasm"
+IN="$1"
+OUT="$2"
 
 # USE HOMEBREW VERSION OF LLVM/CLANG!
 CFLAGS="${CFLAGS} -I/opt/homebrew/opt/llvm/include"

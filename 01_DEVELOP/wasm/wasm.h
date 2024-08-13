@@ -4,6 +4,7 @@
 
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 
 // TYPE DEFS ///////////////////////////////////////////////////////////////////
 
@@ -80,25 +81,20 @@ inline void printe(char * err) {
     print(err, len(err), 1, T_NONE, 0, NULL);
 }
 
-// shortcut for print, string with u32 value
+// shortcut for print, (optional) string with u32 value
 inline void printu32(char * str, uint32_t value) {
     print(str, len(str), 0, T_U32, 1, &value);
 }
 
-// shortcut for print, string with value of type
+// shortcut for print, (optional) string with value of type
 inline void printv(char * str, uint8_t valType, void * ptr) {
     print(str, len(str), 0, valType, 1, ptr);
 }
 
-// shortcut for print, string with value of type
+// shortcut for print, (optional) string with multiple values of type
 inline void printvs(char * str, uint8_t valType, uint8_t valCount, void * ptr) {
     print(str, len(str), 0, valType, valCount, ptr);
 }
-
-// shortcut for print, string with multiple values of type
-// inline void printv(char * str, uint8_t valType, uint8_t valCount, void * ptr) {
-//     print(str, len(str), 0, valType, valCount, ptr);
-// }
 
 // UTILITY EXPORTS /////////////////////////////////////////////////////////////
 // use in conjunction with WASM.js
