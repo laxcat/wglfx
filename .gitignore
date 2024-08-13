@@ -1,2 +1,3 @@
 .DS_Store
 **/build
+/01_DEVELOP/scripts/upload.py
