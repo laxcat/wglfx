@@ -104,8 +104,34 @@ String.prototype.toStartCase = function() {
 
 Array.prototype.last =
 HTMLCollection.prototype.last = function() {
-    return this[this.length - 1];
+    return this.length ? this[this.length - 1] : null;
 }
+
+Array.prototype.getKeyOrDefault = function(key) {
+    // don't search for key if nullish, just try to find default
+    if ((key ?? null) === null) {
+        return this.find(i => i.default);
+    }
+
+    // key passed, so we'll favor it, otherwise default if found
+    const e = this.length;
+    let i = 0;
+    let defaultItem = null;
+    while (i < e) {
+        const item = this[i];
+        // favor finding key
+        if (item.key === key) {
+            return item;
+        }
+        // note the default if we encounter it (uses first found)
+        if (!defaultItem && item.default) {
+            defaultItem = item;
+        }
+        ++i;
+    }
+    return defaultItem;
+}
+
 
 // Base64 Encoding/Decoding ------------------------------------------------- //
 
