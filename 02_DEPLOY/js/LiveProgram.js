@@ -34,10 +34,6 @@ export default class LiveProgram {
         this.frag.clearErrors();
     }
 
-    get valid() {
-        return (this.glObj !== null);
-    }
-
     compile(uboBlockName=null) {
         console.log(`program compile, UBO Block Name:"${uboBlockName}"`);
 

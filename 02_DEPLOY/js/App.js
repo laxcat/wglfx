@@ -1,21 +1,19 @@
-import Time from "./Time.js"
+import Project from "./Project.js"
 import Renderer from "./Renderer.js"
-import Pass from "./Pass.js"
-import UniformBuffer from "./UniformBuffer.js"
-import WASM from "./WASM.js";
+import Time from "./Time.js"
+// import WASM from "./WASM.js";
 import WASMZ85 from "./WASMZ85.js";
 import * as util from "./util.js"
 import * as ui from "./util-ui.js"
 
 // App is a simple singleton
 export default class App {
-    renderer = new Renderer();
-    time = new Time();
-
-    // single instance
-    static instance = null;
-    // single point of interface with z85 coder
-    static z85 = null;
+    // All members are available for global access
+    static renderer     = new Renderer();
+    static time         = new Time();
+    static project      = null;
+    static z85          = null;
+    static instance     = null;
 
     constructor() {
         if (App.instance) {
@@ -26,26 +24,41 @@ export default class App {
         // create keyboard shortcuts and anything that opperates on whole App
         this.setupGlobalHandlers();
 
-        // setup z85 encoder/decoder
-        App.z85 = new WASMZ85();
-        App.z85.addEventListener(WASM.READY, () => { this.z85Ready(); });
-    }
-
-    z85Ready() {
-        // test z85 encoder/decoder
-        // App.z85.test();
-
         // load settings/src from user's localStorage. will set defaults if none found.
         this.load();
+    }
+
+    load() {
+        const loaded = localStorage.getItem("main");
+
+        // setup z85 encoder/decoder
+        App.z85 = new WASMZ85();
+        // test z85 encoder/decoder
+        // App.z85.addEventListener(WASMZ85.READY, App.z85.test);
+
+        // if nothing was loaded from localStorage, we don't need the z85 decoder right away
+        if (loaded) {
+            App.z85.addEventListener(WASMZ85.READY, () => {
+                this.#onLoad(JSON.parse(loaded));
+            });
+        }
+        else {
+            this.#onLoad();
+        }
+    }
+
+    #onLoad(loadedObj) {
+        // setup project, from loaded or default
+        this.project = new Project(App.renderer.gl, loadedObj);
 
         // create the HTML UI
         this.createUI(document.getElementById("ui"));
 
         // compile the shader program
-        this.renderer.compile();
+        this.project.compile();
 
         // setup the simulations
-        this.time.isRunning = true;
+        App.time.isRunning = true;
 
         // start the run loop
         this.loop(0);
@@ -60,8 +73,8 @@ export default class App {
     }
 
     toggleRun() {
-        this.time.isRunning = !this.time.isRunning;
-        this.time.printStatus();
+        App.time.isRunning = !App.time.isRunning;
+        App.time.printStatus();
     }
 
     setupGlobalHandlers() {
@@ -84,47 +97,41 @@ export default class App {
 
     loop(eventTime) {
         // time
-        this.time.update(eventTime);
+        App.time.update(eventTime);
 
         // advance sim
         this.tick();
 
         // draw
-        this.renderer.draw();
+        App.renderer.draw(this.project);
 
         // next loop
         requestAnimationFrame(this.loop.bind(this));
     }
 
     tick() {
-        if (!this.time.isRunning) {
+        if (!App.time.isRunning) {
             return;
         }
 
-        this.renderer.unib.update();
-    }
-
-    load() {
-        // if obj is null (no save data found), classes will use built-in default object
-        let obj = JSON.parse(localStorage.getItem("main"));
-        this.renderer.fromObject(obj);
+        this.project.unib.update();
     }
 
     save() {
         console.log("SAVE START -----------------------------------------------------")
         Coloris.close();
-        this.renderer.pass.updateDataFromUI();
-        this.renderer.unib.updateDataFromUI();
-        this.renderer.unib.update();
-        this.renderer.compile();
-        let saveObj = this.renderer.toObject();
+        this.project.pass.updateDataFromUI();
+        this.project.unib.updateDataFromUI();
+        this.project.unib.update();
+        this.project.compile();
+        let saveObj = this.project.toObject();
         console.log(saveObj);
         localStorage.setItem("main", JSON.stringify(saveObj));
         console.log("------------------------------------------------------- SAVE END");
     }
 
     createUI(parentEl) {
-        this.renderer.createUI(parentEl);
+        this.project.createUI(parentEl);
         // adds systematic handlers, etc
         ui.parse(parentEl);
     }

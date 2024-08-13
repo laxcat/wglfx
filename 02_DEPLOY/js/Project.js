@@ -1,3 +1,4 @@
+import App from "./App.js"
 import LiveProgram from "./LiveProgram.js"
 import Pass from "./Pass.js"
 import UniformBuffer from "./UniformBuffer.js"
@@ -29,7 +30,7 @@ export default class Project {
     }
 
     /*
-    All fromObject (deserialize) functions have the following setup:
+    All fromObject (deserialize) functions work like this:
         • obj can be falsy, which will create project from default template
         • obj can be string, which will create project from template key
         • obj can be object (probably deserialized from load, see toObject for structure)
@@ -53,7 +54,7 @@ export default class Project {
         if (this.prog) this.prog.destroy();
         if (this.unib) this.unib.destroy();
 
-        // if obj's children (obj.pass) follow standard fromObject rules (see above)
+        // obj's children (obj.pass) follow standard fromObject rules (see above)
         this.pass = new Pass(this.gl, obj.pass);
         this.prog = new LiveProgram(this.gl, obj.prog);
         this.unib = new UniformBuffer(this.gl, obj.unib);
@@ -61,6 +62,7 @@ export default class Project {
 
     compile() {
         this.prog.compile(this.unib.name);
+        App.renderer.checkGLErrors("COMPILE");
     }
 
     draw() {
