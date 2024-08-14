@@ -2,6 +2,14 @@ import App from "./App.js"
 import LiveShader from "./LiveShader.js"
 import * as util from "./util.js"
 
+/*
+    Shader Program, with editable UI.
+    Handles vert and frag shaders, shader compiling/linking.
+    Tightly bound with LiveShader, which handles the src and UI for both shaders.
+
+    TODO:
+    • apply new "template" system of defaults
+*/
 export default class LiveProgram {
     vert = null;    // instance of LiveShader
     frag = null;    // instance of LiveShader

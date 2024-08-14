@@ -4,6 +4,13 @@ import Pass from "./Pass.js"
 import UniformBuffer from "./UniformBuffer.js"
 import * as ui from "./util-ui.js"
 
+/*
+    A project, holding all information and UI.
+    Can be thought of as root of actual drawing functionality.
+
+    TODO:
+    • save each project to its own localStorage item
+*/
 export default class Project {
     id = 0;
     name = "";

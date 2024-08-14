@@ -6,7 +6,12 @@ import WASMZ85 from "./WASMZ85.js";
 import * as util from "./util.js"
 import * as ui from "./util-ui.js"
 
-// App is a simple singleton
+/*
+    Root class for the project. Singleton.
+    Handles renderer, run-loop, saving/loading, keyboard shortcuts, project list
+    and other global asset handling, anything that is not the graphics code,
+    which is all in Project.
+*/
 export default class App {
     // Settings
     static NAME             = "gfxtoy"

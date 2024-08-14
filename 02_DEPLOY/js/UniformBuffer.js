@@ -1,6 +1,9 @@
 import App from "./App.js"
 import * as ui from "./util-ui.js"
 
+/*
+    Uniform Buffer Object, and related data and operations.
+*/
 export default class UniformBuffer {
     el = null;          // the ui element attached to the base of this class
     name = null;        // name of the UBO. should match the uniform block name in shader

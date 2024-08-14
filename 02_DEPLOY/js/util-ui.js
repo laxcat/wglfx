@@ -1,3 +1,7 @@
+/*
+    Utility code for UI operations
+*/
+
 import "./util.js"
 
 export function parse(uiEl) {

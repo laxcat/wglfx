@@ -1,3 +1,8 @@
+/*
+    Time information for the app.
+    Handles a global time, which never stops, and a "now" time which can be
+    paused.
+*/
 export default class Time {
     global = 0;         // global time, in seconds
     dt = 0;             // delta time from last frame, in seconds

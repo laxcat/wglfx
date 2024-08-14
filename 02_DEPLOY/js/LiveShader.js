@@ -2,6 +2,15 @@ import App from "./App.js"
 import * as util from "./util.js"
 import * as ui from "./util-ui.js"
 
+/*
+    Shader, shader src, and UI.
+    Handles compling, but should only be used through LiveProgram,
+    which compiles each shader and links.
+    Show compile errors directly in editor UI.
+
+    TODO:
+    • apply new "template" system of defaults
+*/
 export default class LiveShader {
     editor = null;          // instance of ace.editor
     errors = [];            // array of error objects, see parseErrors
@@ -128,17 +137,6 @@ export default class LiveShader {
         this.editor.session.setAnnotations();
         this.errors = [];
     }
-
-    // load() {
-    //     // try to load from localStorage, otherwise load from defaultSrcPath
-    //     const localSrc = localStorage.getItem(this.glTypeStr);
-    //     this.src = (localSrc) ? localSrc : util.loadFileSync(this.defaultSrcPath);
-    // }
-
-    // save() {
-    //     console.log(`Saving ${this.glTypeStr} shader to localStorage.`);
-    //     localStorage.setItem(this.glTypeStr, this.src);
-    // }
 
     createUI(parentEl) {
         this.el = parentEl.appendHTML(

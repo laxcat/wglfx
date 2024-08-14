@@ -1,3 +1,12 @@
+/*
+    Color data, with convenient operations.
+    Holds color data as 4 32bit floats, for covenient uploading to WebGL.
+    The set() variadic method handles most types of color information
+    (hex string, rgba numbers, etc).
+    Use setFrom*() methods to be more explicit with input, specifically
+    setting from an integer, which is too ambiguous in set().
+    See to*() methods for color output.
+*/
 export default class Color {
     data = new Float32Array([0, 0, 0, 1])
 
@@ -8,7 +17,7 @@ export default class Color {
     set(...args) {
         // new Color();
         if (args.length === 0 || !args[0]) {
-            // do nothing, default already set
+            // do nothing, default already set in member init above
         }
 
         // new Color(floatArray.buffer)
@@ -62,7 +71,7 @@ export default class Color {
         this.data[3] = ((i >>  0) & 0xff) / 255.0;
     }
 
-    setFromFloats(r, g, b, a=1) {
+    setFromNumbers(r, g, b, a=1) {
         this.data[0] = r;
         this.data[1] = g;
         this.data[2] = b;

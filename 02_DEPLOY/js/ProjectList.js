@@ -1,6 +1,9 @@
 import App from "./App.js"
 import Project from "./Project.js"
 
+/*
+    A list of projects, and operations to manage projects.
+*/
 export default class ProjectList {
 
     projects = [];
