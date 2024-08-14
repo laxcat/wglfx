@@ -12,43 +12,56 @@ export default class Pass {
     nMeshes = 0;
     el = null;
 
-    static default = {
-        clear: "000000",
-        layout: [
-            {name: "pos",   size: 4},
-            {name: "color", size: 4},
-        ],
-        meshes: [
-            {
-                nVerts: 6,
-                data: {
-                    pos: new Float32Array([
-                         0.50,   1.00,   0.00,   1.00,
-                         1.00,  -1.00,   0.00,   1.00,
-                        -1.00,  -1.00,   0.00,   1.00,
-                        -0.50,   1.00,   0.00,   1.00,
-                         1.00,  -1.00,   0.00,   1.00,
-                        -1.00,  -1.00,   0.00,   1.00,
-                    ]),
-                    color: new Float32Array([
-                        0.5,  0.0,  0.0,  1.0,
-                        0.0,  0.0,  0.0,  1.0,
-                        0.0,  0.0,  0.0,  1.0,
-                        0.0,  0.5,  0.5,  1.0,
-                        0.0,  0.0,  0.0,  1.0,
-                        0.0,  0.0,  0.0,  1.0,
-                    ]),
+    static templates = [
+        {
+            key: "basic2d",
+            default: true,
+            clear: "000000",
+            layout: [
+                {name: "pos",   size: 4},
+                {name: "color", size: 4},
+            ],
+            meshes: [
+                {
+                    nVerts: 6,
+                    data: {
+                        pos: new Float32Array([
+                             0.50,   1.00,   0.00,   1.00,
+                             1.00,  -1.00,   0.00,   1.00,
+                            -1.00,  -1.00,   0.00,   1.00,
+                            -0.50,   1.00,   0.00,   1.00,
+                             1.00,  -1.00,   0.00,   1.00,
+                            -1.00,  -1.00,   0.00,   1.00,
+                        ]),
+                        color: new Float32Array([
+                            0.5,  0.0,  0.0,  1.0,
+                            0.0,  0.0,  0.0,  1.0,
+                            0.0,  0.0,  0.0,  1.0,
+                            0.0,  0.5,  0.5,  1.0,
+                            0.0,  0.0,  0.0,  1.0,
+                            0.0,  0.0,  0.0,  1.0,
+                        ]),
+                    },
                 },
-            },
-        ],
-    };
+            ],
+        },
+    ];
 
-    constructor(gl, obj=Pass.default) {
+    constructor(gl, obj) {
         this.gl = gl;
         this.fromObject(obj);
     }
 
     fromObject(obj) {
+        // create from default template
+        if (!obj) {
+            obj = Pass.prepareFromTemplate();
+        }
+        // create from specified template
+        else if (typeof obj == "string") {
+            obj = Pass.prepareFromTemplate(obj);
+        }
+
         // set clear color
         this.setClearColor(obj.clear);
 
@@ -204,6 +217,15 @@ export default class Pass {
             meshAttrib.createDataUI(mesh.el.querySelector("ul.attribs"));
         });
         return true;
+    }
+
+    static prepareFromTemplate(key) {
+        const obj = Pass.templates.findByKeyOrDefault(key);
+        // if not set, set children to key (pass template key through to children)
+        if (!obj.clear)     obj.clear = key;
+        if (!obj.layout)    obj.layout = key;
+        if (!obj.meshes)    obj.meshes = key;
+        return obj;
     }
 
     toObject() {

@@ -8,6 +8,11 @@ import * as ui from "./util-ui.js"
 
 // App is a simple singleton
 export default class App {
+    // Settings
+    static NAME             = "gfxtoy"
+    static KEY_PROJ_LIST    = `${App.NAME}_projlist`;
+    static KEY_PROJ_PREFIX  = `${App.NAME}_proj_`;
+
     // All members are available for global access
     static renderer     = new Renderer();
     static time         = new Time();

@@ -90,7 +90,7 @@ export default class Project {
     }
 
     static prepareFromTemplate(key) {
-        const obj = Project.templates.getKeyOrDefault(key);
+        const obj = Project.templates.findByKeyOrDefault(key);
         // if not set, set children to key (pass template key through to children)
         if (!obj.pass) obj.pass = key;
         if (!obj.prog) obj.prog = key;
