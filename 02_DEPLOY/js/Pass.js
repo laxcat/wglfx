@@ -1,3 +1,4 @@
+import App from "./App.js"
 import VertexLayout from "./VertexLayout.js"
 import VertexAttrib from "./VertexAttrib.js"
 import Color from "./Color.js"
@@ -5,7 +6,6 @@ import Mesh from "./Mesh.js"
 import * as ui from "./util-ui.js"
 
 export default class Pass {
-    gl = null;
     clearColor = new Color();
     layout = null;
     meshes = [];
@@ -47,8 +47,7 @@ export default class Pass {
         },
     ];
 
-    constructor(gl, obj) {
-        this.gl = gl;
+    constructor(obj) {
         this.fromObject(obj);
     }
 
@@ -70,7 +69,7 @@ export default class Pass {
             this.layout.fromObject(obj.layout);
         }
         else {
-            this.layout = new VertexLayout(this.gl, obj.layout);
+            this.layout = new VertexLayout(obj.layout);
         }
 
         // create new meshes
@@ -89,14 +88,14 @@ export default class Pass {
     }
 
     addMesh(meshObj) {
-        const mesh = new Mesh(this.gl, meshObj);
+        const mesh = new Mesh(meshObj);
         this.meshes.push(mesh);
         ++this.nMeshes;
     }
 
     setClearColor(newColor = null) {
         this.clearColor.set(newColor);
-        this.gl.clearColor(...this.clearColor.data);
+        App.renderer.gl.clearColor(...this.clearColor.data);
     }
 
     draw() {

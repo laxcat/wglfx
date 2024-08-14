@@ -1,8 +1,8 @@
+import App from "./App.js"
 import LiveShader from "./LiveShader.js"
 import * as util from "./util.js"
 
 export default class LiveProgram {
-    gl = null;      // webgl context object
     vert = null;    // instance of LiveShader
     frag = null;    // instance of LiveShader
     glObj = null;   // the webgl program object
@@ -13,10 +13,10 @@ export default class LiveProgram {
         frag: () => util.loadFileSync("./glsl/frag.glsl"),
     };
 
-    constructor(gl, obj=LiveProgram.default) {
-        this.gl = gl;
-        this.vert = new LiveShader(gl, gl.VERTEX_SHADER);
-        this.frag = new LiveShader(gl, gl.FRAGMENT_SHADER);
+    constructor(obj=LiveProgram.default) {
+        const gl = App.renderer.gl;
+        this.vert = new LiveShader(gl.VERTEX_SHADER);
+        this.frag = new LiveShader(gl.FRAGMENT_SHADER);
         this.fromObject(obj);
     }
 
@@ -26,7 +26,7 @@ export default class LiveProgram {
     }
 
     destroy() {
-        this.gl.deleteProgram(this.glObj);
+        App.renderer.gl.deleteProgram(this.glObj);
         this.glObj = null;
         this.vert.destroy();
         this.frag.destroy();
@@ -37,7 +37,9 @@ export default class LiveProgram {
     compile(uboBlockName=null) {
         console.log(`program compile, UBO Block Name:"${uboBlockName}"`);
 
-        this.gl.deleteProgram(this.glObj);
+        const gl = App.renderer.gl;
+
+        gl.deleteProgram(this.glObj);
         this.glObj = null;
         this.vert.clearErrors();
         this.frag.clearErrors();
@@ -52,15 +54,15 @@ export default class LiveProgram {
             return false;
         }
 
-        this.gl.useProgram(this.glObj);
+        gl.useProgram(this.glObj);
         console.log(`Shader glObj compiled/linked successfully.`);
 
         if (uboBlockName) {
-            const uboBlockIndex = this.gl.getUniformBlockIndex(this.glObj, uboBlockName);
+            const uboBlockIndex = gl.getUniformBlockIndex(this.glObj, uboBlockName);
             // when index not found, returning 0xffffffff (or -1?),
             // but i couldn't find documentation for it
             if (uboBlockIndex !== 0xffffffff) {
-                this.gl.uniformBlockBinding(this.glObj, uboBlockIndex, 0);
+                gl.uniformBlockBinding(this.glObj, uboBlockIndex, 0);
                 console.log(`Attaching uniform block "${uboBlockName}" to UBO index 0.`);
             }
         }
@@ -74,23 +76,25 @@ export default class LiveProgram {
             return null;
         }
 
-        this.glObj = this.gl.createProgram();
+        const gl = App.renderer.gl;
 
-        this.gl.attachShader(this.glObj, this.vert.glObj);
-        this.gl.attachShader(this.glObj, this.frag.glObj);
+        this.glObj = gl.createProgram();
 
-        this.gl.linkProgram(this.glObj);
+        gl.attachShader(this.glObj, this.vert.glObj);
+        gl.attachShader(this.glObj, this.frag.glObj);
 
-        this.gl.detachShader(this.glObj, this.vert.glObj);
-        this.gl.detachShader(this.glObj, this.frag.glObj);
+        gl.linkProgram(this.glObj);
+
+        gl.detachShader(this.glObj, this.vert.glObj);
+        gl.detachShader(this.glObj, this.frag.glObj);
 
         this.vert.destroy();
         this.frag.destroy();
 
-        if (!this.gl.getProgramParameter(this.glObj, this.gl.LINK_STATUS)) {
-            const info = this.gl.getProgramInfoLog(this.glObj);
+        if (!gl.getProgramParameter(this.glObj, gl.LINK_STATUS)) {
+            const info = gl.getProgramInfoLog(this.glObj);
             console.log(`Error linking shader program. \n${info}`);
-            this.gl.deleteProgram(this.glObj);
+            gl.deleteProgram(this.glObj);
             this.glObj = null;
         }
     }

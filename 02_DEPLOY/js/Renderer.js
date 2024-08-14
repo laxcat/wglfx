@@ -11,12 +11,13 @@ export default class Renderer {
     constructor() {
         // setup context
         const canvas = document.getElementsByTagName("canvas")[0];
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        this.gl = canvas.getContext("webgl2");
+        if (canvas) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            this.gl = canvas.getContext("webgl2");
+        }
         if (this.gl === null) {
-            console.log("Error creating WebGL context.");
-            return;
+            throw `Error creating WebGL context.`;
         }
     }
 

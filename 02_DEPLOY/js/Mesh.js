@@ -1,19 +1,20 @@
+import App from "./App.js"
 import VertexLayout from "./VertexLayout.js"
 
 export default class Mesh {
-    gl = null;
     nVerts = 0;
     layout = null;
     el = null;
 
-    constructor(gl, obj=null) {
-        this.gl = gl;
-        if (obj) {
-            this.fromObject(obj);
-        }
+    constructor(obj) {
+        this.fromObject(obj);
     }
 
     fromObject(obj) {
+        if (!obj) {
+            obj = {};
+        }
+
         this.nVerts = obj.nVerts;
 
         let layoutWithData = obj.layout.map(attrib => {
@@ -22,22 +23,24 @@ export default class Mesh {
             }
             return attrib;
         });
-        this.layout = new VertexLayout(this.gl, layoutWithData);
+        this.layout = new VertexLayout(layoutWithData);
     }
 
     bind() {
+        const gl = App.renderer.gl;
         for(let index = 0; index < this.layout.attribs.length; ++index) {
             const attrib = this.layout.attribs[index];
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, attrib.glBuffer);
-            this.gl.vertexAttribPointer(index, attrib.size, this.gl.FLOAT, false, 0, 0);
-            this.gl.enableVertexAttribArray(index);
+            gl.bindBuffer(gl.ARRAY_BUFFER, attrib.glBuffer);
+            gl.vertexAttribPointer(index, attrib.size, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(index);
         }
     }
 
     unbind() {
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, 0);
+        const gl = App.renderer.gl;
+        gl.bindBuffer(gl.ARRAY_BUFFER, 0);
         for (let index = 0; index < this.layout.attribs.length; ++i) {
-            this.gl.disableVertexAttribArray(index);
+            gl.disableVertexAttribArray(index);
         }
     }
 
@@ -57,8 +60,8 @@ export default class Mesh {
     }
 
     draw() {
-        this.gl.drawArrays(this.gl.TRIANGLES, 0, this.nVerts);
-        // this.gl.throwError();
+        const gl = App.renderer.gl;
+        gl.drawArrays(gl.TRIANGLES, 0, this.nVerts);
     }
 
     createUI(parentEl) {

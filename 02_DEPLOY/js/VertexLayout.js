@@ -3,11 +3,9 @@ import VertexAttrib from "./VertexAttrib.js"
 // Can be generic, reuseable with different passes, etc
 // When assigned to mesh, gets buffer objects assigned to attributes
 export default class VertexLayout {
-    gl = null;          // webgl context object
     attribs = [];       // list of attributes
 
-    constructor(gl, attribs) {
-        this.gl = gl;
+    constructor(attribs) {
         this.fromObject(attribs);
     }
 
@@ -35,7 +33,7 @@ export default class VertexLayout {
             throw `Unexpected index. Expecting sequential indices. ${obj.index}, ${this.attribs.length}`;
         }
         obj.index = this.attribs.length;
-        const attrib = new VertexAttrib(this.gl, obj);
+        const attrib = new VertexAttrib(obj);
         this.attribs.push(attrib);
         return attrib;
     }

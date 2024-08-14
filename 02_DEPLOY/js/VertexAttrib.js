@@ -7,7 +7,6 @@ NOTES:
 */
 
 export default class VertexAttrib {
-    gl = null;          // webgl contex object
     index = 0;          // vertex attribute index
     size = 4;           // number of compoenents
     name = "";          // friendly name to indicate nature of data. pos, norm, color, etc.
@@ -16,14 +15,15 @@ export default class VertexAttrib {
     uiDirty = false;    // ui data has changed, has not been set to local/gpu yet
     editor = null;      // ace editor, replaces dataEl
 
-    constructor(gl, obj=null) {
-        this.gl = gl;
-        if (obj) {
-            this.fromObject(obj);
-        }
+    constructor(obj) {
+        this.fromObject(obj);
     }
 
     fromObject(obj) {
+        if (!obj) {
+            obj = {};
+        }
+
         this.index = obj.index;
         this.size = obj.size;
         this.name = obj.name;
@@ -56,18 +56,20 @@ export default class VertexAttrib {
                   `${this.glBuffer}\n`+
                   `${this.data}\n`;
         }
-        this.glBuffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.glBuffer);
+        const gl = App.renderer.gl;
+        this.glBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
         this.data = floatArray;
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.data, this.gl.STATIC_DRAW);
-        this.gl.vertexAttribPointer(this.index, this.size, this.gl.FLOAT, false, 0, 0);
-        this.gl.enableVertexAttribArray(this.index);
+        gl.bufferData(gl.ARRAY_BUFFER, this.data, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(this.index, this.size, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(this.index);
     }
 
     deleteBuffer() {
-        this.gl.disableVertexAttribArray(this.index);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
-        this.gl.deleteBuffer(this.glBuffer);
+        const gl = App.renderer.gl;
+        gl.disableVertexAttribArray(this.index);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.deleteBuffer(this.glBuffer);
         this.glBuffer = null;
         this.data = null;
     }
@@ -86,8 +88,9 @@ export default class VertexAttrib {
 
     uploadData() {
         console.log(`Uploading vertex attrib ${this.name} local data to GPU.`);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.glBuffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, this.data);
+        const gl = App.renderer.gl;
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data);
     }
 
     get dataStr() {

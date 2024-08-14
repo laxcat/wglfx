@@ -5,7 +5,6 @@ import UniformBuffer from "./UniformBuffer.js"
 import * as ui from "./util-ui.js"
 
 export default class Project {
-    gl = null;
     id = 0;
     pass = null;
     prog = null;
@@ -24,8 +23,7 @@ export default class Project {
         {key:"basic3d"},
     ];
 
-    constructor(gl, obj) {
-        this.gl = gl;
+    constructor(obj) {
         this.fromObject(obj);
     }
 
@@ -55,9 +53,9 @@ export default class Project {
         if (this.unib) this.unib.destroy();
 
         // obj's children (obj.pass) follow standard fromObject rules (see above)
-        this.pass = new Pass(this.gl, obj.pass);
-        this.prog = new LiveProgram(this.gl, obj.prog);
-        this.unib = new UniformBuffer(this.gl, obj.unib);
+        this.pass = new Pass(obj.pass);
+        this.prog = new LiveProgram(obj.prog);
+        this.unib = new UniformBuffer(obj.unib);
     }
 
     compile() {

@@ -1,8 +1,8 @@
+import App from "./App.js"
 import * as util from "./util.js"
 import * as ui from "./util-ui.js"
 
 export default class LiveShader {
-    gl = null;              // reference to webgl context
     editor = null;          // instance of ace.editor
     errors = [];            // array of error objects, see parseErrors
     glObj = null;           // the webgl shader object
@@ -11,18 +11,18 @@ export default class LiveShader {
     tempSrc = null;         // holds source code when editor isn't set yet. should be null if editor is non null.
     el = null;              // reference to the primary HTML element of the UI
 
-    constructor(gl, type) {
-        this.gl = gl;
+    constructor(type) {
         this.glType = type;
 
-        this.glTypeStr = (type === this.gl.VERTEX_SHADER)    ? "vert" :
-                         (type === this.gl.FRAGMENT_SHADER)  ? "frag" :
+        const gl = App.renderer.gl;
+        this.glTypeStr = (type === gl.VERTEX_SHADER)    ? "vert" :
+                         (type === gl.FRAGMENT_SHADER)  ? "frag" :
                          "unknown-type";
     }
 
     destroy() {
         if (this.glObj) {
-            this.gl.deleteShader(this.glObj);
+            App.renderer.gl.deleteShader(this.glObj);
             this.glObj = null;
         }
     }
@@ -50,11 +50,13 @@ export default class LiveShader {
             return null;
         }
 
-        this.glObj = this.gl.createShader(this.glType);
-        this.gl.shaderSource(this.glObj, this.src);
-        this.gl.compileShader(this.glObj);
+        const gl = App.renderer.gl;
 
-        if (!this.gl.getShaderParameter(this.glObj, this.gl.COMPILE_STATUS)) {
+        this.glObj = gl.createShader(this.glType);
+        gl.shaderSource(this.glObj, this.src);
+        gl.compileShader(this.glObj);
+
+        if (!gl.getShaderParameter(this.glObj, gl.COMPILE_STATUS)) {
             console.log(`Could not compile ${this.glTypeStr} this.glObj.`);
             this.parseErrors(this);
             this.destroy();
@@ -67,7 +69,7 @@ export default class LiveShader {
         const Range = ace.require("ace/range").Range;
 
         // get the whole error string
-        const info = this.gl.getShaderInfoLog(this.glObj);
+        const info = App.renderer.gl.getShaderInfoLog(this.glObj);
         // split on lines
         const lines = info.split("\n");
         // for each line, construct an error object

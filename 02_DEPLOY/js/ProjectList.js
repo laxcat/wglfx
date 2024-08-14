@@ -58,7 +58,7 @@ export default class ProjectList {
         if (!item) {
             return null;
         }
-        const proj = new Project(App.renderer.gl, item.key);
+        const proj = new Project(item.key);
         this.addEntry(proj.id, proj.name, true);
         return proj;
     }

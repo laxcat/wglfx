@@ -1,7 +1,7 @@
+import App from "./App.js"
 import * as ui from "./util-ui.js"
 
 export default class UniformBuffer {
-    gl = null;          // webgl context object
     el = null;          // the ui element attached to the base of this class
     name = null;        // name of the UBO. should match the uniform block name in shader
     size = 0;           // size of buffer in bytes
@@ -24,8 +24,7 @@ export default class UniformBuffer {
         ],
     };
 
-    constructor(gl, obj=UniformBuffer.default) {
-        this.gl = gl;
+    constructor(obj=UniformBuffer.default) {
         this.fromObject(obj);
     }
 
@@ -37,18 +36,21 @@ export default class UniformBuffer {
         this.data = new ArrayBuffer(this.size);
         this.dataView = new DataView(this.data);
 
-        this.glBuffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, this.glBuffer);
-        this.gl.bufferData(this.gl.UNIFORM_BUFFER, this.data, this.gl.DYNAMIC_DRAW);
-        this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null);
-        this.gl.bindBufferBase(this.gl.UNIFORM_BUFFER, 0, this.glBuffer);
+        const gl = App.renderer.gl;
+
+        this.glBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.UNIFORM_BUFFER, this.glBuffer);
+        gl.bufferData(gl.UNIFORM_BUFFER, this.data, gl.DYNAMIC_DRAW);
+        gl.bindBuffer(gl.UNIFORM_BUFFER, null);
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, this.glBuffer);
 
         this.setAllData();
     }
 
     destroy() {
-        this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null);
-        this.gl.deleteBuffer(this.glBuffer);
+        const gl = App.renderer.gl;
+        gl.bindBuffer(gl.UNIFORM_BUFFER, null);
+        gl.deleteBuffer(this.glBuffer);
     }
 
     get dirty() {
@@ -88,13 +90,15 @@ export default class UniformBuffer {
 
         console.log(`updating UBO, dirty:${this.#dirtyFirstByte}–${this.#dirtyLastByte}`);
 
-        this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, this.glBuffer);
-        this.gl.bufferSubData(
-            this.gl.UNIFORM_BUFFER,
+        const gl = App.renderer.gl;
+
+        gl.bindBuffer(gl.UNIFORM_BUFFER, this.glBuffer);
+        gl.bufferSubData(
+            gl.UNIFORM_BUFFER,
             this.#dirtyFirstByte,
             new DataView(this.data, this.#dirtyFirstByte, this.dirtyByteLength),
         );
-        this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null);
+        gl.bindBuffer(gl.UNIFORM_BUFFER, null);
 
         this.#dirtyFirstByte = this.size;
         this.#dirtyLastByte  = 0;

@@ -1,7 +1,7 @@
 import Project from "./Project.js"
+import ProjectList from "./ProjectList.js"
 import Renderer from "./Renderer.js"
 import Time from "./Time.js"
-// import WASM from "./WASM.js";
 import WASMZ85 from "./WASMZ85.js";
 import * as util from "./util.js"
 import * as ui from "./util-ui.js"
@@ -16,6 +16,7 @@ export default class App {
     // All members are available for global access
     static renderer     = new Renderer();
     static time         = new Time();
+    static porjectList  = new ProjectList();
     static project      = null;
     static z85          = null;
     static instance     = null;
@@ -54,7 +55,7 @@ export default class App {
 
     #onLoad(loadedObj) {
         // setup project, from loaded or default
-        this.project = new Project(App.renderer.gl, loadedObj);
+        this.project = new Project(loadedObj);
 
         // create the HTML UI
         this.createUI(document.getElementById("ui"));
