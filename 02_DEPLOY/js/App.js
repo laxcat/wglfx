@@ -16,7 +16,7 @@ export default class App {
     // All members are available for global access
     static renderer     = new Renderer();
     static time         = new Time();
-    static porjectList  = new ProjectList();
+    static projectList  = new ProjectList();
     static project      = null;
     static z85          = null;
     static instance     = null;

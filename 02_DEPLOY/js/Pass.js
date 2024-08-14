@@ -54,11 +54,11 @@ export default class Pass {
     fromObject(obj) {
         // create from default template
         if (!obj) {
-            obj = Pass.prepareFromTemplate();
+            obj = Pass.makeObjectFromTemplate();
         }
         // create from specified template
         else if (typeof obj == "string") {
-            obj = Pass.prepareFromTemplate(obj);
+            obj = Pass.makeObjectFromTemplate(obj);
         }
 
         // set clear color
@@ -218,12 +218,14 @@ export default class Pass {
         return true;
     }
 
-    static prepareFromTemplate(key) {
-        const obj = Pass.templates.findByKeyOrDefault(key);
+    static makeObjectFromTemplate(key) {
+        const obj = {...Pass.templates.findByKeyOrDefault(key)};
+
         // if not set, set children to key (pass template key through to children)
         if (!obj.clear)     obj.clear = key;
         if (!obj.layout)    obj.layout = key;
         if (!obj.meshes)    obj.meshes = key;
+
         return obj;
     }
 

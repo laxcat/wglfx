@@ -6,6 +6,7 @@ import * as ui from "./util-ui.js"
 
 export default class Project {
     id = 0;
+    name = "";
     pass = null;
     prog = null;
     unib = null;
@@ -15,7 +16,7 @@ export default class Project {
 
     /*
     Template objects should look like toObject() objects.
-    If children are not set, prepareFromTemplate can set them to a template key
+    If children are not set, makeObjectFromTemplate can set them to a template key
     */
     static templates = [
         {key:"blank"},
@@ -36,16 +37,15 @@ export default class Project {
     fromObject(obj) {
         // no obj sent. load default template
         if (!obj) {
-            obj = Project.prepareFromTemplate();
-            obj.id = Project.nextId++;
+            obj = Project.makeObjectFromTemplate();
         }
         // template key (string) sent. load specific template
         else if (typeof obj == "string") {
-            obj = Project.prepareFromTemplate(obj);
-            obj.id = Project.nextId++;
+            obj = Project.makeObjectFromTemplate(obj);
         }
 
         this.id = obj.id;
+        this.name = obj.name;
 
         // if previous children existed, make sure they destroy any created objects
         if (this.pass) this.pass.destroy();
@@ -87,12 +87,17 @@ export default class Project {
         this.prog.createUI(parentEl);
     }
 
-    static prepareFromTemplate(key) {
-        const obj = Project.templates.findByKeyOrDefault(key);
+    static makeObjectFromTemplate(key) {
+        const obj = {...Project.templates.findByKeyOrDefault(key)};
+
         // if not set, set children to key (pass template key through to children)
         if (!obj.pass) obj.pass = key;
         if (!obj.prog) obj.prog = key;
         if (!obj.unib) obj.unib = key;
+
+        obj.id = Project.nextId++;
+        obj.name = Project.newName;
+
         return obj;
     }
 

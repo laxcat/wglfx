@@ -20,9 +20,9 @@ export default class ProjectList {
 
     get projectCount() { return this.projects.length; }
 
-    load(projListKey) {
+    load() {
         // load from disk
-        const loaded = localStorage.getItem(projListKey);
+        const loaded = localStorage.getItem(App.KEY_PROJ_LIST);
 
         //
         if (loaded) {
@@ -42,12 +42,12 @@ export default class ProjectList {
         }
     }
 
-    save(projListKey) {
+    save() {
         const obj = {
             nextProjectId: Project.nextId,
             projects: this.projects,
         };
-        localStorage.getItem(projListKey);
+        localStorage.setItem(App.KEY_PROJ_LIST);
     }
 
     createProjectFromTemplate(template) {
