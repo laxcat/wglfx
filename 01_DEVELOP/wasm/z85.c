@@ -84,14 +84,14 @@ void * WASM_EXPORT(Z85_init)() {
     // 4 to read from, 5 to encode to.
     // So we can calculate max encoding size by figuing how many 9-byte blocks we can fit
     uint32_t codecSize = MEM_HEAP_E - MEM_HEAP_S - sizeof(uint32_t);
-    uint32_t blockCount = 1 + ((codecSize - 1) / 9);
+    uint32_t blockCount = codecSize / 9;
     info.decodedDataSizeMax = blockCount * 4;
     info.encodedDataSizeMax = blockCount * 5;
     info.dataSizePtr = (uint32_t *)MEM_HEAP_S;
     info.decodedDataPtr = (byte *)(MEM_HEAP_S + sizeof(uint32_t));
     info.encodedDataPtr = info.decodedDataPtr + info.decodedDataSizeMax;
 
-    printu32("INIT Z85. Buffer size:", info.decodedDataSizeMax);
+    printu32("INIT Z85. Decoded buffer size:", info.decodedDataSizeMax);
 
     return &info;
 }

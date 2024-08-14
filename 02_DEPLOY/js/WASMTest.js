@@ -1,5 +1,8 @@
 import WASM from "./WASM.js"
 
+/*
+    Test case for WASM.js/wasm.h.
+*/
 export default class WASMTest extends WASM {
 
     // convenience references to underlying exports (wasm functions)

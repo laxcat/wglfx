@@ -1,6 +1,14 @@
 import WASM from "./WASM.js"
 import Struct from "./Struct.js"
 
+/*
+    Z85 encoder/decoder
+    Currently has a data size limitation based on available memory, which is
+    configuable in constructor.
+
+    TODO:
+    • chunk encoding/decoding, which would remove any size limit
+*/
 class InitInfo extends Struct {
     constructor(buffer, ptr) {
         super({
@@ -22,8 +30,15 @@ export default class WASMZ85 extends WASM {
     get paddedDataSize() { return this.fns.Z85_getPaddedDataSize(); }
     get encodedDataSize() { return this.paddedDataSize * 5 / 4; }
 
-    constructor() {
-        super("./wasm/z85.wasm", 4);
+    // 0-58252 for minimum wasm size. more starts adding pages.
+    // see WASM.js for more info about memory, min size, etc
+    constructor(unencodedDataSizeLimit=58252) {
+        // This could be simplified by using the entire "heap" for encoding/
+        // decoding. right now we reserve a single data size varaible, but it
+        // surely could be moved to special memory space (like the info struct).
+        const totalDataSize = Math.ceil(unencodedDataSizeLimit / 4) * 9 + 4;
+        const nPages = WASM.pagesForMinHeapSize(totalDataSize);
+        super("./wasm/z85.wasm", nPages);
         this.addEventListener(WASM.READY, () => { this.#onReady(); })
     }
 

@@ -1,11 +1,36 @@
 import * as util from "./util.js"
 
+/*
+    WebAssembly handler designed for small wasm modules.
+    Use in conjuction wasm.h; see 01_DEVELOP/wasm/build_wasm for compiling.
+    No additional runtime, extremely basic memory system. Module has no
+    standard library or memory management.
+    Designed to be extended, so derived class can add convenience operations
+    specific to the wasm module it handles.
+
+    On memory:
+    WASM seems to expect at least 4 pages (might be more configureable,
+    but needs more research).
+    A WebAssembly.Memory page is 65536 (0x10000) bytes.
+    As it is now, WASM will lay out memory like:
+    Page 0   (0x00000)     Special variables and string encoder space.
+    Page 1   (0x10000)     Stack and rodata.
+    Page 2-n (0x20000—end) "Heap", available to for this module's use.
+    So with default 4 pages, we have 0x20000 bytes to work with.
+    These values are reflected in minPageCount, reservedPageCount.
+    See also pagesForMinMemorySize and pagesForMinHeapSize static methods.
+
+
+*/
 export default class WASM extends EventTarget {
     // STATICS VARS --------------------------------------------------------- //
 
+    static minPageCount         = 4; // errored out with less. needs more research
+    static reservedPageCount    = 2; // current setup uses
+
     static defaultMemory = {
-        initial: 4,
-        maximum: 4,
+        initial: WASM.pagesForMinMemorySize(1),
+        maximum: WASM.pagesForMinMemorySize(1),
     };
 
     static defaultImports = t => {
@@ -53,7 +78,7 @@ export default class WASM extends EventTarget {
 
     memory = null;      // WebAssembly.Memory
     heap = null;        // Uint8Array view of entire memory ArrayBuffer
-    view = null;        // DataView of entore memory ArrayBuffer
+    view = null;        // DataView of entire memory ArrayBuffer
 
     // READY, after loaded and instantiated
     ready = false;      // wasm has been loaded and instantiated, wasm functions available
@@ -162,6 +187,22 @@ export default class WASM extends EventTarget {
     }
 
     // MEMORY ACCESS, GENERIC ----------------------------------------------- //
+
+    // How many total pages (0x10000 bytes) do we need to to have at least
+    // minByteSize bytes?
+    static pagesForMinMemorySize(minByteSize) {
+        const pages = Math.ceil(minByteSize / 0x10000);
+        if (pages < WASM.minPageCount) {
+            return WASM.minPageCount;
+        }
+        return pages;
+    }
+
+    // How many total pages do we need to have at least minHeapSize bytess
+    // available in the "heap".
+    static pagesForMinHeapSize(minHeapSize) {
+        return WASM.pagesForMinMemorySize(minHeapSize + 0x10000*WASM.reservedPageCount);
+    }
 
     setBytesAt(ptr, buffer) {
         // accept some different buffer types
