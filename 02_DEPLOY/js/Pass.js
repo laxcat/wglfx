@@ -5,11 +5,17 @@ import Color from "./Color.js"
 import Mesh from "./Mesh.js"
 import * as ui from "./util-ui.js"
 
+/*
+    A draw pass, with necessary objects, data, and UI.
+    Draws a list of meshes (bound by a vertex layout) to framebuffer.
+
+    TODO:
+    • ability to draw to texture for multiple pass pipelines
+*/
 export default class Pass {
     clearColor = new Color();
     layout = null;
     meshes = [];
-    nMeshes = 0;
     el = null;
 
     static templates = [
@@ -25,22 +31,28 @@ export default class Pass {
                 {
                     nVerts: 6,
                     data: {
-                        pos: new Float32Array([
-                             0.50,   1.00,   0.00,   1.00,
-                             1.00,  -1.00,   0.00,   1.00,
-                            -1.00,  -1.00,   0.00,   1.00,
-                            -0.50,   1.00,   0.00,   1.00,
-                             1.00,  -1.00,   0.00,   1.00,
-                            -1.00,  -1.00,   0.00,   1.00,
-                        ]),
-                        color: new Float32Array([
-                            0.5,  0.0,  0.0,  1.0,
-                            0.0,  0.0,  0.0,  1.0,
-                            0.0,  0.0,  0.0,  1.0,
-                            0.0,  0.5,  0.5,  1.0,
-                            0.0,  0.0,  0.0,  1.0,
-                            0.0,  0.0,  0.0,  1.0,
-                        ]),
+                        pos: {
+                            data: new Float32Array([
+                                0.50,   1.00,   0.00,   1.00,
+                                1.00,  -1.00,   0.00,   1.00,
+                               -1.00,  -1.00,   0.00,   1.00,
+                               -0.50,   1.00,   0.00,   1.00,
+                                1.00,  -1.00,   0.00,   1.00,
+                               -1.00,  -1.00,   0.00,   1.00,
+                            ]),
+                            size: 4,
+                        },
+                        color: {
+                            data: new Float32Array([
+                                0.5,  0.0,  0.0,  1.0,
+                                0.0,  0.0,  0.0,  1.0,
+                                0.0,  0.0,  0.0,  1.0,
+                                0.0,  0.5,  0.5,  1.0,
+                                0.0,  0.0,  0.0,  1.0,
+                                0.0,  0.0,  0.0,  1.0,
+                            ]),
+                            size: 4,
+                        },
                     },
                 },
             ],
@@ -77,20 +89,13 @@ export default class Pass {
         this.destroy();
         obj.meshes.forEach(mesh => {
             mesh.layout = obj.layout;
-            this.addMesh(mesh);
+            this.meshes.push(new Mesh(mesh));
         });
     }
 
     destroy() {
-        this.meshes.forEach(mesh => mesh.layout.destroy());
+        this.meshes.forEach(mesh => mesh.destroy());
         this.meshes = [];
-        this.nMeshes = 0;
-    }
-
-    addMesh(meshObj) {
-        const mesh = new Mesh(meshObj);
-        this.meshes.push(mesh);
-        ++this.nMeshes;
     }
 
     setClearColor(newColor = null) {
@@ -99,10 +104,11 @@ export default class Pass {
     }
 
     draw() {
-        let i = 0;
-        while(i < this.nMeshes) {
-            this.meshes[i].draw();
-            ++i;
+        let i = this.meshes.length;
+        while(i--) {
+            const mesh = this.meshes[i];
+            mesh.bind(this.layout);
+            mesh.draw();
         }
     }
 
@@ -118,7 +124,9 @@ export default class Pass {
     resetUI() {
         // clear contents and listeners
         this.el.innerHTML = "";
+        // refill and recreate listeners
         this.#fillUI();
+        // add global listeners
         ui.parse(this.el);
     }
 
@@ -162,7 +170,7 @@ export default class Pass {
 
         // create attributes list (layout)
         const layoutEl = this.el.querySelector("section.layout > ul");
-        this.layout.attribs.forEach(attrib => attrib.createListUI(layoutEl));
+        this.layout.attribs.forEach(attrib => attrib.createUI(layoutEl));
 
         // create mesh list
         const meshesEl = this.el.querySelector("ul.meshes");
@@ -205,16 +213,17 @@ export default class Pass {
 
         const attrib = this.layout.addAttrib({size:size, name:name});
         // create list ui for new attrib in layout ul
-        attrib.createListUI(this.el.querySelector("section.layout > ul"));
-        // create data ui for each mesh in mesh list
-        this.meshes.forEach(mesh => {
-            const meshAttrib = mesh.layout.addAttrib({
-                size: size,
-                name: name,
-                data: new Float32Array(mesh.nVerts * size),
-            });
-            meshAttrib.createDataUI(mesh.el.querySelector("ul.attribs"));
-        });
+        attrib.createUI(this.el.querySelector("section.layout > ul"));
+        // TODO: not sure about this. maybe leave mesh data alone?
+        // // create data ui for each mesh in mesh list
+        // this.meshes.forEach(mesh => {
+        //     const meshAttrib = mesh.layout.addAttrib({
+        //         size: size,
+        //         name: name,
+        //         data: new Float32Array(mesh.nVerts * size),
+        //     });
+        //     meshAttrib.createDataUI(mesh.el.querySelector("ul.attribs"));
+        // });
         return true;
     }
 

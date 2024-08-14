@@ -1,9 +1,7 @@
 import VertexAttrib from "./VertexAttrib.js"
 
-// Can be generic, reuseable with different passes, etc
-// When assigned to mesh, gets buffer objects assigned to attributes
 export default class VertexLayout {
-    attribs = [];       // list of attributes
+    attribs = [];       // array of VertexAttrib
 
     constructor(attribs) {
         this.fromObject(attribs);
@@ -24,7 +22,6 @@ export default class VertexLayout {
     }
 
     destroy() {
-        this.attribs.forEach(attrib => attrib.destroy());
         this.attribs = [];
     }
 
@@ -45,15 +42,6 @@ export default class VertexLayout {
             }
         }
         return false;
-    }
-
-    setDataByName(name, data, offset=0) {
-        for (let i = 0; i < this.attribs.length; ++i) {
-            if (this.attribs[i].name === name) {
-                this.attribs[i].setData(data, offset);
-                return;
-            }
-        }
     }
 
     toObject() {

@@ -2,18 +2,14 @@ import App from "./App.js"
 import * as ui from "./util-ui.js"
 
 /*
-NOTES:
- • component type is always float32
+    Vertex attrib information for each attrib in VertexLayout.
+    Does not hold attrib data (see VertexAttribData).
 */
 
 export default class VertexAttrib {
     index = 0;          // vertex attribute index
     size = 4;           // number of compoenents
     name = "";          // friendly name to indicate nature of data. pos, norm, color, etc.
-    glBuffer = null;    // when VertexLayout assigned to a pass, buffers get stored here
-    data = null;        // when VertexLayout assigned to a pass, keep copy of buffer data here
-    uiDirty = false;    // ui data has changed, has not been set to local/gpu yet
-    editor = null;      // ace editor, replaces dataEl
 
     constructor(obj) {
         this.fromObject(obj);
@@ -28,141 +24,10 @@ export default class VertexAttrib {
         this.size = obj.size;
         this.name = obj.name;
 
-        this.deleteBuffer();
-        this.data = null;
-        if (typeof obj.data === "string") {
-            // copy=true because otherwise the Float32Array remains attached
-            // to underlying buffer based on wasm memory.
-            const arr = App.z85.decodeTo(Float32Array, obj.data, true);
-            this.createBufferFromFloats(arr);
-        }
-        else if (obj.data instanceof Float32Array) {
-            this.createBufferFromFloats(obj.data);
-        }
+        App.renderer.gl.enableVertexAttribArray(this.index);
     }
 
-    destroy() {
-        this.deleteBuffer();
-    }
-
-    createBuffer(nVerts) {
-        const emptyData = new Float32Array(nVerts * this.size);
-        this.createBufferFromFloats(emptyData);
-    }
-
-    createBufferFromFloats(floatArray) {
-        if (this.glBuffer || this.data) {
-            throw `Unexpected call to createBuffer. Buffer already created.\n`+
-                  `${this.glBuffer}\n`+
-                  `${this.data}\n`;
-        }
-        const gl = App.renderer.gl;
-        this.glBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
-        this.data = floatArray;
-        gl.bufferData(gl.ARRAY_BUFFER, this.data, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.index, this.size, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(this.index);
-    }
-
-    deleteBuffer() {
-        const gl = App.renderer.gl;
-        gl.disableVertexAttribArray(this.index);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        gl.deleteBuffer(this.glBuffer);
-        this.glBuffer = null;
-        this.data = null;
-    }
-
-    setData(data, offset=0) {
-        // update this.data
-        const n = Math.min(data.length, this.data.length);
-        for (let i = offset; i < n; ++i) {
-            this.data[i] = data[i];
-        }
-        // update ui from this.data
-        this.updateUIFromData();
-        // upload this.data to gpu
-        this.uploadData();
-    }
-
-    uploadData() {
-        console.log(`Uploading vertex attrib ${this.name} local data to GPU.`);
-        const gl = App.renderer.gl;
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data);
-    }
-
-    get dataStr() {
-        let str = "";
-        let rowIndex = 0;
-        let maxLen = 0;
-        let hasNeg = "";
-        this.data.forEach(item => {
-            const len = item.toString().length;
-            if (maxLen < len) {
-                maxLen = len;
-            }
-            if (item < 0) hasNeg = " ";
-        });
-        maxLen = (maxLen === 1) ? 0 : maxLen - 2;
-        if (maxLen > 3) maxLen = 3;
-        // console.log("max len in ", this.name, maxLen, hasNeg.length);
-        this.data.forEach(item => {
-            str += `${item<0?"":hasNeg}${item.toFixed(maxLen)}  `;
-            ++rowIndex;
-            if (rowIndex === this.size) {
-                str += "\n";
-                rowIndex = 0;
-            }
-        });
-        return str;
-    }
-
-    updateDataFromUI() {
-        // BAIL IF NO CHANGES MADE!
-        if (!this.uiDirty) {
-            return;
-        }
-        // strings, might have extra empty element at end, or other junk
-        const uiDataStr = this.editor.getValue().split(/[\s]+/);
-        // take only valid floats
-        let uiData = [];
-        uiDataStr.forEach(item => {
-            const f = parseFloat(item);
-            if (!isNaN(f)) {
-                uiData.push(f);
-            }
-        })
-        console.log(`Updating vertex attrib ${this.name} data from UI:\n` +
-                    `UI has ${uiData.length} elements. (Data buffer has ${this.data.length})`
-        );
-        // don't go beyond bound of this.data or uiData. we don't care which is bigger.
-        const n = Math.min(uiData.length, this.data.length);
-        // copy whatever data we can from ui to this.data
-        for (let i = 0; i < n; ++i) {
-            this.data[i] = uiData[i];
-        }
-        // upload ALL of this.data to gpu (even parts not changed by uiData)
-        this.uploadData();
-        // set the data string again, to fix formatting, etc
-        this.updateUIFromData();
-        // this house is clean
-        this.uiDirty = false;
-    }
-
-    updateUIFromData() {
-        if (!this.editor) {
-            return;
-        }
-        const row = this.editor.session.selection.cursor.row;
-        const col = this.editor.session.selection.cursor.column;
-        this.editor.setValue(this.dataStr);
-        this.editor.clearSelection();
-        this.editor.moveCursorTo(row, col);
-    }
-
-    createListUI(parentEl) {
+    createUI(parentEl) {
         parentEl.appendHTML(
             // li set to white-space:pre, so string can't contain new lines
             `<li>`+
@@ -174,29 +39,12 @@ export default class VertexAttrib {
         );
     }
 
-    createDataUI(parentEl) {
-        const dataEl = parentEl.appendHTML(
-            `<li>
-                <div>${this.name}</div>
-                <pre>${this.dataStr}</pre>
-            </li>`
-        );
-        this.editor = ui.aceit(dataEl.querySelector("pre"), "ace/mode/text");
-        this.editor.addEventListener("change", e => {
-            this.uiDirty = true;
-        })
-    }
-
     toObject() {
-        const obj = {
+        return {
             index: this.index,
             size: this.size,
             name: this.name
         };
-        if (this.data) {
-            obj.data = App.z85.encode(this.data);
-        }
-        return obj;
     }
 
     toString() {

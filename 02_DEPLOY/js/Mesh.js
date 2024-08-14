@@ -1,10 +1,25 @@
 import App from "./App.js"
-import VertexLayout from "./VertexLayout.js"
+import VertexAttribData from "./VertexAttribData.js"
 
+/*
+    Handles mesh data and UI.
+    Vertex data (attribsData) is mapped to attribute name. Mesh data might not
+    have the same attributes as pass.layout, which is by design, allowing
+    arbitrary mesh data from varying sources to be used.
+
+    TODO:
+    • mesh name
+    • apply the new "template" system for defaults
+    • add/load meshes
+    • add arbitrary data attributes
+    • cache binding. would be nice to avoid enabling disabling attribs, but
+      this level of performance is lower priority for a this kind of toy
+      project
+*/
 export default class Mesh {
-    nVerts = 0;
-    layout = null;
-    el = null;
+    nVerts = 0;                 // number of vertices in the mesh
+    attribsData = new Map();    // map of VertexAttribData, keyed by attrib name
+    el = null;                  // base HTML element of mesh UI
 
     constructor(obj) {
         this.fromObject(obj);
@@ -17,30 +32,37 @@ export default class Mesh {
 
         this.nVerts = obj.nVerts;
 
-        let layoutWithData = obj.layout.map(attrib => {
-            if (obj.data.hasOwnProperty(attrib.name)) {
-                attrib.data = obj.data[attrib.name];
-            }
-            return attrib;
-        });
-        this.layout = new VertexLayout(layoutWithData);
-    }
-
-    bind() {
-        const gl = App.renderer.gl;
-        for(let index = 0; index < this.layout.attribs.length; ++index) {
-            const attrib = this.layout.attribs[index];
-            gl.bindBuffer(gl.ARRAY_BUFFER, attrib.glBuffer);
-            gl.vertexAttribPointer(index, attrib.size, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(index);
+        this.destroy();
+        for (const key in obj.data) {
+            const attribObj = obj.data[key];
+            attribObj.name = key;
+            this.attribsData.set(key, new VertexAttribData(attribObj));
         }
     }
 
-    unbind() {
+    destroy() {
+        this.attribsData.forEach(a => a.destroy());
+        this.attribsData.clear();
+    }
+
+    bind(layout) {
         const gl = App.renderer.gl;
-        gl.bindBuffer(gl.ARRAY_BUFFER, 0);
-        for (let index = 0; index < this.layout.attribs.length; ++i) {
-            gl.disableVertexAttribArray(index);
+        let i = layout.attribs.length;
+        while (i--) {
+            const attrib = layout.attribs[i];
+            const data = this.attribsData.get(attrib.name);
+            // no data found for this attribute
+            if (!data) {
+                gl.disableVertexAttribArray(i);
+                continue;
+            }
+            if (attrib.size !== data.size) {
+                console.log(`could not bind attrib ${attrib.name}; layout attrib size: ${attrib.size}, data attrib size: ${data.size}`);
+                continue;
+            }
+            gl.bindBuffer(gl.ARRAY_BUFFER, data.glBuffer);
+            gl.vertexAttribPointer(i, attrib.size, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(i);
         }
     }
 
@@ -49,11 +71,9 @@ export default class Mesh {
         const nVertsChanged = (this.nVerts !== newNVerts);
         this.nVerts = newNVerts;
 
-        this.layout.attribs.forEach(attrib => {
+        this.attribsData.forEach(attrib => {
             if (nVertsChanged) {
-                attrib.deleteBuffer();
-                attrib.createBuffer(this.nVerts);
-                attrib.uiDirty = true; // forces data to be pulled from ui
+                attrib.recreateBuffer(this.nVerts);
             }
             attrib.updateDataFromUI();
         });
@@ -78,7 +98,7 @@ export default class Mesh {
             `
         );
         const attribsEl = this.el.querySelector("ul.attribs");
-        this.layout.attribs.forEach(attrib => attrib.createDataUI(attribsEl));
+        this.attribsData.forEach(attrib => attrib.createUI(attribsEl));
     }
 
     toObject() {
@@ -86,10 +106,8 @@ export default class Mesh {
             nVerts: this.nVerts,
             data: {},
         };
-        this.layout.attribs.forEach(attrib => {
-            if (attrib.data) {
-                obj.data[attrib.name] = attrib.toObject().data;
-            }
+        this.attribsData.forEach((attrib, key) => {
+            obj.data[key] = attrib.toObject();
         });
         return obj;
     }
