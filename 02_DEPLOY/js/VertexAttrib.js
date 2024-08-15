@@ -24,7 +24,10 @@ export default class VertexAttrib {
         this.size = obj.size;
         this.name = obj.name;
 
-        App.renderer.gl.enableVertexAttribArray(this.index);
+        // enabling/disabling vertex attribs handled in mesh.bind() for now
+        // would be nice to just set once here, but needs to be disabled if
+        // a particular mesh doesn't have data for the enabled index.
+        // App.gl.enableVertexAttribArray(this.index);
     }
 
     createUI(parentEl) {

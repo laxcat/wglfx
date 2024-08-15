@@ -67,11 +67,16 @@ export default class Project {
 
     compile() {
         this.prog.compile(this.unib.name);
-        App.renderer.checkGLErrors("COMPILE");
+        App.gl.logErrors("COMPILE");
     }
 
     draw() {
+        if (App.gl.hasErrors) {
+            return;
+        }
+        App.gl.clear(App.gl.COLOR_BUFFER_BIT);
         this.pass.draw();
+        App.gl.logErrors("DRAW");
     }
 
     createUI(parentEl) {

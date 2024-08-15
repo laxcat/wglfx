@@ -53,7 +53,7 @@ export default class VertexAttribData {
                   `${this.glBuffer}\n`+
                   `${this.data}\n`;
         }
-        const gl = App.renderer.gl;
+        const gl = App.gl;
         this.glBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
         this.data = floatArray;
@@ -63,8 +63,7 @@ export default class VertexAttribData {
     }
 
     deleteBuffer() {
-        const gl = App.renderer.gl;
-        gl.deleteBuffer(this.glBuffer);
+        App.gl.deleteBuffer(this.glBuffer);
         this.glBuffer = null;
         this.data = null;
     }
@@ -89,7 +88,7 @@ export default class VertexAttribData {
 
     uploadData() {
         console.log(`Uploading vertex attrib ${this.name} local data to GPU.`);
-        const gl = App.renderer.gl;
+        const gl = App.gl;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data);
     }

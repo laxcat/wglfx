@@ -1,6 +1,7 @@
+import WebGL2 from "./extend/WebGL2RenderingContext.js"
+
 import Project from "./Project.js"
 import ProjectList from "./ProjectList.js"
-import Renderer from "./Renderer.js"
 import Time from "./Time.js"
 import WASMZ85 from "./WASMZ85.js";
 import * as util from "./util.js"
@@ -19,7 +20,7 @@ export default class App {
     static KEY_PROJ_PREFIX  = `${App.NAME}_proj_`;
 
     // All members are available for global access
-    static renderer     = new Renderer();
+    static gl           = WebGL2.create();
     static time         = new Time();
     static projectList  = new ProjectList();
     static project      = null;
@@ -114,7 +115,7 @@ export default class App {
         this.tick();
 
         // draw
-        App.renderer.draw(this.project);
+        this.project.draw();
 
         // next loop
         requestAnimationFrame(this.loop.bind(this));

@@ -46,7 +46,7 @@ export default class Mesh {
     }
 
     bind(layout) {
-        const gl = App.renderer.gl;
+        const gl = App.gl;
         let i = layout.attribs.length;
         while (i--) {
             const attrib = layout.attribs[i];
@@ -80,8 +80,7 @@ export default class Mesh {
     }
 
     draw() {
-        const gl = App.renderer.gl;
-        gl.drawArrays(gl.TRIANGLES, 0, this.nVerts);
+        App.gl.drawArrays(App.gl.TRIANGLES, 0, this.nVerts);
     }
 
     createUI(parentEl) {

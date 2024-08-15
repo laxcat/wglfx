@@ -100,7 +100,7 @@ export default class Pass {
 
     setClearColor(newColor = null) {
         this.clearColor.set(newColor);
-        App.renderer.gl.clearColor(...this.clearColor.data);
+        App.gl.clearColor(...this.clearColor.data);
     }
 
     draw() {

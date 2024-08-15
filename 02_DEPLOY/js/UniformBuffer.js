@@ -39,7 +39,7 @@ export default class UniformBuffer {
         this.data = new ArrayBuffer(this.size);
         this.dataView = new DataView(this.data);
 
-        const gl = App.renderer.gl;
+        const gl = App.gl;
 
         this.glBuffer = gl.createBuffer();
         gl.bindBuffer(gl.UNIFORM_BUFFER, this.glBuffer);
@@ -51,9 +51,8 @@ export default class UniformBuffer {
     }
 
     destroy() {
-        const gl = App.renderer.gl;
-        gl.bindBuffer(gl.UNIFORM_BUFFER, null);
-        gl.deleteBuffer(this.glBuffer);
+        App.gl.bindBuffer(App.gl.UNIFORM_BUFFER, null);
+        App.gl.deleteBuffer(this.glBuffer);
     }
 
     get dirty() {
@@ -93,7 +92,7 @@ export default class UniformBuffer {
 
         console.log(`updating UBO, dirty:${this.#dirtyFirstByte}–${this.#dirtyLastByte}`);
 
-        const gl = App.renderer.gl;
+        const gl = App.gl;
 
         gl.bindBuffer(gl.UNIFORM_BUFFER, this.glBuffer);
         gl.bufferSubData(

@@ -22,9 +22,8 @@ export default class LiveProgram {
     };
 
     constructor(obj=LiveProgram.default) {
-        const gl = App.renderer.gl;
-        this.vert = new LiveShader(gl.VERTEX_SHADER);
-        this.frag = new LiveShader(gl.FRAGMENT_SHADER);
+        this.vert = new LiveShader(App.gl.VERTEX_SHADER);
+        this.frag = new LiveShader(App.gl.FRAGMENT_SHADER);
         this.fromObject(obj);
     }
 
@@ -34,7 +33,7 @@ export default class LiveProgram {
     }
 
     destroy() {
-        App.renderer.gl.deleteProgram(this.glObj);
+        App.gl.deleteProgram(this.glObj);
         this.glObj = null;
         this.vert.destroy();
         this.frag.destroy();
@@ -45,7 +44,7 @@ export default class LiveProgram {
     compile(uboBlockName=null) {
         console.log(`program compile, UBO Block Name:"${uboBlockName}"`);
 
-        const gl = App.renderer.gl;
+        const gl = App.gl;
 
         gl.deleteProgram(this.glObj);
         this.glObj = null;
@@ -84,7 +83,7 @@ export default class LiveProgram {
             return null;
         }
 
-        const gl = App.renderer.gl;
+        const gl = App.gl;
 
         this.glObj = gl.createProgram();
 

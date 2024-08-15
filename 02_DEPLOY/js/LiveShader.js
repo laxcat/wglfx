@@ -22,16 +22,14 @@ export default class LiveShader {
 
     constructor(type) {
         this.glType = type;
-
-        const gl = App.renderer.gl;
-        this.glTypeStr = (type === gl.VERTEX_SHADER)    ? "vert" :
-                         (type === gl.FRAGMENT_SHADER)  ? "frag" :
+        this.glTypeStr = (type === App.gl.VERTEX_SHADER)    ? "vert" :
+                         (type === App.gl.FRAGMENT_SHADER)  ? "frag" :
                          "unknown-type";
     }
 
     destroy() {
         if (this.glObj) {
-            App.renderer.gl.deleteShader(this.glObj);
+            App.gl.deleteShader(this.glObj);
             this.glObj = null;
         }
     }
@@ -59,7 +57,7 @@ export default class LiveShader {
             return null;
         }
 
-        const gl = App.renderer.gl;
+        const gl = App.gl;
 
         this.glObj = gl.createShader(this.glType);
         gl.shaderSource(this.glObj, this.src);
@@ -78,7 +76,7 @@ export default class LiveShader {
         const Range = ace.require("ace/range").Range;
 
         // get the whole error string
-        const info = App.renderer.gl.getShaderInfoLog(this.glObj);
+        const info = App.gl.getShaderInfoLog(this.glObj);
         // split on lines
         const lines = info.split("\n");
         // for each line, construct an error object
