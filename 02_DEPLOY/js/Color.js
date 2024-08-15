@@ -50,7 +50,7 @@ export default class Color {
         }
 
         // new Color({r:0, g:1, b:0, a:1});
-        else if (args.length === 1 && typeof args[0] === "object") {
+        else if (args.length === 1 && args[0] instanceof Object) {
             this.setFromFloatObj(args[0]);
         }
 
