@@ -1,6 +1,7 @@
 import App from "./App.mjs"
 import LiveProgram from "./LiveProgram.mjs"
 import Pass from "./Pass.mjs"
+import Serializable from "./Serializable.mjs"
 import UniformBuffer from "./UniformBuffer.mjs"
 import * as ui from "./util-ui.mjs"
 
@@ -11,7 +12,7 @@ import * as ui from "./util-ui.mjs"
     TODO:
     • save each project to its own localStorage item
 */
-export default class Project {
+export default class Project extends Serializable {
     id = 0;
     name = "";
     pass = null;
@@ -21,48 +22,40 @@ export default class Project {
     static nextId = 1;
     static newName = "New Project";
 
-    /*
-    Template objects should look like toObject() objects.
-    If children are not set, makeObjectFromTemplate can set them to a template key
-    */
     static templates = [
         {key:"blank"},
         {key:"basic2d", default: true},
         {key:"basic3d"},
     ];
 
-    constructor(obj) {
-        this.fromObject(obj);
+    static serialBones = {
+        id:   null,
+        name: null,
+        pass: undefined,
+        prog: undefined,
+        unib: undefined,
+    };
+
+    constructor(serialObj) {
+        super();
+        this.deserialize(serialObj);
     }
 
-    /*
-    All fromObject (deserialize) functions work like this:
-        • obj can be falsy, which will create project from default template
-        • obj can be string, which will create project from template key
-        • obj can be object (probably deserialized from load, see toObject for structure)
-    */
-    fromObject(obj) {
-        // no obj sent. load default template
-        if (!obj) {
-            obj = Project.makeObjectFromTemplate();
-        }
-        // template key (string) sent. load specific template
-        else if (typeof obj === "string") {
-            obj = Project.makeObjectFromTemplate(obj);
-        }
+    deserialize(serialObj) {
+        serialObj = super.deserialize(serialObj);
 
-        this.id = obj.id;
-        this.name = obj.name;
+        this.id =   serialObj.id    || this.nextId++;
+        this.name = serialObj.name  || this.newName;
 
         // if previous children existed, make sure they destroy any created objects
         if (this.pass) this.pass.destroy();
         if (this.prog) this.prog.destroy();
         if (this.unib) this.unib.destroy();
 
-        // obj's children (obj.pass) follow standard fromObject rules (see above)
-        this.pass = new Pass(obj.pass);
-        this.prog = new LiveProgram(obj.prog);
-        this.unib = new UniformBuffer(obj.unib);
+        // serialObj's children (serialObj.pass) follow standard fromObject rules (see above)
+        this.pass = new Pass(serialObj.pass);
+        this.prog = new LiveProgram(serialObj.prog);
+        this.unib = new UniformBuffer(serialObj.unib);
     }
 
     compile() {
@@ -99,30 +92,7 @@ export default class Project {
         this.prog.createUI(parentEl);
     }
 
-    static makeObjectFromTemplate(key) {
-        const obj = {...Project.templates.findByKeyOrDefault(key)};
-
-        // if not set, set children to key (pass template key through to children)
-        if (!obj.pass) obj.pass = key;
-        if (!obj.prog) obj.prog = key;
-        if (!obj.unib) obj.unib = key;
-
-        obj.id = Project.nextId++;
-        obj.name = Project.newName;
-
-        return obj;
-    }
-
-    toObject() {
-        return {
-            pass: this.pass.toObject(),
-            prog: this.prog.toObject(),
-            unib: this.unib.toObject(),
-        };
-    }
-
     toString() {
         return JSON.stringify(this.toObject());
     }
 }
-

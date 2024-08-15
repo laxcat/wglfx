@@ -137,9 +137,9 @@ export default class App {
         this.project.unib.updateDataFromUI();
         this.project.unib.update();
         this.project.compile();
-        let saveObj = this.project.toObject();
-        console.log(saveObj);
-        localStorage.setItem("main", JSON.stringify(saveObj));
+        let serialObj = this.project.serialize();
+        console.log(serialObj);
+        localStorage.setItem("main", JSON.stringify(serialObj));
         console.log("------------------------------------------------------- SAVE END");
     }
 
