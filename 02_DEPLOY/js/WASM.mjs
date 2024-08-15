@@ -362,13 +362,13 @@ export default class WASM extends EventTarget {
             if (TypedArray) {
                 let vals = new TypedArray(this.memory.buffer, valPtr, valCount);
                 // convert to hex
-                if (valType == WASM.T_PTR || valType == WASM.T_BYTE) {
-                    const pad = (valType == WASM.T_PTR) ? 8 : 2;
+                if (valType === WASM.T_PTR || valType === WASM.T_BYTE) {
+                    const pad = (valType === WASM.T_PTR) ? 8 : 2;
                     // copy array, map to string, add leading zeros, join to single string
                     vals = [...vals].map(v => v.toString(16).padStart(pad, '0')).join("  ");
                 }
                 // reduce from array to single value
-                if (valCount == 1) {
+                if (valCount === 1) {
                     vals = vals[0];
                 }
                 msg.push(vals);

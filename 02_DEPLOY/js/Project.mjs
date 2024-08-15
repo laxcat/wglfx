@@ -47,7 +47,7 @@ export default class Project {
             obj = Project.makeObjectFromTemplate();
         }
         // template key (string) sent. load specific template
-        else if (typeof obj == "string") {
+        else if (typeof obj === "string") {
             obj = Project.makeObjectFromTemplate(obj);
         }
 

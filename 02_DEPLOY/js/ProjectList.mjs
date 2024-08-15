@@ -39,7 +39,7 @@ export default class ProjectList {
                     this.#selected = i;
                 }
             });
-            if (this.#selected == -1) {
+            if (this.#selected === -1) {
                 this.#selected = 0;
             }
         }
@@ -53,14 +53,13 @@ export default class ProjectList {
         localStorage.setItem(App.KEY_PROJ_LIST);
     }
 
-    createProjectFromTemplate(template) {
-        const item =    ProjectList.templates[template] ||
-                        ProjectList.templates.find(t => t.key == template) ||
-                        ProjectList.templates.find(t => t.default) ||
-                        template;
+    createProjectFromTemplate(key) {
+        item = {...ProjectList.templates.findKeyOrDefault(key)};
+
         if (!item) {
             return null;
         }
+
         const proj = new Project(item.key);
         this.addEntry(proj.id, proj.name, true);
         return proj;

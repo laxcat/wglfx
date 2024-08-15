@@ -9,7 +9,7 @@ export function loadFileSync(path) {
     let request = new XMLHttpRequest();
     request.open("GET", path, false);
     request.send();
-    if (request.status == 200) {
+    if (request.status === 200) {
         return request.responseText;
     }
     return null;

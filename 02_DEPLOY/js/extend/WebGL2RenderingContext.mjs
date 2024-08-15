@@ -27,7 +27,7 @@ WebGL2.create = function(canvasElOrQuery) {
             return c;
         }
         // query document if string
-        if (typeof c == "string") {
+        if (typeof c === "string") {
             return document.querySelector(c);
         }
         throw   `Error creating WebGL2RenderingContext context. Could not find canvas.`+

@@ -69,7 +69,7 @@ export default class Pass {
             obj = Pass.makeObjectFromTemplate();
         }
         // create from specified template
-        else if (typeof obj == "string") {
+        else if (typeof obj === "string") {
             obj = Pass.makeObjectFromTemplate(obj);
         }
 
