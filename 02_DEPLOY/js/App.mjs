@@ -48,12 +48,13 @@ export default class App {
         // test z85 encoder/decoder
         // App.z85.addEventListener(WASMZ85.READY, App.z85.test);
 
-        // if nothing was loaded from localStorage, we don't need the z85 decoder right away
+        // we need the decoder to parse data in the loaded data
         if (loaded) {
             App.z85.addEventListener(WASMZ85.READY, () => {
                 this.#onLoad(JSON.parse(loaded));
             });
         }
+        // if nothing was loaded from localStorage, we don't need the z85 decoder right away
         else {
             this.#onLoad();
         }
@@ -64,7 +65,7 @@ export default class App {
         this.project = new Project(loadedObj);
 
         // create the HTML UI
-        this.createUI(document.getElementById("ui"));
+        this.createUI();
 
         // compile the shader program
         this.project.compile();
@@ -143,6 +144,7 @@ export default class App {
     }
 
     createUI(parentEl) {
+        if (!parentEl) parentEl = document.getElementById("ui");
         this.project.createUI(parentEl);
         // adds systematic handlers, etc
         ui.parse(parentEl);

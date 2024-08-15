@@ -1,7 +1,7 @@
 import WASM from "./WASM.mjs"
 
 /*
-    Test case for WASM.js/wasm.h.
+    Test case for WASM.mjs/wasm.h.
 */
 export default class WASMTest extends WASM {
 

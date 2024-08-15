@@ -20,32 +20,32 @@ WebGL2.create = function(canvasElOrQuery) {
     let canvas = (c => {
         // if falsy find first canvas in document
         if (!c) {
-            return document.getElementsByTagName("canvas")[0];
-        }
-        // we already have a canvas
-        if (c instanceof HTMLCanvasElement) {
-            return c;
+            c = document.getElementsByTagName("canvas")[0];
         }
         // query document if string
         if (typeof c === "string") {
-            return document.querySelector(c);
+            c = document.querySelector(c);
+        }
+        // we have a canvas
+        if (c instanceof HTMLCanvasElement) {
+            return c;
         }
         throw   `Error creating WebGL2RenderingContext context. Could not find canvas.`+
                 `canvasElOrQuery: ${c}\n`;
     })(canvasElOrQuery);
 
     // setup context
-    let gl = null;
-    if (canvas instanceof HTMLCanvasElement) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        gl = canvas.getContext("webgl2");
-    }
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const gl = canvas.getContext("webgl2");
+
+    // getContext successful?
     if (!gl) {
         throw   `Error creating WebGL2RenderingContext context.\n`+
                 `canvasElOrQuery: ${canvasElOrQuery}\n`+
                 `canvas: ${canvas}\n`;
     }
+
     // check errors just to make sure
     gl.logErrors();
     return gl;

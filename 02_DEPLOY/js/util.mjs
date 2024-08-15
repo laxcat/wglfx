@@ -60,7 +60,7 @@ HTMLCollection.prototype.last = function() {
     Find item in Array where item[keyProp] === key.
     key can be anything not nullish, including 0.
     If not found, returns item where item[defaultProp] is not falsy.
-    If not found, return null.
+    If not found, returns null.
 
     Example:
 
@@ -70,11 +70,12 @@ HTMLCollection.prototype.last = function() {
         {key: 0,   data: "things"},
         {key: 7,   data: "garbage"},
     ];
-    a.findByKeyOrDefault();      // returns a[0]
-    a.findByKeyOrDefault("b");   // returns a[1]
-    a.findByKeyOrDefault(0);     // returns a[2]
-    a.findByKeyOrDefault();      // returns a[0]
-
+    console.log(a.findByKeyOrDefault()    );  // returns a[0]
+    console.log(a.findByKeyOrDefault("b") );  // returns a[1]
+    console.log(a.findByKeyOrDefault(0)   );  // returns a[2]
+    console.log(a.findByKeyOrDefault("7") );  // no === match, returns default a[0]
+    delete a[0].default;
+    console.log(a.findByKeyOrDefault("7") );  // no === match, no default, returns null
 */
 Array.prototype.findByKeyOrDefault = function(key, keyProp="key", defaultProp="default") {
     // don't search for key if nullish, just try to find default

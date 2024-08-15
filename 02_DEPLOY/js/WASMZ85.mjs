@@ -31,7 +31,7 @@ export default class WASMZ85 extends WASM {
     get encodedDataSize() { return this.paddedDataSize * 5 / 4; }
 
     // 0-58252 for minimum wasm size. more starts adding pages.
-    // see WASM.js for more info about memory, min size, etc
+    // see WASM.mjs for more info about memory, min size, etc
     constructor(unencodedDataSizeLimit=58252) {
         // This could be simplified by using the entire "heap" for encoding/
         // decoding. right now we reserve a single data size varaible, but it

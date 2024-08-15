@@ -1,5 +1,5 @@
 // wasm.h /////////////////////////////////////////////////////////////////////
-// Use in conjunction with WASM.js
+// Use in conjunction with WASM.mjs
 // /////////////////////////////////////////////////////////////////////////////
 
 #pragma once
@@ -28,8 +28,8 @@ extern void print(
 
 // CONSTANTS ///////////////////////////////////////////////////////////
 
-// WASM.js will configure memory with a special block, defined as follows
-// Mirror these settings in WASM.js
+// WASM.mjs will configure memory with a special block, defined as follows
+// Mirror these settings in WASM.mjs
 // Space for 12 special 4-byte blocks here
 #define MEM_SPECIAL_S 0x00010
 #define MEM_SPECIAL_E 0x00040
@@ -97,7 +97,7 @@ inline void printvs(char * str, uint8_t valType, uint8_t valCount, void * ptr) {
 }
 
 // UTILITY EXPORTS /////////////////////////////////////////////////////////////
-// use in conjunction with WASM.js
+// use in conjunction with WASM.mjs
 
 // Request memory location for string encoding.
 // Simple circular buffer in range: MEM_STR_S — MEM_STR_E
