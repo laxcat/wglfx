@@ -2,7 +2,7 @@
     Utility code for UI operations
 */
 
-import "./util.js"
+import "./util.mjs"
 
 export function parse(uiEl) {
     // add collapsible handlers

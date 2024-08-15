@@ -1,6 +1,6 @@
-import App from "./App.js"
-import * as util from "./util.js"
-import * as ui from "./util-ui.js"
+import App from "./App.mjs"
+import * as util from "./util.mjs"
+import * as ui from "./util-ui.mjs"
 
 /*
     Shader, shader src, and UI.

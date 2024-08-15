@@ -1,5 +1,5 @@
-import App from "./App.js"
-import * as ui from "./util-ui.js"
+import App from "./App.mjs"
+import * as ui from "./util-ui.mjs"
 
 /*
     Uniform Buffer Object, and related data and operations.

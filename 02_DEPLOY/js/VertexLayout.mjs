@@ -1,4 +1,4 @@
-import VertexAttrib from "./VertexAttrib.js"
+import VertexAttrib from "./VertexAttrib.mjs"
 
 export default class VertexLayout {
     attribs = [];       // array of VertexAttrib

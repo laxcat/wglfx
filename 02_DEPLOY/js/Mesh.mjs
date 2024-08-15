@@ -1,5 +1,5 @@
-import App from "./App.js"
-import VertexAttribData from "./VertexAttribData.js"
+import App from "./App.mjs"
+import VertexAttribData from "./VertexAttribData.mjs"
 
 /*
     Handles mesh data and UI.

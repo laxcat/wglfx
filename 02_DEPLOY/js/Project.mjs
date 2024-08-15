@@ -1,8 +1,8 @@
-import App from "./App.js"
-import LiveProgram from "./LiveProgram.js"
-import Pass from "./Pass.js"
-import UniformBuffer from "./UniformBuffer.js"
-import * as ui from "./util-ui.js"
+import App from "./App.mjs"
+import LiveProgram from "./LiveProgram.mjs"
+import Pass from "./Pass.mjs"
+import UniformBuffer from "./UniformBuffer.mjs"
+import * as ui from "./util-ui.mjs"
 
 /*
     A project, holding all information and UI.

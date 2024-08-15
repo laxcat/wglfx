@@ -1,5 +1,5 @@
-import App from "./App.js"
-import Project from "./Project.js"
+import App from "./App.mjs"
+import Project from "./Project.mjs"
 
 /*
     A list of projects, and operations to manage projects.

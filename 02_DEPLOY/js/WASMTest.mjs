@@ -1,4 +1,4 @@
-import WASM from "./WASM.js"
+import WASM from "./WASM.mjs"
 
 /*
     Test case for WASM.js/wasm.h.

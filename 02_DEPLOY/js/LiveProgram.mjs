@@ -1,6 +1,6 @@
-import App from "./App.js"
-import LiveShader from "./LiveShader.js"
-import * as util from "./util.js"
+import App from "./App.mjs"
+import LiveShader from "./LiveShader.mjs"
+import * as util from "./util.mjs"
 
 /*
     Shader Program, with editable UI.

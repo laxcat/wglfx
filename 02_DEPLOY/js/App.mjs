@@ -1,11 +1,11 @@
-import WebGL2 from "./extend/WebGL2RenderingContext.js"
+import WebGL2 from "./extend/WebGL2RenderingContext.mjs"
 
-import Project from "./Project.js"
-import ProjectList from "./ProjectList.js"
-import Time from "./Time.js"
-import WASMZ85 from "./WASMZ85.js";
-import * as util from "./util.js"
-import * as ui from "./util-ui.js"
+import Project from "./Project.mjs"
+import ProjectList from "./ProjectList.mjs"
+import Time from "./Time.mjs"
+import WASMZ85 from "./WASMZ85.mjs";
+import * as util from "./util.mjs"
+import * as ui from "./util-ui.mjs"
 
 /*
     Root class for the project. Singleton.

@@ -1,5 +1,5 @@
-import App from "./App.js"
-import * as ui from "./util-ui.js"
+import App from "./App.mjs"
+import * as ui from "./util-ui.mjs"
 
 /*
     Vertex attrib information for each attrib in VertexLayout.

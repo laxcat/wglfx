@@ -1,9 +1,9 @@
-import App from "./App.js"
-import VertexLayout from "./VertexLayout.js"
-import VertexAttrib from "./VertexAttrib.js"
-import Color from "./Color.js"
-import Mesh from "./Mesh.js"
-import * as ui from "./util-ui.js"
+import App from "./App.mjs"
+import VertexLayout from "./VertexLayout.mjs"
+import VertexAttrib from "./VertexAttrib.mjs"
+import Color from "./Color.mjs"
+import Mesh from "./Mesh.mjs"
+import * as ui from "./util-ui.mjs"
 
 /*
     A draw pass, with necessary objects, data, and UI.

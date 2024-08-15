@@ -1,4 +1,4 @@
-import * as util from "./util.js"
+import * as util from "./util.mjs"
 
 /*
     WebAssembly handler designed for small wasm modules.
