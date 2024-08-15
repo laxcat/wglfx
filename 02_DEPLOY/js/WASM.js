@@ -12,7 +12,7 @@ import * as util from "./util.js"
     WASM seems to expect at least 4 pages (might be more configureable,
     but needs more research).
     A WebAssembly.Memory page is 65536 (0x10000) bytes.
-    As it is now, WASM will lay out memory like:
+    As it is now, memory gets laid out like this:
     Page 0   (0x00000)     Special variables and string encoder space.
     Page 1   (0x10000)     Stack and rodata.
     Page 2-n (0x20000—end) "Heap", available to for this module's use.
