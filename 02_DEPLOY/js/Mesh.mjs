@@ -51,9 +51,9 @@ export default class Mesh extends Serializable {
 
     bind(layout) {
         const gl = App.gl;
-        let i = layout.attribs.length;
+        let i = layout.length;
         while (i--) {
-            const attrib = layout.attribs[i];
+            const attrib = layout[i];
             const data = this.attribsData.get(attrib.key);
             // no data found for this attribute
             if (!data) {

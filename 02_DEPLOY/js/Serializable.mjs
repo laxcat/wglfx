@@ -6,13 +6,6 @@
 */
 export default class Serializable {
 
-    constructor() {
-        // assert the derived class meets the requirements
-        if (this.constructor.serialBones === undefined) {
-            throw `${this.constructor.name} extends Serializable and needs to define static serialBones.`;
-        }
-    }
-
     /*
     Derived class should define object that contains keys for all items to be
     serialized.
@@ -45,6 +38,13 @@ export default class Serializable {
             ...this.serialBones,
             ...this.templates?.findByKeyOrDefault(templateKey),
         };
+    }
+
+    constructor() {
+        // assert the derived class meets the requirements
+        if (this.constructor.serialBones === undefined) {
+            throw `${this.constructor.name} extends Serializable and needs to define static serialBones.`;
+        }
     }
 
     /*
@@ -111,4 +111,6 @@ export default class Serializable {
         }
         return serialObj;
     }
+
+    get defaultTemplate() { this.constructor.templates?.find(t=>!!t.default) }
 }

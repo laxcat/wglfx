@@ -3,7 +3,6 @@ import Color from "./Color.mjs"
 import Mesh from "./Mesh.mjs"
 import Serializable from "./Serializable.mjs"
 import VertexAttrib from "./VertexAttrib.mjs"
-import VertexLayout from "./VertexLayout.mjs"
 import * as ui from "./util-ui.mjs"
 
 /*
@@ -15,7 +14,7 @@ import * as ui from "./util-ui.mjs"
 */
 export default class Pass extends Serializable {
     clearColor = new Color();
-    layout = null;
+    layout = [];       // array of VertexAttribData
     meshes = [];
     el = null;
 
@@ -24,10 +23,10 @@ export default class Pass extends Serializable {
             key: "basic2d",
             default: true,
             clear: "000000",
-            layout: { attribs:[
+            layout: [
                 {key: "pos",   size: 4},
                 {key: "color", size: 4},
-            ]},
+            ],
             meshes: [
                 {
                     nVerts: 6,
@@ -77,16 +76,14 @@ export default class Pass extends Serializable {
         // set clear color
         this.setClearColor(serialObj.clear);
 
-        // set new pass layout. never has buffers.
-        this.layout = new VertexLayout(serialObj.layout);
+        // set pass layout as aaray of VertexAttrib
+        this.layout = serialObj.layout.map((serialAttrib, index) => {
+            if (serialAttrib.index === undefined) serialAttrib.index = index;
+            return new VertexAttrib(serialAttrib);
+        });
 
         // create new meshes
-        // make sure mesh buffers are destroyed
-        this.destroy();
-        serialObj.meshes.forEach(serialMesh => {
-            serialMesh.layout = serialObj.layout;
-            this.meshes.push(new Mesh(serialMesh));
-        });
+        this.meshes = serialObj.meshes.map(serialMesh => new Mesh(serialMesh));
     }
 
     serialize() {
@@ -97,7 +94,11 @@ export default class Pass extends Serializable {
 
     destroy() {
         this.meshes.forEach(mesh => mesh.destroy());
-        this.meshes = [];
+    }
+
+    reset(serialObj) {
+        this.destroy();
+        this.deserialize(serialObj);
     }
 
     setClearColor(newColor = null) {
@@ -172,7 +173,7 @@ export default class Pass extends Serializable {
 
         // create attributes list (layout)
         const layoutEl = this.el.querySelector("section.layout > ul");
-        this.layout.attribs.forEach(attrib => attrib.createUI(layoutEl));
+        this.layout.forEach(attrib => attrib.createUI(layoutEl));
 
         // create mesh list
         const meshesEl = this.el.querySelector("ul.meshes");
@@ -181,41 +182,43 @@ export default class Pass extends Serializable {
         // add form handler
         const form = this.el.querySelector("form");
         const size = form.querySelectorAll("input")[0];
-        const name = form.querySelectorAll("input")[1];
+        const key  = form.querySelectorAll("input")[1];
         form.addEventListener("submit", e => {
-            if (this.addAttrib(parseInt(size.value), name.value)) {
+            if (this.addAttrib(parseInt(size.value), key.value)) {
                 form.reset();
             }
         });
 
-        // add
+        // add restore default handler
         const defaultButtonEl = this.el.querySelector("button.action");
         defaultButtonEl.addEventListener("click", e => {
             e.preventDefault();
             if (confirm("Really DELETE ALL CHANGES and restore pass settings and data to default?")) {
-                this.deserialize(Pass.default);
+                this.reset(this.defaultTemplate);
                 this.resetUI();
             }
         });
     }
 
-    addAttrib(size, name) {
-        name = name.trim();
+    addAttrib(size, key) {
+        key = key.trim();
 
         // basic error checking
         if (!Number.isInteger(size) ||
             size < 1 ||
             size > 4 ||
-            name.length < 3 ||
-            this.layout.hasAttribName(name)
+            key.length < 3 ||
+            this.layout.find(i => (i.key === key))
             ) {
-            console.log("Did not create new attribute.", size, name);
+            console.log("Did not create new attribute.", size, key);
             return false;
         }
 
-        const attrib = this.layout.addAttrib({size:size, name:name});
+        const attrib = new VertexAttrib({size:size, key:key, index:this.layout.legnth});
+        this.layout.push(attrib);
         // create list ui for new attrib in layout ul
         attrib.createUI(this.el.querySelector("section.layout > ul"));
+
         // TODO: not sure about this. maybe leave mesh data alone?
         // // create data ui for each mesh in mesh list
         // this.meshes.forEach(mesh => {
@@ -224,7 +227,7 @@ export default class Pass extends Serializable {
         //         name: name,
         //         data: new Float32Array(mesh.nVerts * size),
         //     });
-        //     meshAttrib.createDataUI(mesh.el.querySelector("ul.attribs"));
+        //     meshAttrib.createDataUI(mesh.el.querySelector("ul.layout"));
         // });
         return true;
     }
