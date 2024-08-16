@@ -1,5 +1,5 @@
 import App from "./App.mjs"
-import LiveProgram from "./LiveProgram.mjs"
+import ShaderProgram from "./ShaderProgram.mjs"
 import Pass from "./Pass.mjs"
 import Serializable from "./Serializable.mjs"
 import UniformBuffer from "./UniformBuffer.mjs"
@@ -54,7 +54,7 @@ export default class Project extends Serializable {
 
         // serialObj's children (serialObj.pass) follow standard fromObject rules (see above)
         this.pass = new Pass(serialObj.pass);
-        this.prog = new LiveProgram(serialObj.prog);
+        this.prog = new ShaderProgram(serialObj.prog);
         this.unib = new UniformBuffer(serialObj.unib);
     }
 

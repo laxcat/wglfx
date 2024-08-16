@@ -4,15 +4,12 @@ import * as util from "./util.mjs"
 import * as ui from "./util-ui.mjs"
 
 /*
-    Shader, shader src, and UI.
-    Handles compling, but should only be used through LiveProgram,
-    which compiles each shader and links.
-    Show compile errors directly in editor UI.
-
-    TODO:
-    • apply new "template" system of defaults
+    Individual shader (frag or vert) source and UI.
+    Handles compling, but should only be used through ShaderProgram, which
+    compiles each shader and links.
+    Shows compile errors directly in editor UI.
 */
-export default class LiveShader extends Serializable {
+export default class Shader extends Serializable {
     key = ""            // "vert" or "frag" string
     tempSrc = "";       // holds source code when editor isn't set yet. should be null if editor is non null.
     editor = null;      // instance of ace.editor

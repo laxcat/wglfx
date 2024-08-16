@@ -1,19 +1,19 @@
 import App from "./App.mjs"
-import LiveShader from "./LiveShader.mjs"
+import Shader from "./Shader.mjs"
 import Serializable from "./Serializable.mjs"
 import * as util from "./util.mjs"
 
 /*
     Shader Program, with editable UI.
     Handles vert and frag shaders, shader compiling/linking.
-    Tightly bound with LiveShader, which handles the src and UI for both shaders.
+    Tightly bound with Shader, which handles the src and UI for both shaders.
 
     TODO:
     • apply new "template" system of defaults
 */
-export default class LiveProgram extends Serializable {
-    vert = null;    // instance of LiveShader
-    frag = null;    // instance of LiveShader
+export default class ShaderProgram extends Serializable {
+    vert = null;    // instance of Shader
+    frag = null;    // instance of Shader
     glObj = null;   // the webgl program object
     el = null;
 
@@ -23,7 +23,7 @@ export default class LiveProgram extends Serializable {
     };
 
     static templates = [
-        // send template keys to children for lookup on LiveShader
+        // send template keys to children for lookup on Shader
         { vert: "vert", frag: "frag", default: true },
     ];
 
@@ -41,8 +41,8 @@ export default class LiveProgram extends Serializable {
         }
         // serialObj.vert.key = "vert"
         // serialObj.frag.key = "frag"
-        this.vert = new LiveShader(serialObj.vert);
-        this.frag = new LiveShader(serialObj.frag);
+        this.vert = new Shader(serialObj.vert);
+        this.frag = new Shader(serialObj.frag);
     }
 
     destroy() {
