@@ -1,6 +1,6 @@
 /*
     Convenient base class for derived serializable object.
-    Handles multiple code paths (templates, etc) for helping deserialization.
+    Handles multiple code paths (templates, etc) for initializing.
     Can handled automatic serialization using serialBones, which defines
     what properties to serialize and how.
 */
@@ -16,21 +16,19 @@ export default class Serializable {
     /*
     Derived class should define object that contains keys for all items to be
     serialized.
-    null items will not be in templates.
-    undefined items are expected to be Serializeable. when making template they
-    will get populated by default key if value not specified in template.
     */
     static serialBones = undefined;
 
     /*
     Dervied class can define static templates array.
-    When deserializing, if no serialObj is passed in, templates are how a
+    When initializing, if no serialObj is passed in, templates are how a
     derived class and its children poplate default values.
-    Each template item is essentially a serialBones object with some exeptions:
-        • templates will have a key property (string). if serialObj is a string,
-          assumes a template key and will use the coresponding template
-        • templates might have a default:true property. if serialObj is
-          undefined in deserialize, the default template will be used.
+    Each template item is essentially a serialBones object with some differences:
+        • templates will have a key property (string). if object is initialized
+          with a string, it is assumed to be a template key and will use the
+          coresponding template.
+        • templates might have a default property. if object is initalized
+          with an undefined serialObj, the default template will be selected.
     Once a template has been selected, it will become the serialObj, and the
     Serializable derived class will populate the same was as if it was passed in.
     */
@@ -45,7 +43,7 @@ export default class Serializable {
     static makeSerialObjFromTemplate(templateKey) {
         return {
             ...this.serialBones,
-            ...this.templates.findByKeyOrDefault(templateKey),
+            ...this.templates?.findByKeyOrDefault(templateKey),
         };
     }
 
@@ -57,10 +55,12 @@ export default class Serializable {
         • serialObj is an object (probably deserialized from load, see serialize
           for structure)
     A Serializable derived class should call this super.deserialize(serialObj)
-    to handle all three of the above code paths. The returned serialObj
-    can then be used to populate values without much care of where it came from.
-    This method will usually be overriden to handle the population of values,
-    but a derived class can break pattern if necessary.
+    to handle perparing serialObj for all three of the above code paths.
+    The returned serialObj can then be used to populate values without much care
+    of where it came from. This method will usually be overriden to handle the
+    population of values, but a derived class can break pattern if necessary.
+
+    TODO: this could also be more systemized
     */
     deserialize(serialObj) {
         // no serialObj sent. load default template
@@ -75,21 +75,38 @@ export default class Serializable {
     }
 
     /*
-    Can handle serization automatically, and might not need to be overriden.
+    Can usually handle serization automatically, and might not need to be
+    overriden.
     Uses serialBones to know which properties to pull and which to expect to
     be serializable themselves.
+
+    TODO: serialBones could also have class objects and instantiate them
+    automatically?
     */
     serialize() {
         // serial bones informs us where to pull key values from
         const serialObj = {...this.constructor.serialBones};
+        // for each key in serialBones, assign this[key] to serialObj[key],
+        // with some considerations for some common types and patterns
         for (const key in serialObj) {
-            // if it was null in bones, expect a regular property
-            if (serialObj[key] === null) {
-                serialObj[key] = this[key];
+            // convert array to array of serialized items
+            if (this[key] instanceof Array) {
+                serialObj[key] = this[key].map(item => item.serialize());
             }
-            // if it was undefined in bones
-            else if (serialObj[key] === undefined) {
-                serialObj[key] = this[key].toObject();
+            // convert map to object of serialized items
+            else if (this[key] instanceof Map) {
+                serialObj[key] = {};
+                this[key].forEach((item, mapKey) => {
+                    // console.log("map", item, mapKey, serialObj[key]);
+                    serialObj[key][mapKey] = item.serialize();
+                });
+            }
+            // serialize item
+            else if (this[key] instanceof Serializable) {
+                serialObj[key] = this[key].serialize();
+            }
+            else {
+                serialObj[key] = this[key];
             }
         }
         return serialObj;

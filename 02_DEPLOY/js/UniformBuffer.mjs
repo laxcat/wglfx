@@ -1,16 +1,17 @@
 import App from "./App.mjs"
+import Serializable from "./Serializable.mjs"
 import * as ui from "./util-ui.mjs"
 
 /*
     Uniform Buffer Object, and related data and operations.
 */
-export default class UniformBuffer {
-    el = null;          // the ui element attached to the base of this class
+export default class UniformBuffer extends Serializable {
     name = null;        // name of the UBO. should match the uniform block name in shader
     size = 0;           // size of buffer in bytes
     slots = [];         // list of slots objects, converted to Slot instances in createUI
     data = null;        // our data buffer, which mirrors what's on the gpu
     dataView = null;    // maintain a data view into the whole buffer why not
+    el = null;          // the ui element attached to the base of this class
     glBuffer = null;    // the webgl obect for the uniform buffer
 
     // dirty bytes have been set in buffer, but not uploaded to webgl
@@ -18,25 +19,42 @@ export default class UniformBuffer {
     #dirtyFirstByte = 0xffffffff;
     #dirtyLastByte  = 0;
 
+    static serialBones = {
+        name: undefined,
+        size: undefined,
+        slots: undefined,
+        data: undefined,
+    };
+
     // default setup
-    static default = {
+    static templates = [{
         name: "Block",
         size: 1024,
         slots: [
             {name: "time", offset: 0, size: 1, values: [0.5]},
         ],
-    };
+        default: true,
+    }];
 
-    constructor(obj=UniformBuffer.default) {
-        this.fromObject(obj);
+    constructor(serialObj) {
+        super();
+        this.deserialize(serialObj);
     }
 
-    fromObject(obj) {
-        this.destroy();
+    deserialize(serialObj) {
+        serialObj = super.deserialize(serialObj);
 
-        Object.assign(this, obj);
+        this.name = serialObj.name
+        this.size = serialObj.size;
 
-        this.data = new ArrayBuffer(this.size);
+        this.slots = serialObj.slots.map(serialSlot => new Slot(serialSlot));
+
+        if (typeof serialObj.data === "string") {
+            this.data = App.z85.decodeData(serialObj.data);
+        }
+        else {
+            this.data = new ArrayBuffer(this.size);
+        }
         this.dataView = new DataView(this.data);
 
         const gl = App.gl;
@@ -48,6 +66,15 @@ export default class UniformBuffer {
         gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, this.glBuffer);
 
         this.setAllData();
+    }
+
+    serialize() {
+        return {
+            name: this.name,
+            size: this.size,
+            slots: this.slots.map(slot => slot.serialize()),
+            data: App.z85.encode(this.data),
+        };
     }
 
     destroy() {
@@ -137,24 +164,17 @@ export default class UniformBuffer {
         const slotCount = this.slots.length;
         for (let si = 0; si < slotCount; ++si) {
             const slotEl = tbodyEl.appendHTML(`<tr></tr>`);
-            this.slots[si] = new Slot(this, si, slotEl, this.slots[si]);
+            this.slots[si].createUI(slotEl, this);
+             // = new Slot(this, si, slotEl, this.slots[si]);
         }
     }
 
-    toObject() {
-        return {
-            name: this.name,
-            size: this.size,
-            slots: this.slots.map(slot => slot.toObject()),
-        };
-    }
-
     toString() {
-        return JSON.stringify(this.toObject());
+        return JSON.stringify(this.serialize());
     }
 }
 
-class Slot {
+class Slot extends Serializable {
     name;
     offset;
     size;
@@ -162,10 +182,34 @@ class Slot {
 
     updateFromUI = {};
 
-    constructor(ubo, index, slotEl, obj) {
-        Object.assign(this, obj);
+    static serialBones = {
+        name: undefined,
+        offset: undefined,
+        size: undefined,
+        values: undefined,
+    };
 
-        slotEl.appendHTML(
+    constructor(serialObj) {
+        super();
+        this.deserialize(serialObj);
+    }
+
+    deserialize(serialObj) {
+        serialObj = super.deserialize(serialObj);
+        Object.assign(this, serialObj);
+    }
+
+    serialize() {
+        return {
+            name: this.name,
+            offset: this.offset,
+            size: this.size,
+            values: this.values
+        };
+    }
+
+    createUI(parentEl, ubo) {
+        parentEl.appendHTML(
             `
             <td><input type="text" class="name" value="${this.name}"></td>
             <td>
@@ -194,12 +238,12 @@ class Slot {
         this.values.forEach(value => {
             valueInputs += `<input type="text" value="${value}" class="value">`;
         });
-        slotEl.appendHTML(`<td>${valueInputs}</td>`);
+        parentEl.appendHTML(`<td>${valueInputs}</td>`);
 
-        const nameEl   = slotEl.querySelector("input.name");
-        const offsetEl = slotEl.querySelector("input.offset");
-        const selectEl = slotEl.querySelector("select");
-        const valueEls = slotEl.querySelectorAll("input.value");
+        const nameEl   = parentEl.querySelector("input.name");
+        const offsetEl = parentEl.querySelector("input.offset");
+        const selectEl = parentEl.querySelector("select");
+        const valueEls = parentEl.querySelectorAll("input.value");
 
         this.updateFromUI = {
             name: () => {
@@ -249,19 +293,14 @@ class Slot {
         );
     }
 
+    // constructor(ubo, index, slotEl, obj) {
+    //     Object.assign(this, obj);
+    // }
+
     updateSlotFromUI() {
         this.updateFromUI.name();
         this.updateFromUI.offset();
         this.updateFromUI.select();
         this.updateFromUI.values.forEach(fn => fn());
-    }
-
-    toObject() {
-        return {
-            name: this.name,
-            offset: this.offset,
-            size: this.size,
-            values: this.values
-        };
     }
 }

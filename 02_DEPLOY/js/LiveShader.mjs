@@ -1,4 +1,5 @@
 import App from "./App.mjs"
+import Serializable from "./Serializable.mjs"
 import * as util from "./util.mjs"
 import * as ui from "./util-ui.mjs"
 
@@ -11,20 +12,55 @@ import * as ui from "./util-ui.mjs"
     TODO:
     • apply new "template" system of defaults
 */
-export default class LiveShader {
-    editor = null;          // instance of ace.editor
-    errors = [];            // array of error objects, see parseErrors
-    glObj = null;           // the webgl shader object
-    glType = null;          // webgl shader type
-    glTypeStr = null;       // string for shader type. frequently used as key.
-    tempSrc = null;         // holds source code when editor isn't set yet. should be null if editor is non null.
-    el = null;              // reference to the primary HTML element of the UI
+export default class LiveShader extends Serializable {
+    key = ""            // "vert" or "frag" string
+    tempSrc = "";       // holds source code when editor isn't set yet. should be null if editor is non null.
+    editor = null;      // instance of ace.editor
+    errors = [];        // array of error objects, see parseErrors
+    glObj = null;       // the webgl shader object
+    el = null;          // reference to the primary HTML element of the UI
 
-    constructor(type) {
-        this.glType = type;
-        this.glTypeStr = (type === App.gl.VERTEX_SHADER)    ? "vert" :
-                         (type === App.gl.FRAGMENT_SHADER)  ? "frag" :
-                         "unknown-type";
+    static serialBones = {
+        src: undefined,
+    };
+
+    static templates = [
+        this.makeTemplate("vert"),
+        this.makeTemplate("frag"),
+    ];
+    static makeTemplate(key) {
+        return {key, src: ()=>util.loadFileSync(`./glsl/${key}.glsl`), }
+    }
+
+    constructor(serialObj) {
+        super();
+        this.deserialize(serialObj);
+    }
+
+    deserialize(serialObj) {
+        serialObj = super.deserialize(serialObj);
+        this.key  = serialObj.key;
+        this.src  = (typeof serialObj.src === "function") ? serialObj.src() : serialObj.src;
+    }
+
+    // webgl shader type
+    get glType() {
+        return (this.key === "vert") ? App.gl.VERTEX_SHADER :
+               (this.key === "frag") ? App.gl.FRAGMENT_SHADER :
+               null;
+    };
+
+    get src() {
+        return (this.editor) ? this.editor.getValue() : this.tempSrc;
+    }
+    set src(val) {
+        if (this.editor && val) {
+            this.editor.setValue(val, -1);
+            this.tempSrc = "";
+        }
+        else {
+            this.tempSrc = val;
+        }
     }
 
     destroy() {
@@ -34,26 +70,9 @@ export default class LiveShader {
         }
     }
 
-    get src() {
-        return  (this.editor)  ? this.editor.getValue() :
-                (this.tempSrc) ? this.tempSrc :
-                "";
-    }
-    set src(val) {
-        if (this.editor && val) {
-            this.editor.setValue(val, -1);
-            this.tempSrc = null;
-        }
-        else {
-            this.tempSrc = val;
-        }
-    }
-
-    get defaultSrcPath() { return `./glsl/${this.glTypeStr}.glsl`; }
-
     compile() {
         if (this.src === "") {
-            console.log(`Will not attempt to compile, ${this.glTypeStr} source not set`);
+            console.log(`Will not attempt to compile, ${this.key} source not set`);
             return null;
         }
 
@@ -64,7 +83,7 @@ export default class LiveShader {
         gl.compileShader(this.glObj);
 
         if (!gl.getShaderParameter(this.glObj, gl.COMPILE_STATUS)) {
-            console.log(`Could not compile ${this.glTypeStr} this.glObj.`);
+            console.log(`Could not compile ${this.key} this.glObj.`);
             this.parseErrors(this);
             this.destroy();
             return null;
@@ -121,7 +140,7 @@ export default class LiveShader {
         this.editor.session.setAnnotations(annotations);
 
         if (errorMsg) {
-            console.log(`Errors in ${this.glTypeStr} shader:\n%c${errorMsg}`, "color:red;");
+            console.log(`Errors in ${this.key} shader:\n%c${errorMsg}`, "color:red;");
         }
     }
 
@@ -139,7 +158,7 @@ export default class LiveShader {
     createUI(parentEl) {
         this.el = parentEl.appendHTML(
             `<li>
-            <label class="collapsible">${this.glTypeStr.toStartCase()} Shader</label>
+            <label class="collapsible">${this.key.toStartCase()} Shader</label>
             <pre>${this.src}</pre>
             </li>`
         );
@@ -152,5 +171,3 @@ export default class LiveShader {
         this.tempSrc = null;
     }
 }
-
-

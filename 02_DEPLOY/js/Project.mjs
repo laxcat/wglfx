@@ -29,8 +29,8 @@ export default class Project extends Serializable {
     ];
 
     static serialBones = {
-        id:   null,
-        name: null,
+        id:   undefined,
+        name: undefined,
         pass: undefined,
         prog: undefined,
         unib: undefined,
@@ -44,8 +44,8 @@ export default class Project extends Serializable {
     deserialize(serialObj) {
         serialObj = super.deserialize(serialObj);
 
-        this.id =   serialObj.id    || this.nextId++;
-        this.name = serialObj.name  || this.newName;
+        this.id =   serialObj.id    || Project.nextId++;
+        this.name = serialObj.name  || Project.newName;
 
         // if previous children existed, make sure they destroy any created objects
         if (this.pass) this.pass.destroy();
@@ -93,6 +93,6 @@ export default class Project extends Serializable {
     }
 
     toString() {
-        return JSON.stringify(this.toObject());
+        return JSON.stringify(this.serialize());
     }
 }

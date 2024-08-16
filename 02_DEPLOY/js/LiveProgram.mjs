@@ -1,5 +1,6 @@
 import App from "./App.mjs"
 import LiveShader from "./LiveShader.mjs"
+import Serializable from "./Serializable.mjs"
 import * as util from "./util.mjs"
 
 /*
@@ -10,26 +11,38 @@ import * as util from "./util.mjs"
     TODO:
     • apply new "template" system of defaults
 */
-export default class LiveProgram {
+export default class LiveProgram extends Serializable {
     vert = null;    // instance of LiveShader
     frag = null;    // instance of LiveShader
     glObj = null;   // the webgl program object
     el = null;
 
-    static default = {
-        vert: () => util.loadFileSync("./glsl/vert.glsl"),
-        frag: () => util.loadFileSync("./glsl/frag.glsl"),
+    static serialBones = {
+        vert: undefined,
+        frag: undefined,
     };
 
-    constructor(obj=LiveProgram.default) {
-        this.vert = new LiveShader(App.gl.VERTEX_SHADER);
-        this.frag = new LiveShader(App.gl.FRAGMENT_SHADER);
-        this.fromObject(obj);
+    static templates = [
+        // send template keys to children for lookup on LiveShader
+        { vert: "vert", frag: "frag", default: true },
+    ];
+
+    constructor(serialObj) {
+        super();
+        this.deserialize(serialObj);
     }
 
-    fromObject(obj) {
-        this.vert.src = (typeof obj.vert === "function") ? obj.vert() : obj.vert;
-        this.frag.src = (typeof obj.frag === "function") ? obj.frag() : obj.frag;
+    deserialize(serialObj) {
+        serialObj = super.deserialize(serialObj);
+        for (const key in serialObj) {
+            if (serialObj[key] instanceof Object) {
+                serialObj[key].key = key;
+            }
+        }
+        // serialObj.vert.key = "vert"
+        // serialObj.frag.key = "frag"
+        this.vert = new LiveShader(serialObj.vert);
+        this.frag = new LiveShader(serialObj.frag);
     }
 
     destroy() {
@@ -120,14 +133,7 @@ export default class LiveProgram {
         this.frag.createUI(ul);
     }
 
-    toObject() {
-        return {
-            vert: this.vert.src,
-            frag: this.frag.src,
-        };
-    }
-
     toString() {
-        return JSON.stringify(this.toObject());
+        return JSON.stringify(this.serialize());
     }
 }

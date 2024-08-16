@@ -90,8 +90,8 @@ export default class WASMZ85 extends WASM {
         this.encodeStrInto(str, this.info.encodedDataPtr);
     }
 
-    // encode bytes in buffer into z85 string, or
-    // call without buffer to encode bytes already in decoded buffer
+    // Encode bytes in buffer into z85 string.
+    // Call without buffer to encode bytes already in decoded buffer.
     encode(buffer) {
         this.throwIfNotReady();
         if (buffer !== undefined) {
@@ -100,7 +100,7 @@ export default class WASMZ85 extends WASM {
         return this.#encode();
     }
 
-    // write string as data decoded buffer, then encode into z85 string
+    // Encode a string into a z85 string
     encodeString(str) {
         this.dataSize = str.length;
         this.encodeStrInto(str, this.info.decodedDataPtr);
@@ -119,13 +119,22 @@ export default class WASMZ85 extends WASM {
         return this.decodeCStr(this.info.encodedDataPtr, this.encodedDataSize);
     }
 
-    // decode z85 string to Uint8Array of bytes, either view or copy
-    decode(str, decodedSize, copy=false) {
+    // Decode z85 string to Uint8Array, either view or copy.
+    // The user may have saved the true decodedSize before encoding and can
+    // feed it back in here to get a correctly sized buffer.
+    decode(str, decodedSize=undefined, copy=false) {
         this.throwIfNotReady();
         if (str !== undefined) {
             this.fillEncodedBytes(str, decodedSize);
         }
         return this.#decode(str, copy);
+    }
+
+    // decodes z85 string to a ArrayBuffer
+    // Assumes no padding (data is usually 4-byte aligned)
+    // Assumes we want a copy
+    decodeData(str) {
+        return this.decode(str, undefined, true)?.buffer;
     }
 
     // decode z85 string to string, and trim end null bytes

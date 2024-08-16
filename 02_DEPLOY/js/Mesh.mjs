@@ -1,4 +1,5 @@
 import App from "./App.mjs"
+import Serializable from "./Serializable.mjs"
 import VertexAttribData from "./VertexAttribData.mjs"
 
 /*
@@ -16,27 +17,30 @@ import VertexAttribData from "./VertexAttribData.mjs"
       this level of performance is lower priority for a this kind of toy
       project
 */
-export default class Mesh {
+export default class Mesh extends Serializable {
     nVerts = 0;                 // number of vertices in the mesh
     attribsData = new Map();    // map of VertexAttribData, keyed by attrib name
     el = null;                  // base HTML element of mesh UI
 
-    constructor(obj) {
-        this.fromObject(obj);
+    static serialBones = {
+        nVerts: undefined,
+        attribsData: undefined,
+    };
+
+    constructor(serialObj) {
+        super();
+        this.deserialize(serialObj);
     }
 
-    fromObject(obj) {
-        if (!obj) {
-            obj = {};
-        }
+    deserialize(serialObj) {
+        serialObj = super.deserialize(serialObj);
 
-        this.nVerts = obj.nVerts;
+        this.nVerts = serialObj.nVerts;
 
-        this.destroy();
-        for (const key in obj.data) {
-            const attribObj = obj.data[key];
-            attribObj.name = key;
-            this.attribsData.set(key, new VertexAttribData(attribObj));
+        for (const key in serialObj.attribsData) {
+            const serialAttrib = serialObj.attribsData[key];
+            serialAttrib.key = key;
+            this.attribsData.set(key, new VertexAttribData(serialAttrib));
         }
     }
 
@@ -50,14 +54,14 @@ export default class Mesh {
         let i = layout.attribs.length;
         while (i--) {
             const attrib = layout.attribs[i];
-            const data = this.attribsData.get(attrib.name);
+            const data = this.attribsData.get(attrib.key);
             // no data found for this attribute
             if (!data) {
                 gl.disableVertexAttribArray(i);
                 continue;
             }
             if (attrib.size !== data.size) {
-                console.log(`could not bind attrib ${attrib.name}; layout attrib size: ${attrib.size}, data attrib size: ${data.size}`);
+                console.log(`could not bind attrib ${attrib.key}; layout attrib size: ${attrib.size}, data attrib size: ${data.size}`);
                 continue;
             }
             gl.bindBuffer(gl.ARRAY_BUFFER, data.glBuffer);
@@ -80,6 +84,7 @@ export default class Mesh {
     }
 
     draw() {
+        // console.log("mesh draw");
         App.gl.drawArrays(App.gl.TRIANGLES, 0, this.nVerts);
     }
 
@@ -100,18 +105,7 @@ export default class Mesh {
         this.attribsData.forEach(attrib => attrib.createUI(attribsEl));
     }
 
-    toObject() {
-        const obj = {
-            nVerts: this.nVerts,
-            data: {},
-        };
-        this.attribsData.forEach((attrib, key) => {
-            obj.data[key] = attrib.toObject();
-        });
-        return obj;
-    }
-
     toString() {
-        return JSON.stringify(this.toObject());
+        return JSON.stringify(this.serialize());
     }
 }

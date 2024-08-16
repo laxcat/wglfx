@@ -1,8 +1,9 @@
 import App from "./App.mjs"
-import VertexLayout from "./VertexLayout.mjs"
-import VertexAttrib from "./VertexAttrib.mjs"
 import Color from "./Color.mjs"
 import Mesh from "./Mesh.mjs"
+import Serializable from "./Serializable.mjs"
+import VertexAttrib from "./VertexAttrib.mjs"
+import VertexLayout from "./VertexLayout.mjs"
 import * as ui from "./util-ui.mjs"
 
 /*
@@ -12,7 +13,7 @@ import * as ui from "./util-ui.mjs"
     TODO:
     • ability to draw to texture for multiple pass pipelines
 */
-export default class Pass {
+export default class Pass extends Serializable {
     clearColor = new Color();
     layout = null;
     meshes = [];
@@ -23,14 +24,14 @@ export default class Pass {
             key: "basic2d",
             default: true,
             clear: "000000",
-            layout: [
-                {name: "pos",   size: 4},
-                {name: "color", size: 4},
-            ],
+            layout: { attribs:[
+                {key: "pos",   size: 4},
+                {key: "color", size: 4},
+            ]},
             meshes: [
                 {
                     nVerts: 6,
-                    data: {
+                    attribsData: {
                         pos: {
                             data: new Float32Array([
                                 0.50,   1.00,   0.00,   1.00,
@@ -59,38 +60,39 @@ export default class Pass {
         },
     ];
 
-    constructor(obj) {
-        this.fromObject(obj);
+    static serialBones = {
+        clearColor: undefined,
+        layout: undefined,
+        meshes: undefined,
     }
 
-    fromObject(obj) {
-        // create from default template
-        if (!obj) {
-            obj = Pass.makeObjectFromTemplate();
-        }
-        // create from specified template
-        else if (typeof obj === "string") {
-            obj = Pass.makeObjectFromTemplate(obj);
-        }
+    constructor(serialObj) {
+        super();
+        this.deserialize(serialObj);
+    }
+
+    deserialize(serialObj) {
+        serialObj = super.deserialize(serialObj);
 
         // set clear color
-        this.setClearColor(obj.clear);
+        this.setClearColor(serialObj.clear);
 
         // set new pass layout. never has buffers.
-        if (this.layout) {
-            this.layout.fromObject(obj.layout);
-        }
-        else {
-            this.layout = new VertexLayout(obj.layout);
-        }
+        this.layout = new VertexLayout(serialObj.layout);
 
         // create new meshes
         // make sure mesh buffers are destroyed
         this.destroy();
-        obj.meshes.forEach(mesh => {
-            mesh.layout = obj.layout;
-            this.meshes.push(new Mesh(mesh));
+        serialObj.meshes.forEach(serialMesh => {
+            serialMesh.layout = serialObj.layout;
+            this.meshes.push(new Mesh(serialMesh));
         });
+    }
+
+    serialize() {
+        const serialObj = super.serialize();
+        serialObj.clear = this.clearColor.toRGBAStr();
+        return serialObj;
     }
 
     destroy() {
@@ -191,7 +193,7 @@ export default class Pass {
         defaultButtonEl.addEventListener("click", e => {
             e.preventDefault();
             if (confirm("Really DELETE ALL CHANGES and restore pass settings and data to default?")) {
-                this.fromObject(Pass.default);
+                this.deserialize(Pass.default);
                 this.resetUI();
             }
         });
@@ -227,26 +229,7 @@ export default class Pass {
         return true;
     }
 
-    static makeObjectFromTemplate(key) {
-        const obj = {...Pass.templates.findByKeyOrDefault(key)};
-
-        // if not set, set children to key (pass template key through to children)
-        if (!obj.clear)     obj.clear = key;
-        if (!obj.layout)    obj.layout = key;
-        if (!obj.meshes)    obj.meshes = key;
-
-        return obj;
-    }
-
-    toObject() {
-        return {
-            clear: this.clearColor.toRGBAStr(),
-            layout: this.layout.toObject(),
-            meshes: this.meshes.map(mesh => mesh.toObject()),
-        }
-    }
-
     toString() {
-        return JSON.stringify(this.toObject());
+        return JSON.stringify(this.serialize());
     }
 }

@@ -1,46 +1,58 @@
 import App from "./App.mjs"
+import Serializable from "./Serializable.mjs"
 import * as ui from "./util-ui.mjs"
 
 /*
     Vertex attribute data, related operations and UI.
     Each vertex attrib gets its own buffer.
-    Each VertexAttribData gets mapped by name to Mesh.attribsData, then is
+    Each VertexAttribData gets mapped by key to Mesh.attribsData, then is
     bound according to the current passes vertex layout.
     Data is always array of float32.
 */
 
-export default class VertexAttribData {
+export default class VertexAttribData extends Serializable {
     size = 4;           // number of components
-    name = "";          // key, must match VertexAttrib name (pos, norm, color, etc.)
-    glBuffer = null;    // when VertexLayout assigned to a pass, buffers get stored here
-    data = null;        // when VertexLayout assigned to a pass, keep copy of buffer data here
+    key = "";           // must match VertexAttrib key (pos, norm, color, etc.)
+    data = null;        // keep copy of buffer data here
+    glBuffer = null;    // buffers get stored here
     editor = null;      // ace editor, replaces dataEl
 
     #uiDirty = false;    // ui data has changed, has not been set to local/gpu yet
 
-    constructor(obj) {
-        this.fromObject(obj);
+    static serialBones = {
+        size: undefined,
+        key: undefined,
+        data: undefined,
+    };
+
+    constructor(serialObj) {
+        super();
+        this.deserialize(serialObj);
     }
 
-    fromObject(obj) {
-        if (!obj) {
-            obj = {};
-        }
+    deserialize(serialObj) {
+        serialObj = super.deserialize(serialObj);
 
-        this.size = obj.size;
-        this.name = obj.name;
+        this.size = serialObj.size;
+        this.key = serialObj.key;
 
-        this.deleteBuffer();
-        this.data = null;
-        if (typeof obj.data === "string") {
+        if (typeof serialObj.data === "string") {
             // copy=true because otherwise the Float32Array remains attached
             // to underlying buffer based on wasm memory.
-            const arr = App.z85.decodeTo(Float32Array, obj.data, true);
+            const arr = App.z85.decodeTo(Float32Array, serialObj.data, true);
             this.createBuffer(arr);
         }
-        else if (obj.data instanceof Float32Array) {
-            this.createBuffer(obj.data);
+        else if (serialObj.data instanceof Float32Array) {
+            this.createBuffer(serialObj.data);
         }
+    }
+
+    serialize() {
+        return {
+            size: this.size,
+            key: this.key,
+            data: App.z85.encode(this.data),
+        };
     }
 
     destroy() {
@@ -87,7 +99,7 @@ export default class VertexAttribData {
     }
 
     uploadData() {
-        console.log(`Uploading vertex attrib ${this.name} local data to GPU.`);
+        console.log(`Uploading vertex attrib ${this.key} local data to GPU.`);
         const gl = App.gl;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.data);
@@ -109,7 +121,7 @@ export default class VertexAttribData {
         });
         maxLen = (maxLen === 1) ? 0 : maxLen - 2;
         if (maxLen > 3) maxLen = 3;
-        // console.log("max len in ", this.name, maxLen, hasNeg.length);
+        // console.log("max len in ", this.key, maxLen, hasNeg.length);
         this.data.forEach(item => {
             str += `${item<0?"":hasNeg}${item.toFixed(maxLen)}  `;
             ++rowIndex;
@@ -136,7 +148,7 @@ export default class VertexAttribData {
                 uiData.push(f);
             }
         })
-        console.log(`Updating vertex attrib ${this.name} data from UI:\n` +
+        console.log(`Updating vertex attrib ${this.key} data from UI:\n` +
                     `UI has ${uiData.length} elements. (Data buffer has ${this.data.length})`
         );
         // don't go beyond bound of this.data or uiData. we don't care which is bigger.
@@ -167,7 +179,7 @@ export default class VertexAttribData {
     createUI(parentEl) {
         const dataEl = parentEl.appendHTML(
             `<li>
-                <div>${this.name}</div>
+                <div>${this.key}</div>
                 <pre>${this.dataStr}</pre>
             </li>`
         );
@@ -177,15 +189,7 @@ export default class VertexAttribData {
         })
     }
 
-    toObject() {
-        return {
-            size: this.size,
-            name: this.name,
-            data: App.z85.encode(this.data),
-        };
-    }
-
     toString() {
-        return JSON.stringify(this.toObject());
+        return JSON.stringify(this.serialize());
     }
 }
