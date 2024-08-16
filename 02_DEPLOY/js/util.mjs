@@ -59,8 +59,10 @@ HTMLCollection.prototype.last = function() {
 /*
     Find item in Array where item[keyProp] === key.
     key can be anything not nullish, including 0.
-    If not found, returns item where item[defaultProp] is not falsy.
-    If not found, returns null.
+    If not found, returns item where item[defaultProp] is not falsy. (as in {default: true})
+    If not found, returns item where item[keyProp] === defaultProp. (as in {key: "default"})
+    If not found, returns first item in array.
+    If array is empty returns null.
 
     Example:
 
@@ -73,33 +75,39 @@ HTMLCollection.prototype.last = function() {
     console.log(a.findByKeyOrDefault()    );  // returns a[0]
     console.log(a.findByKeyOrDefault("b") );  // returns a[1]
     console.log(a.findByKeyOrDefault(0)   );  // returns a[2]
-    console.log(a.findByKeyOrDefault("7") );  // no === match, returns default a[0]
+    console.log(a.findByKeyOrDefault("7") );  // no strict match, returns default a[0]
     delete a[0].default;
-    console.log(a.findByKeyOrDefault("7") );  // no === match, no default, returns null
+    console.log(a.findByKeyOrDefault("7") );  // no strict match, no default, returns null
 */
 Array.prototype.findByKeyOrDefault = function(key, keyProp="key", defaultProp="default") {
-    // don't search for key if nullish, just try to find default
-    if ((key ?? null) === null) {
-        return this.find(item => item[defaultProp]);
-    }
-
-    // key passed, so we'll favor it, otherwise default if found
+    // shortcut quickly if array is empty
     const e = this.length;
+    if (e === 0) return null;
+
+    // search according to rules
     let i = 0;
-    let defaultItem = null;
+    let defaultByProp = null;
+    let defaultByKey = null;
+    const lookForKey = ((key ?? null) !== null);
     while (i < e) {
         const item = this[i];
-        // favor finding key
-        if (item[keyProp] === key) {
+        // favor finding key, if it was defined
+        if (lookForKey && item[keyProp] === key) {
+            // RETURN AS SOON AS FOUND!!
             return item;
         }
-        // note the default if we encounter it (uses first found)
-        if (!defaultItem && item[defaultProp]) {
-            defaultItem = item;
+        // note this item has a non-falsy default prop
+        if (!defaultByProp && item[defaultProp]) {
+            defaultByProp = item;
+        }
+        // note this item's key is set to defaultProp
+        if (!defaultByKey && lookForKey && item[keyProp] === defaultProp) {
+            defaultByKey = item;
         }
         ++i;
     }
-    return defaultItem;
+    // key not found. return default according to rules
+    return defaultByProp || defaultByKey || this[0];
 }
 
 

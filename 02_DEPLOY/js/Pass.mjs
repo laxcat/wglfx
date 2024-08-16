@@ -21,41 +21,12 @@ export default class Pass extends Serializable {
     static templates = [
         {
             key: "basic2d",
-            default: true,
             clear: "000000",
             layout: [
                 {key: "pos",   size: 4},
                 {key: "color", size: 4},
             ],
-            meshes: [
-                {
-                    nVerts: 6,
-                    attribsData: {
-                        pos: {
-                            data: new Float32Array([
-                                0.50,   1.00,   0.00,   1.00,
-                                1.00,  -1.00,   0.00,   1.00,
-                               -1.00,  -1.00,   0.00,   1.00,
-                               -0.50,   1.00,   0.00,   1.00,
-                                1.00,  -1.00,   0.00,   1.00,
-                               -1.00,  -1.00,   0.00,   1.00,
-                            ]),
-                            size: 4,
-                        },
-                        color: {
-                            data: new Float32Array([
-                                0.5,  0.0,  0.0,  1.0,
-                                0.0,  0.0,  0.0,  1.0,
-                                0.0,  0.0,  0.0,  1.0,
-                                0.0,  0.5,  0.5,  1.0,
-                                0.0,  0.0,  0.0,  1.0,
-                                0.0,  0.0,  0.0,  1.0,
-                            ]),
-                            size: 4,
-                        },
-                    },
-                },
-            ],
+            meshes: ["debugTriangles"],
         },
     ];
 
