@@ -18,14 +18,11 @@ import VertexAttribData from "./VertexAttribData.mjs"
       project
 */
 export default class Mesh extends Serializable {
-    nVerts = 0;                 // number of vertices in the mesh
-    attribsData = new Map();    // map of VertexAttribData, keyed by attrib name
-    el = null;                  // base HTML element of mesh UI
-
-    static serialBones = {
-        nVerts: undefined,
-        attribsData: undefined,
+    static serialProps = {
+        nVerts: undefined,                      // number of vertices in the mesh
+        attribsData: {Map, VertexAttribData},   // new Map() of VertexAttribData, keyed by attrib name
     };
+    el = null;                                  // base HTML element of mesh UI
 
     static templates = [
         {
@@ -59,20 +56,10 @@ export default class Mesh extends Serializable {
     ];
 
     constructor(serialObj) {
-        super();
-        this.deserialize(serialObj);
-    }
-
-    deserialize(serialObj) {
-        serialObj = super.deserialize(serialObj);
-
-        this.nVerts = serialObj.nVerts;
-
-        for (const key in serialObj.attribsData) {
-            const serialAttrib = serialObj.attribsData[key];
-            serialAttrib.key = key;
-            this.attribsData.set(key, new VertexAttribData(serialAttrib));
-        }
+        super(serialObj);
+        // TODO: i would rather this happen in VertexAttribData...
+        // but VertexAttribData needs nVerts and i'm not sure how to supply it
+        this.attribsData.forEach(attrib => attrib.createBuffer(this.nVerts));
     }
 
     destroy() {
@@ -134,9 +121,5 @@ export default class Mesh extends Serializable {
         );
         const attribsEl = this.el.querySelector("ul.attribs");
         this.attribsData.forEach(attrib => attrib.createUI(attribsEl));
-    }
-
-    toString() {
-        return JSON.stringify(this.serialize());
     }
 }

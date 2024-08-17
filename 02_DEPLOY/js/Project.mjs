@@ -13,11 +13,13 @@ import * as ui from "./util-ui.mjs"
     • save each project to its own localStorage item
 */
 export default class Project extends Serializable {
-    id = 0;
-    name = "";
-    pass = null;
-    prog = null;
-    unib = null;
+    static serialProps = {
+        id:   undefined,
+        name: undefined,
+        pass: Pass,
+        prog: ShaderProgram,
+        unib: UniformBuffer,
+    };
 
     static nextId = 1;
     static newName = "New Project";
@@ -28,39 +30,21 @@ export default class Project extends Serializable {
         {key:"basic3d"},
     ];
 
-    static serialBones = {
-        id:   undefined,
-        name: undefined,
-        pass: undefined,
-        prog: undefined,
-        unib: undefined,
-    };
+    get valid() { return !!this.prog?.compiled; }
 
     constructor(serialObj) {
-        super();
-        this.deserialize(serialObj);
-    }
-
-    deserialize(serialObj) {
-        serialObj = super.deserialize(serialObj);
-
-        this.id =   serialObj.id    || Project.nextId++;
-        this.name = serialObj.name  || Project.newName;
-
-        // if previous children existed, make sure they destroy any created objects
-        if (this.pass) this.pass.destroy();
-        if (this.prog) this.prog.destroy();
-        if (this.unib) this.unib.destroy();
-
-        // serialObj's children (serialObj.pass) follow standard fromObject rules (see above)
-        this.pass = new Pass(serialObj.pass);
-        this.prog = new ShaderProgram(serialObj.prog);
-        this.unib = new UniformBuffer(serialObj.unib);
+        super(serialObj);
+        if (!this.id)   this.id = Project.nextId++;
+        if (!this.name) this.name = Project.newName;
     }
 
     compile() {
         this.prog.compile(this.unib.name);
         App.gl.logErrors("COMPILE");
+    }
+
+    tick() {
+        this.unib.update();
     }
 
     draw() {
@@ -90,9 +74,5 @@ export default class Project extends Serializable {
 
         // add program ui
         this.prog.createUI(parentEl);
-    }
-
-    toString() {
-        return JSON.stringify(this.serialize());
     }
 }

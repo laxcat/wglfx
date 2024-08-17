@@ -2,6 +2,32 @@
     Generic utility code
 */
 
+// VAR "TYPE" DETECTION ///////////////////////////////////////////////////// //
+
+// https://masteringjs.io/tutorials/fundamentals/pojo
+export function isPOJO(arg) {
+    if (arg == null || typeof arg !== 'object') {
+        return false;
+    }
+    const proto = Object.getPrototypeOf(arg);
+    if (proto == null) {
+        return true; // `Object.create(null)`
+    }
+    return proto === Object.prototype;
+}
+
+export function isArray(arg) {
+    return (arg instanceof Array);
+}
+
+export function isFn(arg) {
+    return (typeof arg === "function");
+}
+
+export function isStr(arg) {
+    return (typeof arg === "string");
+}
+
 // UTILITY ////////////////////////////////////////////////////////////////// //
 
 export function loadFileSync(path) {
@@ -13,6 +39,15 @@ export function loadFileSync(path) {
         return request.responseText;
     }
     return null;
+}
+
+// https://stackoverflow.com/a/14810722
+export function objectMap(obj, fn) {
+    return Object.fromEntries(
+        Object.entries(obj).map(
+            ([k, v], i) => [k, fn(v, k, i)]
+        )
+    );
 }
 
 

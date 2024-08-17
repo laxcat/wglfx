@@ -7,32 +7,12 @@ import * as ui from "./util-ui.mjs"
     Does not hold attrib data (see VertexAttribData).
 */
 export default class VertexAttrib  extends Serializable {
-    index = 0;          // vertex attribute index
-    size = 4;           // number of compoenents
-    key = "";           // key to indicate nature of data. pos, norm, color, etc.
-                        // key should match key in mesh attrib data
-
-    static serialBones = {
-        index: undefined,
-        size: undefined,
-        key: undefined,
+    static serialProps = {
+        index: undefined,   // vertex attribute index
+        size: undefined,    // number of compoenents
+        key: undefined,     // key to indicate nature of data. pos, norm, color, etc.
+                            // key should match key in mesh attrib data
     };
-
-    constructor(serialObj) {
-        super();
-        this.deserialize(serialObj);
-    }
-
-    deserialize(serialObj) {
-        serialObj = super.deserialize(serialObj);
-
-        Object.assign(this, serialObj);
-
-        // enabling/disabling vertex attribs handled in mesh.bind() for now
-        // would be nice to just set once here, but needs to be disabled if
-        // a particular mesh doesn't have data for the enabled index.
-        // App.gl.enableVertexAttribArray(this.index);
-    }
 
     createUI(parentEl) {
         parentEl.appendHTML(
@@ -44,9 +24,5 @@ export default class VertexAttrib  extends Serializable {
             `${(this.size * 4).toString().padStart(2)} bytes`+
             `</li>`
         );
-    }
-
-    toString() {
-        return JSON.stringify(this.toObject());
     }
 }

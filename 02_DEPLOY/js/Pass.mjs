@@ -13,9 +13,11 @@ import * as ui from "./util-ui.mjs"
     • ability to draw to texture for multiple pass pipelines
 */
 export default class Pass extends Serializable {
-    clearColor = new Color();
-    layout = [];       // array of VertexAttribData
-    meshes = [];
+    static serialProps = {
+        clearColor: Color,
+        layout: [VertexAttrib],
+        meshes: [Mesh],
+    }
     el = null;
 
     static templates = [
@@ -30,36 +32,9 @@ export default class Pass extends Serializable {
         },
     ];
 
-    static serialBones = {
-        clearColor: undefined,
-        layout: undefined,
-        meshes: undefined,
-    }
-
-    constructor(serialObj) {
-        super();
-        this.deserialize(serialObj);
-    }
-
-    deserialize(serialObj) {
-        serialObj = super.deserialize(serialObj);
-
-        // set clear color
-        this.setClearColor(serialObj.clear);
-
-        // set pass layout as aaray of VertexAttrib
-        this.layout = serialObj.layout.map((serialAttrib, index) => {
-            if (serialAttrib.index === undefined) serialAttrib.index = index;
-            return new VertexAttrib(serialAttrib);
-        });
-
-        // create new meshes
-        this.meshes = serialObj.meshes.map(serialMesh => new Mesh(serialMesh));
-    }
-
     serialize() {
         const serialObj = super.serialize();
-        serialObj.clear = this.clearColor.toRGBAStr();
+        serialObj.clearColor = this.clearColor.toRGBAStr();
         return serialObj;
     }
 
@@ -203,7 +178,4 @@ export default class Pass extends Serializable {
         return true;
     }
 
-    toString() {
-        return JSON.stringify(this.serialize());
-    }
 }

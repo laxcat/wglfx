@@ -1,5 +1,6 @@
 import App from "./App.mjs"
 import Serializable from "./Serializable.mjs"
+import { isStr } from "./util.mjs"
 import * as ui from "./util-ui.mjs"
 
 /*
@@ -11,39 +12,19 @@ import * as ui from "./util-ui.mjs"
 */
 
 export default class VertexAttribData extends Serializable {
-    size = 4;           // number of components
-    key = "";           // must match VertexAttrib key (pos, norm, color, etc.)
-    data = null;        // keep copy of buffer data here
-    glBuffer = null;    // buffers get stored here
-    editor = null;      // ace editor, replaces dataEl
-
-    #uiDirty = false;    // ui data has changed, has not been set to local/gpu yet
-
-    static serialBones = {
-        size: undefined,
-        key: undefined,
-        data: undefined,
+    static serialProps = {
+        key: undefined,     // number of components
+        size: undefined,    // must match VertexAttrib key (pos, norm, color, etc.)
+        data: undefined,    // keep copy of buffer data here
     };
+    glBuffer = null;        // buffers get stored here
+    editor = null;          // ace editor, replaces dataEl
+    #uiDirty = false;       // ui data has changed, has not been set to local/gpu yet
 
     constructor(serialObj) {
-        super();
-        this.deserialize(serialObj);
-    }
-
-    deserialize(serialObj) {
-        serialObj = super.deserialize(serialObj);
-
-        this.size = serialObj.size;
-        this.key = serialObj.key;
-
-        if (typeof serialObj.data === "string") {
-            // copy=true because otherwise the Float32Array remains attached
-            // to underlying buffer based on wasm memory.
-            const arr = App.z85.decodeTo(Float32Array, serialObj.data, true);
-            this.createBuffer(arr);
-        }
-        else if (serialObj.data instanceof Float32Array) {
-            this.createBuffer(serialObj.data);
+        super(serialObj)
+        if (isStr(this.data)) {
+            this.data = App.z85.decodeTo(Float32Array, this.data, true);
         }
     }
 
@@ -59,8 +40,8 @@ export default class VertexAttribData extends Serializable {
         this.deleteBuffer();
     }
 
-    createBuffer(floatArray) {
-        if (this.glBuffer || this.data) {
+    createBuffer(nVerts) {
+        if (this.glBuffer) {
             throw `Unexpected call to createBuffer. Buffer already created.\n`+
                   `${this.glBuffer}\n`+
                   `${this.data}\n`;
@@ -68,8 +49,10 @@ export default class VertexAttribData extends Serializable {
         const gl = App.gl;
         this.glBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.glBuffer);
-        this.data = floatArray;
-        gl.bufferData(gl.ARRAY_BUFFER, floatArray, gl.STATIC_DRAW);
+        if (!this.data) {
+            this.data = new Float32Array(this.size * nVerts); // TODO fix this
+        }
+        gl.bufferData(gl.ARRAY_BUFFER, this.data, gl.STATIC_DRAW);
         // gl.vertexAttribPointer(this.index, this.size, gl.FLOAT, false, 0, 0);
         // gl.enableVertexAttribArray(this.index);
     }
@@ -186,10 +169,6 @@ export default class VertexAttribData extends Serializable {
         this.editor = ui.aceit(dataEl.querySelector("pre"), "ace/mode/text");
         this.editor.addEventListener("change", e => {
             this.#uiDirty = true;
-        })
-    }
-
-    toString() {
-        return JSON.stringify(this.serialize());
+        });
     }
 }

@@ -12,38 +12,19 @@ import * as util from "./util.mjs"
     • apply new "template" system of defaults
 */
 export default class ShaderProgram extends Serializable {
-    vert = null;    // instance of Shader
-    frag = null;    // instance of Shader
-    glObj = null;   // the webgl program object
-    el = null;
-
-    static serialBones = {
-        vert: undefined,
-        frag: undefined,
+    static serialProps = {
+        vert: Shader,   // instance of Shader
+        frag: Shader,   // instance of Shader
     };
+    glObj = null;       // the webgl program object
+    el = null;
 
     static templates = [
         // send template keys to children for lookup on Shader
-        { vert: "vert", frag: "frag", default: true },
+        { vert: "vert", frag: "frag" },
     ];
 
-    constructor(serialObj) {
-        super();
-        this.deserialize(serialObj);
-    }
-
-    deserialize(serialObj) {
-        serialObj = super.deserialize(serialObj);
-        for (const key in serialObj) {
-            if (serialObj[key] instanceof Object) {
-                serialObj[key].key = key;
-            }
-        }
-        // serialObj.vert.key = "vert"
-        // serialObj.frag.key = "frag"
-        this.vert = new Shader(serialObj.vert);
-        this.frag = new Shader(serialObj.frag);
-    }
+    get compiled() { return !!this.glObj; }
 
     destroy() {
         App.gl.deleteProgram(this.glObj);
@@ -131,9 +112,5 @@ export default class ShaderProgram extends Serializable {
         const ul = this.el.children[1];
         this.vert.createUI(ul);
         this.frag.createUI(ul);
-    }
-
-    toString() {
-        return JSON.stringify(this.serialize());
     }
 }

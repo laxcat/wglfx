@@ -10,16 +10,14 @@ import * as ui from "./util-ui.mjs"
     Shows compile errors directly in editor UI.
 */
 export default class Shader extends Serializable {
-    key = ""            // "vert" or "frag" string
-    tempSrc = "";       // holds source code when editor isn't set yet. should be null if editor is non null.
-    editor = null;      // instance of ace.editor
-    errors = [];        // array of error objects, see parseErrors
-    glObj = null;       // the webgl shader object
-    el = null;          // reference to the primary HTML element of the UI
-
-    static serialBones = {
+    static serialProps = {
+        key: undefined,
         src: undefined,
     };
+    editor = null;          // instance of ace.editor
+    errors = [];            // array of error objects, see parseErrors
+    glObj = null;           // the webgl shader object
+    el = null;              // reference to the primary HTML element of the UI
 
     static templates = [
         this.makeTemplate("vert"),
@@ -30,14 +28,7 @@ export default class Shader extends Serializable {
     }
 
     constructor(serialObj) {
-        super();
-        this.deserialize(serialObj);
-    }
-
-    deserialize(serialObj) {
-        serialObj = super.deserialize(serialObj);
-        this.key  = serialObj.key;
-        this.src  = (typeof serialObj.src === "function") ? serialObj.src() : serialObj.src;
+        super(serialObj);
     }
 
     // webgl shader type
@@ -47,16 +38,20 @@ export default class Shader extends Serializable {
                null;
     };
 
+    // hidden prop _src holds source code when editor isn't set yet
     get src() {
-        return (this.editor) ? this.editor.getValue() : this.tempSrc;
+        return this.editor?.getValue() ?? this._src;
     }
     set src(val) {
+        if (typeof val === "function") {
+            val = val();
+        }
         if (this.editor && val) {
             this.editor.setValue(val, -1);
-            this.tempSrc = "";
+            delete this._src;
         }
         else {
-            this.tempSrc = val;
+            this._src = val;
         }
     }
 
@@ -156,7 +151,7 @@ export default class Shader extends Serializable {
         this.el = parentEl.appendHTML(
             `<li>
             <label class="collapsible">${this.key.toStartCase()} Shader</label>
-            <pre>${this.src}</pre>
+            <pre></pre>
             </li>`
         );
         this.editor = ui.aceit(this.el.querySelector("pre"));
@@ -165,6 +160,9 @@ export default class Shader extends Serializable {
         this.editor.addEventListener("change", () => {
             this.clearErrors();
         });
-        this.tempSrc = null;
+        if (this._src) {
+            this.src = this._src;
+            delete this._src;
+        }
     }
 }

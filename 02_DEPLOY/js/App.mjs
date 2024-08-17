@@ -74,7 +74,9 @@ export default class App {
         App.time.isRunning = true;
 
         // start the run loop
-        this.loop(0);
+        if (this.project.valid) {
+            this.loop(0);
+        }
     }
 
     get uiShowing() {
@@ -127,7 +129,7 @@ export default class App {
             return;
         }
 
-        this.project.unib.update();
+        this.project.tick();
     }
 
     save() {
