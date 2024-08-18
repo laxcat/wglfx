@@ -41,40 +41,45 @@ export default class App {
     }
 
     load() {
-        const loaded = localStorage.getItem("main");
+        // loads the list of projects, but no projects yet
+        App.projectList.load();
 
         // setup z85 encoder/decoder
         App.z85 = new WASMZ85();
         // test z85 encoder/decoder
         // App.z85.addEventListener(WASMZ85.READY, App.z85.test);
 
-        // we need the decoder to parse data in the loaded data
-        if (loaded) {
+        // We need the decoder to parse the project load
+        // does the project list have a selected project to load?
+        if (App.projectList.selected) {
             App.z85.addEventListener(WASMZ85.READY, () => {
-                this.#onLoad(JSON.parse(loaded));
+                this.#onLoad();
             });
         }
-        // if nothing was loaded from localStorage, we don't need the z85 decoder right away
+        // no projects found, we don't need the z85 decoder right away
         else {
             this.#onLoad();
         }
     }
 
     #onLoad(loadedObj) {
-        // setup project, from loaded or default
-        this.project = new Project(loadedObj);
+        // setup project, load last selected project or create default
+        App.project = App.projectList.createProject();
+
+        console.log("projectList", App.projectList);
+        console.log("project", App.project);
 
         // create the HTML UI
         this.createUI();
 
         // compile the shader program
-        this.project.compile();
+        App.project.compile();
 
         // setup the simulations
         App.time.isRunning = true;
 
         // start the run loop
-        if (this.project.valid) {
+        if (App.project.valid) {
             this.loop(0);
         }
     }
@@ -118,7 +123,7 @@ export default class App {
         this.tick();
 
         // draw
-        this.project.draw();
+        App.project.draw();
 
         // next loop
         requestAnimationFrame(this.loop.bind(this));
@@ -128,26 +133,19 @@ export default class App {
         if (!App.time.isRunning) {
             return;
         }
-
-        this.project.tick();
+        App.project.tick();
     }
 
     save() {
         console.log("SAVE START -----------------------------------------------------")
-        Coloris.close();
-        this.project.pass.updateDataFromUI();
-        this.project.unib.updateDataFromUI();
-        this.project.unib.update();
-        this.project.compile();
-        let serialObj = this.project.serialize();
-        console.log(serialObj);
-        localStorage.setItem("main", JSON.stringify(serialObj));
+        App.project.save();
+        App.projectList.save();
         console.log("------------------------------------------------------- SAVE END");
     }
 
     createUI(parentEl) {
         if (!parentEl) parentEl = document.getElementById("ui");
-        this.project.createUI(parentEl);
+        App.project.createUI(parentEl);
         // adds systematic handlers, etc
         ui.parse(parentEl);
     }

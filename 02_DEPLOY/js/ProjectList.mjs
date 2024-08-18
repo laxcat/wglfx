@@ -1,75 +1,93 @@
 import App from "./App.mjs"
 import Project from "./Project.mjs"
+import Serializable from "./Serializable.mjs"
 
 /*
     A list of projects, and operations to manage projects.
 */
-export default class ProjectList {
 
-    projects = [];
-    #selected = -1;
+class ProjListItem extends Serializable {
+    static serialProps = {
+        id: undefined,
+        name: undefined,
+    }
+}
 
+export default class ProjectList extends Serializable {
+    static serialProps = {
+        nextProjectId:      undefined,
+        selectedIndex:      undefined,
+        projLIs:            [ProjListItem],
+        projectTemplates:   [ProjListItem],
+    }
+
+    // default construction of ProjectList when none found on dist
     static templates = [
-        {key: "blank",   name: "Blank"},
-        {key: "basic2d", name: "Basic 2D", default: true},
-        {key: "basic3d", name: "Basic 3D"},
+        {
+            nextProjectId: 1,
+            selectedIndex: 0,
+            projLIs: [],
+            projectTemplates: Project.templates,
+        }
     ];
 
     get selected() {
-        return (this.#selected < this.projects.length) ?
-            this.projects[this.#selected] :
+        return (this.selectedIndex < this.projLIs.length) ?
+            this.projLIs[this.selectedIndex] :
             null;
     }
 
-    get projectCount() { return this.projects.length; }
+    get projectCount() { return this.projLIs.length; }
 
     load() {
         // load from disk
         const loaded = localStorage.getItem(App.KEY_PROJ_LIST);
-
-        //
         if (loaded) {
-            Project.nextId = loaded.nextProjectId;
-            this.projects = loaded.projects;
+            this.deserialize(JSON.parse(loaded));
         }
+        return this.selected; // ProjListItem (not Project!)
+    }
 
-        if (this.projects.length) {
-            this.projects.forEach((item, i) => {
-                if (item.selected) {
-                    this.#selected = i;
-                }
-            });
-            if (this.#selected === -1) {
-                this.#selected = 0;
+    createProject(listItemOrId) {
+        const id = (
+            // falsy passed in, use selected
+            (!listItemOrId ? this.selected?.id : null) ??
+            // listItem.id
+            ProjListItem.orNull(listItemOrId)?.id ??
+            // id was passed in, find the list item
+            this.projLIs.find(li => (li.id === listItemOrId))?.id ??
+            0
+        );
+        let proj = null;
+        if (id) {
+            const serialObj = Project.load(id);
+            if (serialObj) {
+                proj = new Project(serialObj);
             }
         }
+        if (!proj) {
+            proj = new Project({
+                id: this.nextProjectId++,
+                name: "Brand New Project"
+            });
+            this.addEntry(proj.id, proj.name, true);
+        }
+        return proj; // Project
     }
 
     save() {
-        const obj = {
-            nextProjectId: Project.nextId,
-            projects: this.projects,
-        };
-        localStorage.setItem(App.KEY_PROJ_LIST);
-    }
-
-    createProjectFromTemplate(key) {
-        item = {...ProjectList.templates.findKeyOrDefault(key)};
-
-        if (!item) {
-            return null;
-        }
-
-        const proj = new Project(item.key);
-        this.addEntry(proj.id, proj.name, true);
-        return proj;
+        const serialObj = this.serialize();
+        localStorage.setItem(App.KEY_PROJ_LIST, JSON.stringify(serialObj));
+        console.log("???", serialObj);
+        return serialObj;
     }
 
     addEntry(id, name, selected) {
-        projects.push({
-            id: id,
-            name: name,
-            selected: (selected) ? true : false,
-        });
+        this.projLIs.push(
+            new ProjListItem({id, name})
+        );
+        if (selected) {
+            this.selectedIndex = this.projLIs.length - 1;
+        }
     }
 }

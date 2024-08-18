@@ -163,4 +163,9 @@ export default class Serializable {
     // TODO: these need to be deep copied probably
     get defaultTemplate() { return this.constructor.templates?.findByKeyOrDefault(); }
     getTemplate(key) { return this.constructor.templates?.findByKeyOrDefault(key); }
+
+    // utility that returns passed if is an instance of this class, null otherwise
+    static orNull(obj) {
+        return (obj instanceof this.constructor) ? obj : null;
+    }
 }

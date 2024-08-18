@@ -21,22 +21,28 @@ export default class Project extends Serializable {
         unib: UniformBuffer,
     };
 
-    static nextId = 1;
-    static newName = "New Project";
-
     static templates = [
-        {key:"blank"},
-        {key:"basic2d", default: true},
-        {key:"basic3d"},
+        {key:"blank", name:"Blank", },
+        {key:"basic2d", name:"Basic 2D", default: true},
+        {key:"basic3d", name:"Basic 3D", },
     ];
+
+    static load(id) {
+        const storageKey = Project.getStorageKey(id);
+        let serialStr;
+        if (typeof id !== "number" ||
+            (!(serialStr = localStorage.getItem(storageKey)))) {
+            console.log(`WARNING! Could not load ${storageKey}`);
+            return null;
+        }
+        return JSON.parse(serialStr);
+    }
+
+    static getStorageKey(id) { return App.KEY_PROJ_PREFIX+id.toString(); }
 
     get valid() { return !!this.prog?.compiled; }
 
-    constructor(serialObj) {
-        super(serialObj);
-        if (!this.id)   this.id = Project.nextId++;
-        if (!this.name) this.name = Project.newName;
-    }
+    get storageKey() { return Project.getStorageKey(this.id); }
 
     compile() {
         this.prog.compile(this.unib.name);
@@ -74,5 +80,16 @@ export default class Project extends Serializable {
 
         // add program ui
         this.prog.createUI(parentEl);
+    }
+
+    save() {
+        Coloris.close();
+        this.pass.updateDataFromUI();
+        this.unib.updateDataFromUI();
+        this.unib.update();
+        this.compile();
+        let serialObj = this.serialize();
+        localStorage.setItem(this.storageKey, JSON.stringify(serialObj));
+        console.log(serialObj);
     }
 }
