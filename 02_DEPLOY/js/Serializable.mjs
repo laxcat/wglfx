@@ -1,4 +1,4 @@
-import { isPOJO, isArray, isFn, } from "./util.mjs"
+import { isPOJO, isArray, isFn, isStr, is } from "./util.mjs"
 
 /*
     TODO: fix all this
@@ -67,7 +67,7 @@ export default class Serializable {
     }
 
     deserialize(serialObj) {
-        if (!serialObj || typeof serialObj === "string") {
+        if (!serialObj || isStr(serialObj)) {
             serialObj = {...this.getTemplate(serialObj)};
         }
 
@@ -123,7 +123,7 @@ export default class Serializable {
             }
 
             // SomeClass
-            else if (typeof prop === "function") {
+            else if (isFn(prop)) {
                 this[key] = new (props[key])(value);
             }
         }
@@ -136,13 +136,13 @@ export default class Serializable {
         // with some considerations for some common types and patterns
         for (const key in serialObj) {
             // convert array to array of serialized items
-            if (this[key] instanceof Array) {
+            if (isArray(this[key])) {
                 serialObj[key] = this[key].map(
                     item => (isFn(item.serialize) ? item.serialize() : item)
                 );
             }
             // convert map to object of serialized items
-            else if (this[key] instanceof Map) {
+            else if (is(this[key], Map)) {
                 serialObj[key] = {};
                 this[key].forEach((item, mapKey) => {
                     // console.log("map", item, mapKey, serialObj[key]);
@@ -150,7 +150,7 @@ export default class Serializable {
                 });
             }
             // serialize item
-            else if (this[key] instanceof Serializable) {
+            else if (isFn(this[key]?.serialize)) {
                 serialObj[key] = this[key].serialize();
             }
             else {

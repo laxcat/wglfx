@@ -57,7 +57,6 @@ export default class Project extends Serializable {
         if (App.gl.hasErrors) {
             return;
         }
-        App.gl.clear(App.gl.COLOR_BUFFER_BIT);
         this.pass.draw();
         App.gl.logErrors("DRAW");
     }

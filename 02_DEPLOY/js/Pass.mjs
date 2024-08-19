@@ -12,9 +12,13 @@ import * as ui from "./util-ui.mjs"
     TODO:
     • ability to draw to texture for multiple pass pipelines
 */
+class PassColor extends Color {
+    serialize() { return this.toRGBAStr(); }
+}
+
 export default class Pass extends Serializable {
     static serialProps = {
-        clearColor: Color,
+        clearColor: PassColor,
         layout: [VertexAttrib],
         meshes: [Mesh],
     }
@@ -32,12 +36,6 @@ export default class Pass extends Serializable {
         },
     ];
 
-    serialize() {
-        const serialObj = super.serialize();
-        serialObj.clearColor = this.clearColor.toRGBAStr();
-        return serialObj;
-    }
-
     destroy() {
         this.meshes.forEach(mesh => mesh.destroy());
     }
@@ -47,12 +45,9 @@ export default class Pass extends Serializable {
         this.deserialize(serialObj);
     }
 
-    setClearColor(newColor = null) {
-        this.clearColor.set(newColor);
-        App.gl.clearColor(...this.clearColor.data);
-    }
-
     draw() {
+        App.gl.clearColor(...this.clearColor.data);
+        App.gl.clear(App.gl.COLOR_BUFFER_BIT);
         let i = this.meshes.length;
         while(i--) {
             const mesh = this.meshes[i];
@@ -110,7 +105,7 @@ export default class Pass extends Serializable {
 
         // add clear color handler
         const colorEl = this.el.querySelector(`input.color`);
-        colorEl.addEventListener("input", e => this.setClearColor(colorEl.value));
+        colorEl.addEventListener("input", e => this.clearColor.set(colorEl.value));
         Coloris({
             forceAlpha: true,
         });

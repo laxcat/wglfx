@@ -145,6 +145,7 @@ export default class App {
 
     createUI(parentEl) {
         if (!parentEl) parentEl = document.getElementById("ui");
+        App.projectList.createUI(parentEl);
         App.project.createUI(parentEl);
         // adds systematic handlers, etc
         ui.parse(parentEl);

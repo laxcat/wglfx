@@ -1,6 +1,7 @@
 import App from "./App.mjs"
 import Project from "./Project.mjs"
 import Serializable from "./Serializable.mjs"
+import * as ui from "./util-ui.mjs"
 
 /*
     A list of projects, and operations to manage projects.
@@ -89,5 +90,17 @@ export default class ProjectList extends Serializable {
         if (selected) {
             this.selectedIndex = this.projLIs.length - 1;
         }
+    }
+
+    createUI(parentEl) {
+        // add pass ui
+        const listEl = parentEl.appendHTML(
+            `
+            <section id="projList">
+                <label>${this.selected.name}</label>
+            </section>
+            `
+
+        );
     }
 }

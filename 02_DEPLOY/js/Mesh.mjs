@@ -70,6 +70,7 @@ export default class Mesh extends Serializable {
     bind(layout) {
         const gl = App.gl;
         let i = layout.length;
+        // for each pass layout attrib, bind to data if key matches
         while (i--) {
             const attrib = layout[i];
             const data = this.attribsData.get(attrib.key);

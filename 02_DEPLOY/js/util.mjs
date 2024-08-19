@@ -28,6 +28,10 @@ export function isStr(arg) {
     return (typeof arg === "string");
 }
 
+export function is(arg, Type) {
+    return (arg instanceof Type);
+}
+
 // UTILITY ////////////////////////////////////////////////////////////////// //
 
 export function loadFileSync(path) {
