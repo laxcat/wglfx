@@ -45,6 +45,18 @@ export function loadFileSync(path) {
     return null;
 }
 
+export function loadJSONSync(url) {
+    const str = loadFileSync(url);
+    let obj = {};
+    try {
+        obj = JSON.parse(str);
+    }
+    catch (e) {
+        console.log(`WARNING. Could not parse ${url}.`);
+    }
+    return obj;
+}
+
 // https://stackoverflow.com/a/14810722
 export function objectMap(obj, fn) {
     return Object.fromEntries(

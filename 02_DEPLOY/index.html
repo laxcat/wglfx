@@ -16,7 +16,9 @@
     <script src="./lib/coloris/coloris.js"></script>
     <script type="module">
         import App from "./js/App.mjs";
-        new App();
+        import { loadJSONSync } from "./js/util.mjs";
+        new App(loadJSONSync("index.json"));
+
     </script>
 
 </body>

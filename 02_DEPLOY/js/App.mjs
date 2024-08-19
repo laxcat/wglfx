@@ -25,13 +25,16 @@ export default class App {
     static projectList  = new ProjectList();
     static project      = null;
     static z85          = null;
+    static info         = null;
     static instance     = null;
 
-    constructor() {
+    constructor(info) {
         if (App.instance) {
             throw new Error(`App should be instantiated only once.`);
         }
         App.instance = this;
+
+        if (info) App.info = info;
 
         // create keyboard shortcuts and anything that opperates on whole App
         this.setupGlobalHandlers();
