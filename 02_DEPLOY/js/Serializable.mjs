@@ -166,6 +166,6 @@ export default class Serializable {
 
     // utility that returns passed if is an instance of this class, null otherwise
     static orNull(obj) {
-        return (obj instanceof this.constructor) ? obj : null;
+        return (is(obj, this.constructor)) ? obj : null;
     }
 }

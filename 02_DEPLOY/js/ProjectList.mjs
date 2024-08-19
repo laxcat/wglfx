@@ -16,27 +16,23 @@ class ProjListItem extends Serializable {
 
 export default class ProjectList extends Serializable {
     static serialProps = {
-        nextProjectId:      undefined,
-        selectedIndex:      undefined,
-        projLIs:            [ProjListItem],
-        projectTemplates:   [ProjListItem],
+        nextProjectId:  undefined,
+        selectedId:     undefined,
+        projLIs:        [ProjListItem],
     }
 
     // default construction of ProjectList when none found on dist
     static templates = [
         {
             nextProjectId: 1,
-            selectedIndex: 0,
+            selectedId: undefined,
             projLIs: [],
-            projectTemplates: Project.templates,
         }
     ];
 
-    get selected() {
-        return (this.selectedIndex < this.projLIs.length) ?
-            this.projLIs[this.selectedIndex] :
-            null;
-    }
+    static newProjectName = "My Project";
+
+    get selected() { return this.itemForId(this.selectedId); }
 
     get projectCount() { return this.projLIs.length; }
 
@@ -51,27 +47,42 @@ export default class ProjectList extends Serializable {
 
     createProject(listItemOrId) {
         const id = (
-            // falsy passed in, use selected
-            (!listItemOrId ? this.selected?.id : null) ??
+            // falsy passed in, use selectedId
+            ((!listItemOrId && this.selectedId) ? this.selectedId : null) ??
             // listItem.id
             ProjListItem.orNull(listItemOrId)?.id ??
             // id was passed in, find the list item
-            this.projLIs.find(li => (li.id === listItemOrId))?.id ??
+            this.itemForId(listItemOrId)?.id ??
             0
         );
+
         let proj = null;
+
+        // a specific id was requested
         if (id) {
-            const serialObj = Project.load(id);
-            if (serialObj) {
-                proj = new Project(serialObj);
+            try {
+                const serialObj = Project.load(id, this.itemForId(id)?.name);
+                if (serialObj) {
+                    proj = new Project(serialObj);
+                }
+            } catch(e) {};
+            // if loading the project errored out, we should remove it from the list
+            if (!proj) {
+                this.removeItem(id);
+                if (id === this.selectedId) {
+                    this.findNewSelected();
+                }
+                return this.createProject(this.selectedId);
             }
         }
+
+        // no project loaded, create default
         if (!proj) {
             proj = new Project({
                 id: this.nextProjectId++,
-                name: "Brand New Project"
+                name: ProjectList.newProjectName,
             });
-            this.addEntry(proj.id, proj.name, true);
+            this.addItem(proj.id, proj.name, true);
         }
         return proj; // Project
     }
@@ -83,13 +94,30 @@ export default class ProjectList extends Serializable {
         return serialObj;
     }
 
-    addEntry(id, name, selected) {
+    addItem(id, name, selected) {
         this.projLIs.push(
             new ProjListItem({id, name})
         );
         if (selected) {
-            this.selectedIndex = this.projLIs.length - 1;
+            this.selectedId = id;
         }
+    }
+
+    removeItem(id) {
+        this.projLIs = this.projLIs.filter(li=>li.id!==id);
+    }
+
+    findNewSelected() {
+        if (this.projLIs.length === 0) {
+            this.selectedId = undefined;
+            return;
+        }
+        this.selectedId = this.projLIs[0].id;
+    }
+
+    itemForId(id) {
+        return (!id) ? undefined :
+            this.projLIs.find(li=>li.id===id);
     }
 
     createUI(parentEl) {
@@ -98,9 +126,32 @@ export default class ProjectList extends Serializable {
             `
             <section id="projList">
                 <label>${this.selected.name}</label>
+                <select>
+                <optgroup label="Projects">
+                    ${this.#getOptionListUI(this.projLIs)}
+                </optgroup>
+                <optgroup label="New Project From Template">
+                    ${this.#getOptionListUI(Project.templates)}
+                </optgroup>
+                ${this.#getActionOptionListUI(this.selected)}
+                </select>
             </section>
             `
-
         );
+    }
+
+    #getOptionListUI(projLIs) {
+        return projLIs.map(
+            li => `<option value="${li.id||li.key}">${li.name}</option>`
+        ).join('\n');
+    }
+
+    #getActionOptionListUI(projLI) {
+        return "";
+        // if (!projLI) return "";
+
+        // return projLIs.map(
+        //     li => `<option value="${li.id||li.key}">${li.name}</option>`
+        // ).join('\n');
     }
 }

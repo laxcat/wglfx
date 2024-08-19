@@ -27,12 +27,12 @@ export default class Project extends Serializable {
         {key:"basic3d", name:"Basic 3D", },
     ];
 
-    static load(id) {
+    static load(id, expectedName) {
         const storageKey = Project.getStorageKey(id);
         let serialStr;
         if (typeof id !== "number" ||
             (!(serialStr = localStorage.getItem(storageKey)))) {
-            console.log(`WARNING! Could not load ${storageKey}`);
+            console.log(`%cWARNING! Could not load ${expectedName} (${storageKey})`, "color:red;");
             return null;
         }
         return JSON.parse(serialStr);
