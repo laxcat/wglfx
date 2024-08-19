@@ -29,7 +29,7 @@ export default class App {
 
     constructor() {
         if (App.instance) {
-            throw `App should be instantiated only once.`;
+            throw new Error(`App should be instantiated only once.`);
         }
         App.instance = this;
 

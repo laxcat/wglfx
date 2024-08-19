@@ -42,9 +42,11 @@ export default class VertexAttribData extends Serializable {
 
     createBuffer(nVerts) {
         if (this.glBuffer) {
-            throw `Unexpected call to createBuffer. Buffer already created.\n`+
-                  `${this.glBuffer}\n`+
-                  `${this.data}\n`;
+            throw new Error(
+                `Unexpected call to createBuffer. Buffer already created.\n`+
+                `${this.glBuffer}\n`+
+                `${this.data}\n`
+            );
         }
         const gl = App.gl;
         this.glBuffer = gl.createBuffer();

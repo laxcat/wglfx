@@ -150,7 +150,7 @@ export default class WASM extends EventTarget {
     // throws if NOT ready!
     throwIfNotReady() {
         if (!this.ready)  {
-            throw WASM.MSG_NOT_READY;
+            throw new Error(WASM.MSG_NOT_READY);
         }
     }
     // returns true if NOT ready!
@@ -165,7 +165,7 @@ export default class WASM extends EventTarget {
     throwIfOutOfRange(ptr, size) {
         if (!this.isInRange(ptr, size)) {
             console.log(ptr, size);
-            throw WASM.MEMORY_OUT_OF_RANGE;
+            throw new RangeError(WASM.MEMORY_OUT_OF_RANGE);
         }
     }
     // returns true if out of range
@@ -313,7 +313,7 @@ export default class WASM extends EventTarget {
     static td = new TextDecoder();
     static decodeCStrArr(arr, trimNullBytes=false) {
         if (!(arr instanceof Uint8Array)) {
-            throw `arr should be Uint8Array`;
+            throw new TypeError(`arr should be Uint8Array`);
         }
         else if (arr.length === 0) {
             return "";

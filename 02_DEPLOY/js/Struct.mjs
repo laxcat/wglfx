@@ -43,7 +43,7 @@ export default class Struct {
 
     constructor(layout, buffer, offset=0) {
         if (layout.hasOwnProperty("setPtr")) {
-            throw `Struct can't use reserved property "setPtr".`;
+            throw new Error(`Struct can't use reserved property "setPtr".`);
         }
 
         // store the layout, allowing to set pointer later
@@ -66,7 +66,7 @@ export default class Struct {
                 else if (layout.hasOwnProperty(prop)) {
                     // ptr not set yet!
                     if (layout[prop].view === undefined) {
-                        throw TypeError(`Struct property ${prop} accessed (get) before pointer set.`);
+                        throw new ReferenceError(`Struct property ${prop} accessed (get) before pointer set.`);
                     }
                     // special case for size=1 properties
                     if (layout[prop].size === 1) {
@@ -75,14 +75,14 @@ export default class Struct {
                     // view will be some sort of TypedArray
                     return layout[prop].view;
                 }
-                throw new TypeError(`Struct property ${prop} not found.`);
+                throw new ReferenceError(`Struct property ${prop} not found.`);
             },
             // all "set" properties are diverted to layout's coresponding view
             set(obj, prop, value) {
                 if (layout.hasOwnProperty(prop)) {
                     // ptr not set yet!
                     if (layout[prop].view === undefined) {
-                        throw TypeError(`Struct property ${prop} accessed (set) before pointer set.`);
+                        throw new ReferenceError(`Struct property ${prop} accessed (set) before pointer set.`);
                     }
                     // the only time we actualy set a property is if it's a size=1 special case
                     if (layout[prop].size === 1) {
@@ -90,9 +90,9 @@ export default class Struct {
                         return true;
                     }
                     // we never set property in usual case of a TypedArray; use set(), [], etc instead.
-                    throw TypeError(`Struct property ${prop} can't be set. Access with set(), [], etc.`);
+                    throw new ReferenceError(`Struct property ${prop} can't be set. Access with set(), [], etc.`);
                 }
-                throw TypeError(`Struct property ${prop} not found in layout.`);
+                throw new ReferenceError(`Struct property ${prop} not found in layout.`);
             }
         });
     }
@@ -104,7 +104,7 @@ export default class Struct {
             buffer = buffer.buffer;
         }
         if (!(buffer instanceof ArrayBuffer)) {
-            throw `Unexpected type`;
+            throw new TypeError(`Unexpected type`);
         }
         for (let [key, val] of Object.entries(this.#layout)) {
             val.view = new val.type(buffer, offset + val.offset, val.size);

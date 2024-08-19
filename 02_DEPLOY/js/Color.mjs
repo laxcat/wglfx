@@ -41,7 +41,7 @@ export default class Color {
 
         // new Color(0xff0000); // ERROR. 0xff0000ff or 0xff0000 ? too ambiguous.
         else if (args.length === 1 && typeof args[0] === "number") {
-            throw `Don't initialize color with integer. Use hex string.`;
+            throw new Error(`Don't initialize color with integer. Use hex string.`);
         }
 
         // new Color([0, 1, 0, 1]);

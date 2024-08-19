@@ -61,7 +61,7 @@ export default class Serializable {
         }
         // assert the derived class meets the requirements
         if (this.constructor.serialProps === undefined) {
-            throw `${this.constructor.name} extends Serializable and needs to define static serialProps.`;
+            throw new SyntaxError(`${this.constructor.name} extends Serializable and needs to define static serialProps.`);
         }
         this.deserialize(serialObj);
     }

@@ -181,7 +181,7 @@ export default class WASMZ85 extends WASM {
             console.log("z85 encoded:", z85Str);
             const bufOut = this.decode(z85Str, bufIn.byteLength);
             console.log("z85 decoded:", bufOut);
-            if (bufIn[0] !== bufOut[0]) throw "test failed";
+            if (bufIn[0] !== bufOut[0]) throw new Error(`test failed`);
             console.groupEnd();
         }
 
@@ -194,7 +194,7 @@ export default class WASMZ85 extends WASM {
             console.log("z85 encoded:", z85Str);
             const strOut = this.decodeToString(z85Str);
             console.log("z85 decoded:", strOut);
-            if (strIn !== strOut) throw "test failed";
+            if (strIn !== strOut) throw new Error(`test failed`);
             console.groupEnd();
         }
 
@@ -212,7 +212,7 @@ export default class WASMZ85 extends WASM {
             console.log("z85 decoded:", bufOut);
             const valOut = this.getFloat64At(this.info.decodedDataPtr);
             console.log("z85 decoded:", valOut);
-            if (valIn !== valOut) throw "test failed";
+            if (valIn !== valOut) throw new Error(`test failed`);
             console.groupEnd();
         }
 
@@ -229,7 +229,7 @@ export default class WASMZ85 extends WASM {
             let i = 0;
             let e = bufIn.length;
             while (i < e) {
-                if (bufIn[i] != bufOut[i]) throw "test failed";
+                if (bufIn[i] != bufOut[i]) throw new Error(`test failed`);
                 ++i;
             }
             console.groupEnd();
@@ -247,7 +247,7 @@ export default class WASMZ85 extends WASM {
             // convenience decoding function that skips memory buffer altogether (used under the hood)
             const strB = WASM.decodeCStrArr(bufIn, true);
             console.log("string decoded:", strB);
-            if (strA !== strB || strA !== "abc") throw "test failed";
+            if (strA !== strB || strA !== "abc") throw new Error(`test failed`);
             console.groupEnd();
         }
     }
