@@ -20,6 +20,9 @@ export default class ProjectList extends Serializable {
         selectedId:     undefined,
         projLIs:        [ProjListItem],
     }
+    el;
+    selectEl;
+    statusEl;
 
     // default construction of ProjectList when none found on dist
     static templates = [
@@ -30,11 +33,13 @@ export default class ProjectList extends Serializable {
         }
     ];
 
-    static newProjectName = "My Project";
+// API: INFO ---------------------------------------------------------------- //
 
     get selected() { return this.itemForId(this.selectedId); }
 
     get projectCount() { return this.projLIs.length; }
+
+// API: SAVE / LOAD / INIT / UPDATE ----------------------------------------- //
 
     load() {
         // load from disk
@@ -45,53 +50,100 @@ export default class ProjectList extends Serializable {
         return this.selected; // ProjListItem (not Project!)
     }
 
-    createProject(listItemOrId) {
-        const id = (
-            // falsy passed in, use selectedId
-            ((!listItemOrId && this.selectedId) ? this.selectedId : null) ??
-            // listItem.id
-            ProjListItem.orNull(listItemOrId)?.id ??
-            // id was passed in, find the list item
-            this.itemForId(listItemOrId)?.id ??
-            0
-        );
-
-        let proj = null;
-
-        // a specific id was requested
-        if (id) {
-            try {
-                const serialObj = Project.load(id, this.itemForId(id)?.name);
-                if (serialObj) {
-                    proj = new Project(serialObj);
-                }
-            } catch(e) {};
-            // if loading the project errored out, we should remove it from the list
-            if (!proj) {
-                this.removeItem(id);
-                if (id === this.selectedId) {
-                    this.findNewSelected();
-                }
-                return this.createProject(this.selectedId);
-            }
-        }
-
-        // no project loaded, create default
-        if (!proj) {
-            proj = new Project({
-                id: this.nextProjectId++,
-                name: ProjectList.newProjectName,
-            });
-            this.addItem(proj.id, proj.name, true);
-        }
-        return proj; // Project
-    }
-
     save() {
         const serialObj = this.serialize();
         localStorage.setItem(App.KEY_PROJ_LIST, JSON.stringify(serialObj));
         console.log("???", serialObj);
+        this.updateStatusUI();
         return serialObj;
+    }
+
+    // create selected project, or new default one
+    // called by App to create the project on first run
+    createProject() {
+        let proj = this.#createProjectFromId(this.selectedId);
+        if (proj) {
+            return proj
+        }
+        // project not found, create new one and update list
+        proj = this.#createNewProject();
+        this.resetProjListUI();
+        this.updateStatusUI(proj);
+        return proj;
+    }
+
+    updateStatusUI(proj) {
+        if (!this.statusEl) return;
+        if (!proj) proj = App.project;
+        if (proj.id !== this.selectedId) return;
+        this.statusEl.classList.toggle("changed", proj.hasChanged());
+        this.statusEl.innerHTML = proj.statusStr;
+    }
+
+// PROJECT CREATION --------------------------------------------------------- //
+
+    // creates new project from initObj (see Serializable for init rules)
+    #createNewProject(initObj) {
+        const proj = new Project(initObj);
+        proj.id = this.nextProjectId++;
+        proj.name = this.#getNewProjectName();
+        this.addItem(proj.id, proj.name, true);
+        return proj;
+    }
+
+    // loads specific project of id, creates Project
+    #createProjectFromId(id) {
+        if (!id) {
+            return null;
+        }
+
+        let proj = null;
+
+        try {
+            const serialObj = Project.load(id, this.itemForId(id)?.name);
+            if (serialObj) {
+                proj = new Project(serialObj);
+            }
+        } catch(e) {
+            console.log("WARNING!! Project failed to parse!");
+            console.log(e);
+            proj = null;
+        };
+
+        return proj;
+    }
+
+    static #newProjectName = "My Project";
+    #getNewProjectName() {
+        let name = ProjectList.#newProjectName;
+        let i = 2;
+        while(this.projLIs.find(li=>li.name===name)) {
+            name = `${ProjectList.#newProjectName} (${i})`;
+            ++i;
+        }
+        return name;
+    }
+
+// LIST ACTIONS ------------------------------------------------------------- //
+
+    switchProject(id) {
+        const proj = this.#createProjectFromId(id);
+        while (!proj && this.projectCount) {
+            this.findNewSelected();
+            proj = this.#createProjectFromId(this.selectedId);
+        }
+        if (!proj) {
+            proj = this.#createNewProject();
+        }
+        return proj;
+    }
+
+    renameCurrentProject() {
+
+    }
+
+    deleteCurrentProject() {
+
     }
 
     addItem(id, name, selected) {
@@ -105,6 +157,9 @@ export default class ProjectList extends Serializable {
 
     removeItem(id) {
         this.projLIs = this.projLIs.filter(li=>li.id!==id);
+        if (id === this.selectedId) {
+            this.findNewSelected();
+        }
     }
 
     findNewSelected() {
@@ -120,38 +175,69 @@ export default class ProjectList extends Serializable {
             this.projLIs.find(li=>li.id===id);
     }
 
+// UI ----------------------------------------------------------------------- //
+
     createUI(parentEl) {
+        const proj = App.project;
         // add pass ui
-        const listEl = parentEl.appendHTML(
+        let v = 1;
+        this.el = parentEl.appendHTML(
             `
             <section id="projList">
-                <label>${this.selected.name}</label>
-                <select>
-                <optgroup label="Projects">
-                    ${this.#getOptionListUI(this.projLIs)}
-                </optgroup>
-                <optgroup label="New Project From Template">
-                    ${this.#getOptionListUI(Project.templates)}
-                </optgroup>
-                ${this.#getActionOptionListUI(this.selected)}
-                </select>
+                <select></select>
+                <div class="status">${proj.statusStr}</div>
+                ${this.#getAboutLinkUI()}
             </section>
+            `
+        );
+        this.selectEl = this.el.querySelector("select");
+        this.#fillProjListUI();
+        this.selectEl.addEventListener("change", e => {
+            let opt = this.selectEl.options[this.selectEl.selectedIndex].dataset;
+            switch(opt.action) {
+            case "load":    return App.setProject(() => this.switchProject(opt.id));
+            case "new":     return App.setProject(() => this.#createNewProject(opt.key));
+            case "rename":  return this.renameCurrentProject();
+            case "delete":  return App.setProject(() => this.deleteCurrentProject());
+            }
+        });
+
+        this.statusEl = this.el.querySelector(".status");
+    }
+
+    resetProjListUI() {
+        if (!this.selectEl) {
+            return;
+        }
+        this.selectEl.innerHTML = "";
+        this.#fillProjListUI();
+    }
+
+    #fillProjListUI() {
+        const projLI = this.selected;
+        this.selectEl.appendHTML(
+            `
+            <optgroup label="Projects">
+                ${this.projLIs.map(
+                li => `<option data-action="load" data-id="${li.id}" ${li.id===projLI.id?"selected":""}>${li.name}</option>`
+                ).join('\n')}
+            </optgroup>
+            <optgroup label="New Project From Template">
+                ${Project.templates.map(
+                li => `<option data-action="new" data-key="${li.key}">${li.name}</option>`
+                ).join('\n')}
+            </optgroup>
+            <optgroup label="${projLI.name} Actions">
+                <option data-action="rename">Rename ${projLI.name}</option>
+                <option data-action="delete">Delete ${projLI.name}</option>
+            </optgroup>
             `
         );
     }
 
-    #getOptionListUI(projLIs) {
-        return projLIs.map(
-            li => `<option value="${li.id||li.key}">${li.name}</option>`
-        ).join('\n');
-    }
-
-    #getActionOptionListUI(projLI) {
-        return "";
-        // if (!projLI) return "";
-
-        // return projLIs.map(
-        //     li => `<option value="${li.id||li.key}">${li.name}</option>`
-        // ).join('\n');
+    #getAboutLinkUI() {
+        const url = App.info?.repository?.url;
+        if (!url) return "";
+        return `<a href="${url}" target="_blank">About</a>`
     }
 }

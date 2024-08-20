@@ -1,4 +1,5 @@
 import App from "./App.mjs"
+import Project from "./Project.mjs"
 import Serializable from "./Serializable.mjs"
 import * as util from "./util.mjs"
 import * as ui from "./util-ui.mjs"
@@ -159,6 +160,7 @@ export default class Shader extends Serializable {
         this.editor.session.setWrapLimit(100);
         this.editor.addEventListener("change", () => {
             this.clearErrors();
+            this.el.dispatchEvent(Project.makeChangeEvent(`${this.key}Shader`));
         });
         if (this._src) {
             this.src = this._src;

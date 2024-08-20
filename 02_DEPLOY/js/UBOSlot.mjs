@@ -1,3 +1,4 @@
+import Project from "./Project.mjs"
 import Serializable from "./Serializable.mjs"
 
 export default class UBOSlot extends Serializable {
@@ -47,9 +48,14 @@ export default class UBOSlot extends Serializable {
         const selectEl = parentEl.querySelector("select");
         const valueEls = parentEl.querySelectorAll("input.value");
 
+        const dispatchChange = () => {
+            parentEl.dispatchEvent(Project.makeChangeEvent("ubo"));
+        };
+
         this.updateFromUI = {
             name: () => {
                 this.name = nameEl.value.trim();
+                dispatchChange();
             },
 
             offset: () => {
@@ -68,15 +74,18 @@ export default class UBOSlot extends Serializable {
                 this.offset = newOffset;
                 // set all data for new offset
                 this.values.forEach((val, index) => ubo.setFloatAtOffset(newOffset + index * 4, val));
+
+                dispatchChange();
             },
 
             select: () => {
-
+                dispatchChange();
             },
 
             values: this.values.map((_, vi) => () => {
                 this.values[vi] = parseFloat(valueEls[vi].value);
                 ubo.setFloatAtOffset(this.offset + vi * 4, this.values[vi]);
+                dispatchChange();
             }),
         };
 

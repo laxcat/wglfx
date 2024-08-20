@@ -19,13 +19,18 @@ export default class Project extends Serializable {
         pass: Pass,
         prog: ShaderProgram,
         unib: UniformBuffer,
+        timeSaved: Date,
     };
+    timeChanged = null;
+    #listenForChanges = true;
 
     static templates = [
-        {key:"blank", name:"Blank", },
+        {key:"blank", name:"Blank", pass: null, prog: null, unib: null},
         {key:"basic2d", name:"Basic 2D", default: true},
         {key:"basic3d", name:"Basic 3D", },
     ];
+
+// STATIC API --------------------------------------------------------------- //
 
     static load(id, expectedName) {
         const storageKey = Project.getStorageKey(id);
@@ -40,9 +45,69 @@ export default class Project extends Serializable {
 
     static getStorageKey(id) { return App.KEY_PROJ_PREFIX+id.toString(); }
 
+    static CHANGE_EVENT = "projectchange";
+    static makeChangeEvent(detail) {
+        return new CustomEvent(Project.CHANGE_EVENT, {detail,bubbles:true});
+    }
+
+// API: STATUS / INFO ------------------------------------------------------- //
+
     get valid() { return !!this.prog?.compiled; }
 
     get storageKey() { return Project.getStorageKey(this.id); }
+
+    hasChanged() {
+        const changedTimeExists = (
+            this.timeChanged &&
+            !isNaN(this.timeChanged.valueOf())
+        );
+        if (this.hasSaved() && changedTimeExists) {
+            return (this.timeChanged > this.timeSaved);
+        }
+        return changedTimeExists;
+    }
+
+    hasSaved() {
+        const savedValue = this.timeSaved.valueOf();
+        return (this.timeSaved && !isNaN(savedValue));
+    }
+
+    static timeFormat = Intl.DateTimeFormat(undefined, {dateStyle:"short",timeStyle:"short"});
+    get statusStr() {
+        const saved = this.hasSaved();
+        const changed = this.hasChanged();
+        let str = "";
+        if (changed) str += "* ";
+        if (saved) {
+            str += (changed) ? "Last saved " : "Saved ";
+            str += Project.timeFormat.format(this.timeSaved)
+                   .replaceAll(" ", "")
+                   .replaceAll("AM", "a")
+                   .replaceAll("PM", "p");
+        }
+        else {
+            str += "Not saved";
+        }
+        return str;
+    }
+
+    hasUnsavedChanges() {
+        return (
+            // has a valid changed date...
+            hasChanged() &&
+            // and either...
+            (!hasSaved() ||
+            this.timeSaved < this.timeChanged)
+        )
+    }
+
+// LIFECYCLE ---------------------------------------------------------------- //
+
+    destroy() {
+        this.pass.destroy();
+        this.prog.destroy();
+        this.unib.destroy();
+    }
 
     compile() {
         this.prog.compile(this.unib.name);
@@ -79,10 +144,21 @@ export default class Project extends Serializable {
 
         // add program ui
         this.prog.createUI(parentEl);
+
+        parentEl.addEventListener(Project.CHANGE_EVENT, e => {
+            if (this.#listenForChanges) {
+                // console.log(e);
+                this.timeChanged = new Date();
+                App.projectList.updateStatusUI();
+            }
+        });
     }
 
     save() {
+        this.#listenForChanges = false;
         Coloris.close();
+        this.timeSaved =
+        this.timeChanged = new Date();
         this.pass.updateDataFromUI();
         this.unib.updateDataFromUI();
         this.unib.update();
@@ -90,5 +166,6 @@ export default class Project extends Serializable {
         let serialObj = this.serialize();
         localStorage.setItem(this.storageKey, JSON.stringify(serialObj));
         console.log(serialObj);
+        this.#listenForChanges = true;
     }
 }

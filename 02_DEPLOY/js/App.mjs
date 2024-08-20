@@ -87,6 +87,19 @@ export default class App {
         }
     }
 
+    // destroys App.project, then sets the project returned by createProjFn
+    static setProject(createProjFn) {
+        // project has never been changed
+        if (!App.project.hasChanged()) {
+            App.projectList.removeItem(App.project.id);
+        }
+        App.project.destroy();
+        App.project = null;
+        App.project = createProjFn();
+        App.projectList.selectedId = App.project.id;
+        App.projectList.resetProjListUI();
+    }
+
     get uiShowing() {
         return (document.getElementById("ui").classList.contains("hidden") === false);
     }

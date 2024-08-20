@@ -1,4 +1,5 @@
 import App from "./App.mjs"
+import Project from "./Project.mjs"
 import Serializable from "./Serializable.mjs"
 import VertexAttribData from "./VertexAttribData.mjs"
 
@@ -122,5 +123,9 @@ export default class Mesh extends Serializable {
         );
         const attribsEl = this.el.querySelector("ul.attribs");
         this.attribsData.forEach(attrib => attrib.createUI(attribsEl));
+        const inputEl = this.el.querySelector("input[type='number']");
+        inputEl.addEventListener("change", e => {
+            this.el.dispatchEvent(Project.makeChangeEvent("meshVertCount"));
+        });
     }
 }

@@ -50,7 +50,6 @@ export default class UniformBuffer extends Serializable {
     }
 
     destroy() {
-        App.gl.bindBuffer(App.gl.UNIFORM_BUFFER, null);
         App.gl.deleteBuffer(this.glBuffer);
     }
 

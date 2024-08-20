@@ -36,16 +36,32 @@ canvas {
     --border:           1px solid rgba(255 255 255 / 0.4);
     --border-focus:     1px solid rgba(255 255 255 / 1.0);
     --color-text:       #fff;
+    --color-active:     #ff0;
     --color-input-bg:   rgba(0 0 0 / 0.5);
-    --color-header:     rgba(255 255 255 / 0.1);
-    --color-hover:      rgba(255 255 255 / 0.3);
+    --color-bg:         transparent;
+    --color-bg-hover:   rgba(255 255 255 / 0.3);
 
     * {
         font-family: 'Menlo', monospace;
     }
 
+    a {
+        text-weight: normal;
+        color: var(--color-text);
+    }
+    a:hover {
+        color: var(--color-active);
+    }
+
+    select {
+        -webkit-appearance: menulist-button;
+        border-radius: 0;
+        background: transparent;
+        color: var(--color-text);
+        outline: none;
+    }
+
     label, section, li, input, button.action, td {
-        font-weight: bold;
         color: var(--color-text);
     }
 
@@ -63,9 +79,10 @@ canvas {
         user-select: none;
         cursor: ns-resize;
         display: block;
+        background-color: var(--color-bg);
     }
     label.collapsible:hover {
-        background-color: var(--color-hover);
+        background-color: var(--color-bg-hover);
     }
 
     input[type="text"],
@@ -106,6 +123,35 @@ canvas {
 /* PROJECT LIST *************************************************** */
     section#projList {
         padding: 3px 0;
+
+        &::after {
+           content: " ";
+           display: block;
+           height: 0;
+           clear: both;
+        }
+
+        > select {
+            float: left;
+            font-size: 13px;
+        }
+
+        > div.status {
+            float: left;
+            font-size: 12px;
+            line-height: 20px;
+            margin-left: 10px;
+        }
+        > div.status.changed {
+            font-style: italic;
+        }
+
+        > a {
+            float: right;
+            font-size: 12px;
+            line-height: 20px;
+            margin-right: 10px;
+        }
     }
 
 /* PASS / LAYOUT / MESHES *************************************************** */

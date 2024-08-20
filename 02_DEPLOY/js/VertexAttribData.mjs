@@ -1,4 +1,5 @@
 import App from "./App.mjs"
+import Project from "./Project.mjs"
 import Serializable from "./Serializable.mjs"
 import { isStr } from "./util.mjs"
 import * as ui from "./util-ui.mjs"
@@ -171,6 +172,7 @@ export default class VertexAttribData extends Serializable {
         this.editor = ui.aceit(dataEl.querySelector("pre"), "ace/mode/text");
         this.editor.addEventListener("change", e => {
             this.#uiDirty = true;
+            dataEl.dispatchEvent(Project.makeChangeEvent(`${this.key}Data`));
         });
     }
 }

@@ -1,6 +1,7 @@
 import App from "./App.mjs"
 import Color from "./Color.mjs"
 import Mesh from "./Mesh.mjs"
+import Project from "./Project.mjs"
 import Serializable from "./Serializable.mjs"
 import VertexAttrib from "./VertexAttrib.mjs"
 import * as ui from "./util-ui.mjs"
@@ -105,7 +106,10 @@ export default class Pass extends Serializable {
 
         // add clear color handler
         const colorEl = this.el.querySelector(`input.color`);
-        colorEl.addEventListener("input", e => this.clearColor.set(colorEl.value));
+        colorEl.addEventListener("input", e => {
+            this.clearColor.set(colorEl.value);
+            this.el.dispatchEvent(Project.makeChangeEvent("passClearColor"));
+        });
         Coloris({
             forceAlpha: true,
         });
@@ -159,6 +163,8 @@ export default class Pass extends Serializable {
         this.layout.push(attrib);
         // create list ui for new attrib in layout ul
         attrib.createUI(this.el.querySelector("section.layout > ul"));
+
+        this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
 
         // TODO: not sure about this. maybe leave mesh data alone?
         // // create data ui for each mesh in mesh list
