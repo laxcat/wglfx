@@ -124,7 +124,7 @@ export default class Serializable {
 
             // SomeClass
             else if (isFn(prop)) {
-                this[key] = new (props[key])(value);
+                this[key] = new (prop)(value);
             }
         }
     }

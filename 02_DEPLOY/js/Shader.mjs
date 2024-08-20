@@ -23,6 +23,7 @@ export default class Shader extends Serializable {
     static templates = [
         this.makeTemplate("vert"),
         this.makeTemplate("frag"),
+        {key: "blank", src:""},
     ];
     static makeTemplate(key) {
         return {key, src: ()=>util.loadFileSync(`./glsl/${key}.glsl`), }

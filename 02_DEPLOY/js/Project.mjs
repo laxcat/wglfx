@@ -25,8 +25,8 @@ export default class Project extends Serializable {
     #listenForChanges = true;
 
     static templates = [
-        {key:"blank", name:"Blank", pass: null, prog: null, unib: null},
-        {key:"basic2d", name:"Basic 2D", default: true},
+        {key:"blank", name:"Blank", pass:"blank", prog:"blank", unib:"blank"},
+        {key:"basic2d", name:"Basic 2D", default:true},
         {key:"basic3d", name:"Basic 3D", },
     ];
 
@@ -128,7 +128,7 @@ export default class Project extends Serializable {
 
     createUI(parentEl) {
         // add pass ui
-        const listEl = parentEl.appendHTML(
+        const projEl = parentEl.appendHTML(
             `
             <section id="passes">
                 <label class="collapsible">Passes</label>
@@ -137,7 +137,7 @@ export default class Project extends Serializable {
             `
         );
         // pass will be an array eventually, making this a loop
-        this.pass.createUI(listEl.children[1]);
+        this.pass.createUI(projEl.children[1]);
 
         // add uniform buffer ui
         this.unib.createUI(parentEl);

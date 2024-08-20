@@ -35,6 +35,12 @@ export default class Pass extends Serializable {
             ],
             meshes: ["debugTriangles"],
         },
+        {
+            key: "blank",
+            clear: "000000",
+            layout: [],
+            meshes: [],
+        }
     ];
 
     destroy() {

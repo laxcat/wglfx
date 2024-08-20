@@ -24,14 +24,21 @@ export default class UniformBuffer extends Serializable {
     #dirtyLastByte  = 0;
 
     // default setup
-    static templates = [{
-        name: "Block",
-        size: 1024,
-        slots: [
-            {name: "time", offset: 0, size: 1, values: [0.5]},
-        ],
-        default: true,
-    }];
+    static templates = [
+        {
+            name: "Block",
+            size: 1024,
+            slots: [
+                {name: "time", offset: 0, size: 1, values: [0.5]},
+            ],
+        },
+        {
+            key: "blank",
+            name: "Block",
+            size: 1024,
+            slots: [],
+        },
+    ];
 
     constructor(serialObj) {
         super(serialObj);

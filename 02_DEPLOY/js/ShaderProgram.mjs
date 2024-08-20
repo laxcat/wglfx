@@ -22,6 +22,7 @@ export default class ShaderProgram extends Serializable {
     static templates = [
         // send template keys to children for lookup on Shader
         { vert: "vert", frag: "frag" },
+        { key: "blank", vert: "blank", frag: "blank" },
     ];
 
     get compiled() { return !!this.glObj; }
