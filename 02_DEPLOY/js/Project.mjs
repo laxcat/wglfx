@@ -34,13 +34,12 @@ export default class Project extends Serializable {
 
     static load(id, expectedName) {
         const storageKey = Project.getStorageKey(id);
-        let serialStr;
-        if (typeof id !== "number" ||
-            (!(serialStr = localStorage.getItem(storageKey)))) {
+        const projStr = localStorage.getItem(storageKey);
+        if (!projStr) {
             console.log(`%cWARNING! Could not load ${expectedName} (${storageKey})`, "color:red;");
             return null;
         }
-        return JSON.parse(serialStr);
+        return JSON.parse(projStr);
     }
 
     static getStorageKey(id) { return App.KEY_PROJ_PREFIX+id.toString(); }
@@ -127,31 +126,37 @@ export default class Project extends Serializable {
     }
 
     createUI(parentEl) {
-        // add pass ui
         const projEl = parentEl.appendHTML(
             `
+            <div id="project">
             <section id="passes">
                 <label class="collapsible">Passes</label>
                 <ul></ul>
             </section>
+            </div>
             `
         );
+
+        // add pass ui
+        const passEl = projEl.querySelector("#passes ul");
         // pass will be an array eventually, making this a loop
-        this.pass.createUI(projEl.children[1]);
+        this.pass.createUI(passEl);
 
         // add uniform buffer ui
-        this.unib.createUI(parentEl);
+        this.unib.createUI(projEl);
 
         // add program ui
-        this.prog.createUI(parentEl);
+        this.prog.createUI(projEl);
 
-        parentEl.addEventListener(Project.CHANGE_EVENT, e => {
+        projEl.addEventListener(Project.CHANGE_EVENT, e => {
             if (this.#listenForChanges) {
                 // console.log(e);
                 this.timeChanged = new Date();
                 App.projectList.updateStatusUI();
             }
         });
+
+        return projEl;
     }
 
     save() {

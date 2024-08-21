@@ -127,7 +127,7 @@ export default class ProjectList extends Serializable {
 // LIST ACTIONS ------------------------------------------------------------- //
 
     switchProject(id) {
-        const proj = this.#createProjectFromId(id);
+        let proj = this.#createProjectFromId(id);
         while (!proj && this.projectCount) {
             this.findNewSelected();
             proj = this.#createProjectFromId(this.selectedId);

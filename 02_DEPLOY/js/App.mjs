@@ -28,6 +28,9 @@ export default class App {
     static info         = null;
     static instance     = null;
 
+    uiEl = null;
+    projectEl = null;
+
     constructor(info) {
         if (App.instance) {
             throw new Error(`App should be instantiated only once.`);
@@ -35,6 +38,8 @@ export default class App {
         App.instance = this;
 
         if (info) App.info = info;
+
+        this.uiEl = document.getElementById("ui");
 
         // create keyboard shortcuts and anything that opperates on whole App
         this.setupGlobalHandlers();
@@ -89,15 +94,28 @@ export default class App {
 
     // destroys App.project, then sets the project returned by createProjFn
     static setProject(createProjFn) {
-        // project has never been changed
-        if (!App.project.hasChanged()) {
+        if (App.project.hasChanged()) {
+            if (!confirm(`Project "${App.project.name}" has unsaved changes. Discard changes and continue?`)) {
+                App.projectList.resetProjListUI();
+                App.projectList.updateStatusUI(App.project);
+                return;
+            }
+        }
+
+        // Project has never been changed, and if not saved, user has confirmed
+        if (!App.project.hasSaved()) {
             App.projectList.removeItem(App.project.id);
         }
+
+        // destroy old project and
+        App.instance.projectEl.remove();
         App.project.destroy();
         App.project = null;
         App.project = createProjFn();
+        App.instance.createProjectUI();
         App.projectList.selectedId = App.project.id;
         App.projectList.resetProjListUI();
+        App.projectList.updateStatusUI(App.project);
     }
 
     get uiShowing() {
@@ -159,11 +177,15 @@ export default class App {
         console.log("------------------------------------------------------- SAVE END");
     }
 
-    createUI(parentEl) {
-        if (!parentEl) parentEl = document.getElementById("ui");
-        App.projectList.createUI(parentEl);
-        App.project.createUI(parentEl);
+    createUI() {
+        App.projectList.createUI(this.uiEl);
+        this.projectEl = App.project.createUI(this.uiEl);
         // adds systematic handlers, etc
-        ui.parse(parentEl);
+        ui.parse(this.uiEl);
+    }
+
+    createProjectUI() {
+        this.projectEl = App.project.createUI(this.uiEl);
+        ui.parse(this.projectEl);
     }
 }
