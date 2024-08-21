@@ -2,7 +2,7 @@ import Project from "./Project.mjs"
 import Serializable from "./Serializable.mjs"
 
 export default class UBOSlot extends Serializable {
-    static serialProps = {
+    static initProps = {
         name: undefined,
         offset: undefined,
         size: undefined,

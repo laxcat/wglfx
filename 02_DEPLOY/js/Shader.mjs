@@ -11,7 +11,7 @@ import * as ui from "./util-ui.mjs"
     Shows compile errors directly in editor UI.
 */
 export default class Shader extends Serializable {
-    static serialProps = {
+    static initProps = {
         key: undefined,
         src: undefined,
     };
@@ -27,10 +27,6 @@ export default class Shader extends Serializable {
     ];
     static makeTemplate(key) {
         return {key, src: ()=>util.loadFileSync(`./glsl/${key}.glsl`), }
-    }
-
-    constructor(serialObj) {
-        super(serialObj);
     }
 
     // webgl shader type

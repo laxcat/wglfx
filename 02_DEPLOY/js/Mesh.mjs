@@ -19,7 +19,7 @@ import VertexAttribData from "./VertexAttribData.mjs"
       project
 */
 export default class Mesh extends Serializable {
-    static serialProps = {
+    static initProps = {
         nVerts: undefined,                      // number of vertices in the mesh
         attribsData: {Map, VertexAttribData},   // new Map() of VertexAttribData, keyed by attrib name
     };
@@ -56,8 +56,8 @@ export default class Mesh extends Serializable {
         },
     ];
 
-    constructor(serialObj) {
-        super(serialObj);
+    constructor(initObj) {
+        super(initObj);
         // TODO: i would rather this happen in VertexAttribData...
         // but VertexAttribData needs nVerts and i'm not sure how to supply it
         this.attribsData.forEach(attrib => attrib.createBuffer(this.nVerts));

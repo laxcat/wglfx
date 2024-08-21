@@ -13,7 +13,7 @@ import * as ui from "./util-ui.mjs"
     • save each project to its own localStorage item
 */
 export default class Project extends Serializable {
-    static serialProps = {
+    static initProps = {
         id:   undefined,
         name: undefined,
         pass: Pass,

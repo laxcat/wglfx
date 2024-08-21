@@ -13,7 +13,7 @@ import * as ui from "./util-ui.mjs"
 */
 
 export default class VertexAttribData extends Serializable {
-    static serialProps = {
+    static initProps = {
         key: undefined,     // number of components
         size: undefined,    // must match VertexAttrib key (pos, norm, color, etc.)
         data: undefined,    // keep copy of buffer data here
@@ -22,8 +22,8 @@ export default class VertexAttribData extends Serializable {
     editor = null;          // ace editor, replaces dataEl
     #uiDirty = false;       // ui data has changed, has not been set to local/gpu yet
 
-    constructor(serialObj) {
-        super(serialObj)
+    constructor(initObj) {
+        super(initObj)
         if (isStr(this.data)) {
             this.data = App.z85.decodeTo(Float32Array, this.data, true);
         }

@@ -12,7 +12,7 @@ import * as util from "./util.mjs"
     • apply new "template" system of defaults
 */
 export default class ShaderProgram extends Serializable {
-    static serialProps = {
+    static initProps = {
         vert: Shader,   // instance of Shader
         frag: Shader,   // instance of Shader
     };

@@ -1,84 +1,167 @@
 import { isPOJO, isArray, isFn, isStr, is } from "./util.mjs"
+// also uses Array.prototype.findByKeyOrDefault
 
 /*
-    TODO: fix all this
+    Serializable
 
+    Convenient base class for easy serializable objects.
 
+    The main purpose is to be able to serialize object into plain data objects,
+    then reverse the process back into JavaScript class instances with as little
+    boilerplate code as possible. But this also creates a system that also
+    allows for default initialization, initialization templates, so it provides
+    that functionality as well.
 
-    Convenient base class for derived serializable object.
-    Handles multiple code paths (templates, etc) for initializing.
-    Can handled automatic serialization using serialProps, which defines
-    what properties to serialize and how.
+    Consider the following example:
 
+    ```
+    class Bar { ... }
+    class Item { ... }
 
-    Use this to create a template from a templateKey. If templateKey is falsy
-    template where default property is found and not falsy will be selected.
-    Override this static method if the derived class needs more consideration
-    when selecting and preparing a serialObj from a template.
+    class Foo extends Serializable {
+        static initProps = {    // Init members, or serializable members
+            name: undefined,    // Values define how properties are initialized.
+            bar: Bar,           // (see initProps below)
+            items: [Item]
+            data: {Item, Map}
+        }
+        view;                   // standard members
 
+        static templates = [    // array of initializer objects
+            {
+                key: "template1",
+                default: true,
+                name: "Default",
+                bar: "bar1",
+                items: [10, 20],
+                data: { fooItem:30, barItem:40 },
+            },
+            {key:"template2", name:"Another"}, // all keys in initProps optional
+        ];
+    }
 
-    Dervied class can define static templates array.
-    When initializing, if no serialObj is passed in, templates are how a
-    derived class and its children poplate default values.
-    Each template item is essentially a serialProps object with some differences:
-        • templates will have a key property (string). if object is initialized
-          with a string, it is assumed to be a template key and will use the
-          coresponding template.
-        • templates might have a default property. if object is initalized
-          with an undefined serialObj, the default template will be selected.
-    Once a template has been selected, it will become the serialObj, and the
-    Serializable derived class will populate the same was as if it was passed in.
+    const foo = new Foo();
+    // foo is now:
+    // Foo {
+    //     name: "Default",
+    //     bar: Bar{...},                  // new Bar("bar1")
+    //     items: [Item{...}, Item{...}],  // new Item(10), new Item(20), etc
+    //     data: Map {                     // uses Map built-in class
+    //         fooItem: Item{...},         // new Item(30)
+    //         barItem: Item{...},         // new Item(40)
+    //     }
+    // }
 
+    const foo2 = new Foo("template1"); // same as above
+    const foo3 = new Foo("template2"); // uses template where key==="template2"
+    const foo4 = new Foo({name:"custom"}); // custom initalizer
+    ```
 
+    Explaination:
 
+    To initalize a class derived from serializable, we need 2 things:
+        • static initProps defined on derived class
+        • some sort of initializer object (not necessarily user provided)
 
+    Using the example code above, the initialization process goes like this:
+    1) Since no constructor was defined on Foo, we use Serializable's
+    constructor, which runs some checks, then calls deserialize.
+    2) deserialize takes the initObj passed to constructor and does the
+    following. (Templates are found using the findByKeyOrDefault
+    Array.prototype extension)
+        2a) If falsy (as in new Foo()), find the default template and use it as
+        the initObj.
+        2b) If a string, find the template where key maches the string, and use
+        that template as the initObj.
+        2c) If no templates were found, initObj will just be an empty object,
+        and when the Foo's properties will be initalized with undefined, which
+        is often exactly the behavior desired.
+    3) deserialize now goes through each property in initProps and initalizes
+    that property on "this" (the instance of Foo). The way the property is
+    initlaized depends on the initProps definition. (See initProps below.) This
+    deserialization process can chain into child classes whether or not if they
+    happen to be Serializable themselves. The process just uses the constructor.
 
-    deserialize's job is to help reconstruct the derived class. This has several
-    code paths:
-        • serialObj is falsy, which will create project from default template
-        • serialObj is a string, which will create project from template key
-        • serialObj is an object (probably deserialized from load, see serialize
-          for structure)
-    A Serializable derived class should call this super.deserialize(serialObj)
-    to handle perparing serialObj for all three of the above code paths.
-    The returned serialObj can then be used to populate values without much care
-    of where it came from. This method will usually be overriden to handle the
-    population of values, but a derived class can break pattern if necessary.
-
-
+    Serializable-derived classes also can use the serialize function, which
+    attempts to automate the reverse process. See below for more information.
 */
-
 export default class Serializable {
 
-    static serialProps = undefined;
+    /*
+    initProps
 
+    Special static object, REQUIRED to be set on all classes derived from
+    Serializable. Uses a special syntax to describe HOW the derived class's
+    properties get set.
+
+    Each initProps key is the property that will get set to the derived
+    instance. The value of that key IS NOT AN ACTUAL VALUE, but rather a type
+    layout description. There are 4 patterns supported, described below.
+
+    Given initObj, which was provided by the user or derived from a template,
+    the key of a derived object (this) is intialized as follows. If initProps
+    key's value is:
+        • undefined
+            then this.key = initObj.key
+
+        • a Class (anything constructable with new)
+            then this.key = new Class(initObj.key)
+
+        • [Class], array of classes
+            then this.key[0] = new Class(initObj.key[0]), etc
+
+        • {Class}, object or Map of classes
+            then this.key.foo = new Class(initObj.key.foo), for each sub-key of
+            the initObj.key object.
+
+    The {Class} option will initialize a POJO, unless "Map" or "map" property is
+    not falsy, in which case the built-in Map class is used instead. For
+    example: {Class, Map}, or {Class, map: true}, etc. The former utilizes ES6's
+    "Shorthand Property Assignment" and the built-in Map object itself for a
+    conventient syntax.
+    */
+    static initProps = undefined;
+
+    /*
+    Static array that defines a set of initObjs available to this class. See
+    init process description above. Optional.
+    */
     static templates = undefined;
 
-    constructor(serialObj) {
+    /*
+    Asserts the derived class was constructed with new.
+    Asserts Derived.initProps has been set.
+    Automatically deserialize initObj.
+    */
+    constructor(initObj) {
         // must be constructed with new
         if (!new.target) {
             throw new TypeError(`calling ${this.constructor.name} constructor without new is invalid`);
         }
         // assert the derived class meets the requirements
-        if (this.constructor.serialProps === undefined) {
-            throw new SyntaxError(`${this.constructor.name} extends Serializable and needs to define static serialProps.`);
+        if (this.constructor.initProps === undefined) {
+            throw new SyntaxError(`${this.constructor.name} extends Serializable and needs to define static initProps.`);
         }
-        this.deserialize(serialObj);
+        this.deserialize(initObj);
     }
 
-    deserialize(serialObj) {
-        if (!serialObj || isStr(serialObj)) {
-            serialObj = {...this.getTemplate(serialObj)};
+    /*
+    Assign the derived classes properties according to the initProps.
+    See initProps and Serializable documentation above.
+    */
+    deserialize(initObj) {
+        if (!initObj || isStr(initObj)) {
+            initObj = {...this.getTemplate(initObj)};
         }
 
-        const props = this.constructor.serialProps;
+        const props = this.constructor.initProps;
 
         for (const key in props) {
-            // the prop in serialProps.
+            // the prop in initProps.
             const prop = props[key];
 
             // the value to assign, as found in the template or initizing object
-            const value = serialObj[key];
+            const value = initObj[key];
 
             // falsy
             if (!prop) {
@@ -129,10 +212,29 @@ export default class Serializable {
         }
     }
 
+    /*
+    serialize
+
+    Automatically serializes the derived instance according to the initProps.
+    For each key in initProps, serialize will take the coresponding key on the
+    instance and convert it to a POJO. If the this.key is:
+        • an Array, loop through and serialize each.
+        • an Object, TODO: mirror Map functionality
+        • a Map, loop through keys, serialize each, convert to POJO
+        • an object with a serialize property, call serialize and assign what
+          returns.
+        • anything else, assign directly
+
+    TODO: right now, does not automatically serialize POJO's sub keys, just
+    assigns the POJO directly. Needs to be changed to loop through POJO keys
+    like Map instances already do below.
+
+    TODO: needs cleanup. better definition of serialize chaining.
+    */
     serialize() {
-        // serial props informs us where to pull key values from
-        const serialObj = {...this.constructor.serialProps};
-        // for each key in serialProps, assign this[key] to serialObj[key],
+        // initProps informs us which keys to serialize
+        const serialObj = {...this.constructor.initProps};
+        // for each key in initProps, assign this[key] to serialObj[key],
         // with some considerations for some common types and patterns
         for (const key in serialObj) {
             // convert array to array of serialized items

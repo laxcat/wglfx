@@ -19,7 +19,7 @@ class PassColor extends Color {
 }
 
 export default class Pass extends Serializable {
-    static serialProps = {
+    static initProps = {
         name: undefined,
         clearColor: PassColor,
         layout: [VertexAttrib],
@@ -50,9 +50,9 @@ export default class Pass extends Serializable {
         this.meshes.forEach(mesh => mesh.destroy());
     }
 
-    reset(serialObj) {
+    reset(initObj) {
         this.destroy();
-        this.deserialize(serialObj);
+        this.deserialize(initObj);
         this.el.dispatchEvent(Project.makeChangeEvent("passReset"));
     }
 

@@ -8,14 +8,14 @@ import * as ui from "./util-ui.mjs"
 */
 
 class ProjListItem extends Serializable {
-    static serialProps = {
+    static initProps = {
         id: undefined,
         name: undefined,
     }
 }
 
 export default class ProjectList extends Serializable {
-    static serialProps = {
+    static initProps = {
         nextProjectId:  undefined,
         selectedId:     undefined,
         projLIs:        [ProjListItem],
@@ -101,9 +101,9 @@ export default class ProjectList extends Serializable {
         let proj = null;
 
         try {
-            const serialObj = Project.load(id, this.itemForId(id)?.name);
-            if (serialObj) {
-                proj = new Project(serialObj);
+            const initObj = Project.load(id, this.itemForId(id)?.name);
+            if (initObj) {
+                proj = new Project(initObj);
             }
         } catch(e) {
             console.log("WARNING!! Project failed to parse!");

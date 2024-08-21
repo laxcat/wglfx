@@ -7,7 +7,7 @@ import * as ui from "./util-ui.mjs"
     Does not hold attrib data (see VertexAttribData).
 */
 export default class VertexAttrib  extends Serializable {
-    static serialProps = {
+    static initProps = {
         index: undefined,   // vertex attribute index
         size: undefined,    // number of compoenents
         key: undefined,     // key to indicate nature of data. pos, norm, color, etc.

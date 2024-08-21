@@ -7,16 +7,15 @@ import * as ui from "./util-ui.mjs"
     Uniform Buffer Object, and related data and operations.
 */
 export default class UniformBuffer extends Serializable {
-    static serialProps = {
+    static initProps = {
         name: undefined,    // name of the UBO. should match the uniform block name in shader
         size: undefined,    // size of buffer in bytes
         slots: [UBOSlot],   // array of UBOSlot
     };
-
-    data = null;        // our data buffer, which mirrors what's on the gpu
-    dataView = null;    // maintain a data view into the whole buffer why not
-    el = null;          // the ui element attached to the base of this class
-    glBuffer = null;    // the webgl obect for the uniform buffer
+    data = null;            // our data buffer, which mirrors what's on the gpu
+    dataView = null;        // maintain a data view into the whole buffer why not
+    el = null;              // the ui element attached to the base of this class
+    glBuffer = null;        // the webgl obect for the uniform buffer
 
     // dirty bytes have been set in buffer, but not uploaded to webgl
     // one dirty range maintained, to upload everything inbetween for simplicity
@@ -40,8 +39,8 @@ export default class UniformBuffer extends Serializable {
         },
     ];
 
-    constructor(serialObj) {
-        super(serialObj);
+    constructor(initObj) {
+        super(initObj);
 
         this.data = new ArrayBuffer(this.size);
         this.dataView = new DataView(this.data);
