@@ -132,7 +132,8 @@ canvas {
            clear: both;
         }
 
-        > select {
+        > select,
+        > input[type="text"] {
             float: left;
             font-size: 13px;
         }
