@@ -1,8 +1,10 @@
 /*
-    WebGL2RenderingContext extension
+    WebGL built-in objects extension
+    Only deals with WebGL2RenderingContext for now.
 
     Add context creation, helpers for errors, and WebGL shortcut export.
 */
+import { extend, extendStatic } from "./common-extension.mjs"
 
 // Export a shortcut name for this bad-boy
 const WebGL2 = WebGL2RenderingContext;
@@ -10,12 +12,12 @@ export default WebGL2;
 
 // TODO: make these read-only
 // error array populated with most recent call to getErrors
-WebGL2.prototype.errors = [];
+extend(WebGL2, "errors", []);
 // will indicate if error array is populated; updated by getErrors
-WebGL2.prototype.hasErrors = false;
+extend(WebGL2, "hasErrors", false);
 
 // creates WebGL2RenderingContext instance
-WebGL2.create = function(canvasElOrQuery) {
+extendStatic(WebGL2, "create", function(canvasElOrQuery) {
     // find canvas
     let canvas = (c => {
         // if falsy find first canvas in document
@@ -53,14 +55,14 @@ WebGL2.create = function(canvasElOrQuery) {
     // check errors just to make sure
     gl.logErrors();
     return gl;
-}
+});
 
-WebGL2.prototype.throwErrors = function() {
+extend(WebGL2, "throwErrors", function() {
     const errs = this.getErrors();
     errs.forEach(err => { throw new Error(err); });
-}
+});
 
-WebGL2.prototype.logErrors = function(msg) {
+extend(WebGL2, "logErrors", function(msg) {
     const errs = this.getErrors();
     if (errs.length) {
         console.log(`%c`+
@@ -71,10 +73,10 @@ WebGL2.prototype.logErrors = function(msg) {
         );
     }
     return errs;
-}
+});
 
 // run getError until exhausted and populate errors array
-WebGL2.prototype.getErrors = function() {
+extend(WebGL2, "getErrors", function() {
     this.errors = [];
     let err;
     while ((err = this.getError())) {
@@ -90,9 +92,9 @@ WebGL2.prototype.getErrors = function() {
     }
     this.hasErrors = (this.errors.length > 0);
     return this.errors;
-}
+});
 
-WebGL2.prototype.framebufferStatusString = function() {
+extend(WebGL2, "framebufferStatusString", function() {
     const status = this.checkFramebufferStatus(this.FRAMEBUFFER);
     switch(status) {
     case this.FRAMEBUFFER_COMPLETE:                         return "FRAMEBUFFER_COMPLETE";
@@ -104,4 +106,4 @@ WebGL2.prototype.framebufferStatusString = function() {
     default:                                                return "FRAMEBUFFER_UNKNOWN_STATUS";
     }
     return status;
-}
+});

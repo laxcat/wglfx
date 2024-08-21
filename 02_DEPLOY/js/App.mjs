@@ -1,4 +1,6 @@
-import WebGL2 from "./extend/WebGL2RenderingContext.mjs"
+import "./extend/common-extension.mjs"
+import "./extend/html-extension.mjs"
+import WebGL2 from "./extend/webgl-extension.mjs"
 
 import Project from "./Project.mjs"
 import ProjectList from "./ProjectList.mjs"
