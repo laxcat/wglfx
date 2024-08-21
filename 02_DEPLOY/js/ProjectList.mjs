@@ -22,7 +22,6 @@ export default class ProjectList extends Serializable {
     }
     el;
     selectEl;
-    inputEl;
     statusEl;
 
     // default construction of ProjectList when none found on dist
@@ -140,30 +139,37 @@ export default class ProjectList extends Serializable {
     }
 
     renameCurrentProject() {
-        this.selectEl.classList.toggle("hidden", true);
-        this.inputEl.classList.toggle("hidden", false);
-        this.inputEl.value = this.selected.name;
-        this.inputEl.focus();
+        const inputEl = this.selectEl.insertHTMLAfter(`<input type="text">`);
 
-        const fn = e => {
+        this.selectEl.classList.toggle("hidden", true);
+        inputEl.value = this.selected.name;
+        inputEl.focus();
+        inputEl.select();
+
+        const cleanup = () => {
+            this.selectEl.classList.toggle("hidden", false);
+            this.updateStatusUI();
+            this.resetProjListUI();
+            inputEl.remove();
+        };
+
+        inputEl.addEventListener("blur", cleanup);
+        inputEl.addEventListener("keydown", e => {
+            // some other key
             if (e.key !== "Enter") return;
 
-            const newName = this.inputEl.value;
+            // name to set
+            const newName = inputEl.value.trim();
 
-            if (newName.trim() === "") {
-                return;
-            }
+            // do nothing if not valid
+            if (newName === "") return;
 
+            // set the name and cleanup
             this.selected.name = newName;
             App.project.name = newName;
             App.project.timeChanged = new Date();
-            this.selectEl.classList.toggle("hidden", false);
-            this.inputEl.classList.toggle("hidden", true);
-            this.updateStatusUI();
-            this.resetProjListUI();
-            this.inputEl.removeEventListener("keydown", fn);
-        };
-        this.inputEl.addEventListener("keydown", fn)
+            cleanup();
+        });
     }
 
     deleteCurrentProject() {
@@ -209,14 +215,12 @@ export default class ProjectList extends Serializable {
             `
             <section id="projList">
                 <select></select>
-                <input type="text" class="hidden">
                 <div class="status">${proj.statusStr}</div>
                 ${this.#getAboutLinkUI()}
             </section>
             `
         );
         this.selectEl = this.el.querySelector("select");
-        this.inputEl = this.el.querySelector("input[type='text']");
         this.#fillProjListUI();
         this.selectEl.addEventListener("change", e => {
             let opt = this.selectEl.options[this.selectEl.selectedIndex].dataset;
@@ -253,7 +257,7 @@ export default class ProjectList extends Serializable {
                 li => `<option data-action="new" data-key="${li.key}">${li.name}</option>`
                 ).join('\n')}
             </optgroup>
-            <optgroup label="${projLI.name} Actions">
+            <optgroup label="Project Actions">
                 <option data-action="rename">Rename ${projLI.name}</option>
                 <option data-action="delete">Delete ${projLI.name}</option>
             </optgroup>
