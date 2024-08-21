@@ -93,13 +93,20 @@ export default class App {
     }
 
     // destroys App.project, then sets the project returned by createProjFn
-    static setProject(createProjFn) {
-        if (App.project.hasChanged()) {
-            if (!confirm(`Project "${App.project.name}" has unsaved changes. Discard changes and continue?`)) {
-                App.projectList.resetProjListUI();
-                App.projectList.updateStatusUI(App.project);
-                return;
-            }
+    static setProject(createProjFn, userConfirmed=false) {
+        // guard if user has not confirmed
+        if (App.project.hasChanged() && !userConfirmed) {
+            util.confirmDialog(
+                `Project "${App.project.name}" has unsaved changes.<br>`+
+                "Discard changes and continue?",
+
+                "Cancel",
+                () => App.projectList.resetProjListUI(),
+
+                "Discard Changes",
+                () => App.setProject(createProjFn, true)
+            );
+            return;
         }
 
         // Project has never been changed, and if not saved, user has confirmed

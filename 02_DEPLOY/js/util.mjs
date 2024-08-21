@@ -5,6 +5,7 @@
 // VAR "TYPE" DETECTION ///////////////////////////////////////////////////// //
 
 // https://masteringjs.io/tutorials/fundamentals/pojo
+// "plain old javascript object"
 export function isPOJO(arg) {
     if (arg == null || typeof arg !== 'object') {
         return false;
@@ -66,6 +67,49 @@ export function objectMap(obj, fn) {
     );
 }
 
+// msg, button1Text, button1Action, button2Text, button2Action...etc
+export function confirmDialog(msg, ...buttonArgs) {
+    const nArgs = buttonArgs.length;
+    if (nArgs % 2) { // odd number of buttonArgs args
+        throw new SyntaxError(`Odd number of parameters expected. ${nArgs} found.`);
+    }
+    // create button html
+    let buttonEls = "";
+    let i = 0; // button index
+    let n = nArgs / 2; // number of buttons
+    while (i < n) {
+        const buttonText = buttonArgs[i*2];
+        if (!isStr(buttonText)) {
+            throw new SyntaxError(`Paremeter ${i*2+1} (${buttonText}) must be a string.`);
+        }
+        buttonEls += `<button tabindex=${i+1} value=${i+1}>${buttonText}</button>\n`;
+        ++i;
+    }
+    // add dialog to end of body
+    const dialog = document.body.appendHTML(`
+        <dialog>
+            <p>${msg}</p>
+            ${buttonEls}
+        </dialog>
+    `);
+    // add click event listeners to buttons
+    i = 0;
+    while (i < n) {
+        const fn = buttonArgs[i*2+1] ?? (()=>{});
+        if (!isFn(fn)) {
+            throw new SyntaxError(`Paremeter ${i*2+2} (${fn}) must be a function.`);
+        }
+        dialog.children[i+1].addEventListener("click", e => {
+            fn(e);
+            dialog.close();
+        });
+        ++i;
+    }
+    // remove dialog html on close
+    dialog.addEventListener("close", e => dialog.remove());
+    // show it!
+    dialog.showModal();
+}
 
 // BUILT-IN CLASS PROTOTYPE ADDITIONS /////////////////////////////////////// //
 
@@ -99,6 +143,7 @@ String.prototype.toStartCase = function() {
     }
     return str;
 }
+
 
 // Array/Iterable ----------------------------------------------------------- //
 

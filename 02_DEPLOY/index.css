@@ -21,6 +21,13 @@ canvas {
     display: none !important;
 }
 
+dialog {
+    &::backdrop {
+        background-color: #000;
+        opacity: .8;
+    }
+}
+
 /* UI GENERAL RULES ********************************************************* */
 #ui {
     width: calc(100% - 20px);
@@ -257,4 +264,4 @@ canvas {
         border: var(--border-focus);
     }
 
-} /* #id */
+} /* #ui */

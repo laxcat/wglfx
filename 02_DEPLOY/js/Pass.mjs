@@ -4,7 +4,8 @@ import Mesh from "./Mesh.mjs"
 import Project from "./Project.mjs"
 import Serializable from "./Serializable.mjs"
 import VertexAttrib from "./VertexAttrib.mjs"
-import * as ui from "./util-ui.mjs"
+import { confirmDialog } from "./util.mjs"
+import { parse as uiParse } from "./util-ui.mjs"
 
 /*
     A draw pass, with necessary objects, data, and UI.
@@ -19,6 +20,7 @@ class PassColor extends Color {
 
 export default class Pass extends Serializable {
     static serialProps = {
+        name: undefined,
         clearColor: PassColor,
         layout: [VertexAttrib],
         meshes: [Mesh],
@@ -26,8 +28,9 @@ export default class Pass extends Serializable {
     el = null;
 
     static templates = [
-        {
+        { // first template is default unless otherwise indicated
             key: "basic2d",
+            name: "Main",
             clear: "000000",
             layout: [
                 {key: "pos",   size: 4},
@@ -50,6 +53,7 @@ export default class Pass extends Serializable {
     reset(serialObj) {
         this.destroy();
         this.deserialize(serialObj);
+        this.el.dispatchEvent(Project.makeChangeEvent("passReset"));
     }
 
     draw() {
@@ -78,13 +82,13 @@ export default class Pass extends Serializable {
         // refill and recreate listeners
         this.#fillUI();
         // add global listeners
-        ui.parse(this.el);
+        uiParse(this.el);
     }
 
     #fillUI() {
         this.el.appendHTML(
             `
-            <label class="collapsible">Main</label>
+            <label class="collapsible">${this.name}</label>
             <section>
 
                 <label>Clear Color</label>
@@ -105,7 +109,7 @@ export default class Pass extends Serializable {
                 <label class="collapsible">Meshes</label>
                 <ul class="meshes"></ul>
 
-                <button class="action">Restore Default</button>
+                <button class="action">Reset Pass To Default</button>
             </section>
             `
         );
@@ -144,10 +148,14 @@ export default class Pass extends Serializable {
         const defaultButtonEl = this.el.querySelector("button.action");
         defaultButtonEl.addEventListener("click", e => {
             e.preventDefault();
-            if (confirm("Really DELETE ALL CHANGES and restore pass settings and data to default?")) {
-                this.reset(this.defaultTemplate);
-                this.resetUI();
-            }
+            confirmDialog(
+                `Really DELETE ALL CHANGES and reset ${this.name} pass to default?`,
+                "Cancel", null,
+                defaultButtonEl.innerHTML, () => {
+                    this.reset(this.defaultTemplate);
+                    this.resetUI();
+                }
+            );
         });
     }
 
