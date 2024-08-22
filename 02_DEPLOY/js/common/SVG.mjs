@@ -4,11 +4,25 @@ import { is } from "./util.mjs"
 /*
     SVG helper class
 
+    SVG.get() is main interface. Mostly designed for icons for now.
+
     // Example:
-    // caches the biult-in reload svg synbol def into body.svg, then wraps a the
+    // Caches the built-in reload svg synbol def into body.svg, then wraps a the
     // refernce in an svg tag, with standardized classes to style path strokes
     // and fills
-    `<button>${SVG.get("reload")}</button>`
+    const buttonEl = `<button>${SVG.get("reload")}</button>`
+
+    // buttonEl is now:
+    <button><svg class="icon reload" version="2.0"><use href="#svg-reload"></use></svg></button>
+
+    // and also, when called for the first time...
+    <body>
+    <svg class="hidden"><defs>
+        <!-- ...symbol cached once here for whole document -->
+        <symbol id="svg-reload" ...></symbol>
+    </defs></svg>
+    ...
+    </body>
 
 */
 export default class SVG {
@@ -21,7 +35,7 @@ export default class SVG {
     get svgEl() {
         if (!this.#svgEl) {
             this.#svgEl = document.body.prependHTML(
-                `<svg style="display: none" version="2.0"><defs></defs></svg>`
+                `<svg class="hidden" version="2.0"><defs></defs></svg>`
             );
         }
         return this.#svgEl;
@@ -51,8 +65,8 @@ export default class SVG {
         case "edit": {
             const ww = w ?? 100;
             const hh = h ?? 100;
-            const p = 15;
-            const i = 25;
+            const p = 10;
+            const i = 27;
             return this.instance.#add(key, w, h,
                 `
                 <symbol viewbox="0 0 ${ww} ${hh}">

@@ -185,15 +185,19 @@ svg {
             float: left;
             width: fit-content;
             height: fit-content;
-            margin: -2px 0 0 10px;
+            margin: -1px 0 0 10px;
             padding: 0;
-/*            -webkit-appearance: menulist-button;*/
             background-color: transparent;
             border-color: transparent;
             cursor: hand;
 
-            svg         { --stroke: rgba(255 255 255 / .7); }
-            &:hover svg { --stroke: #fff; }
+            svg {
+                --stroke:       rgba(255 255 255 / .7);
+                --stroke-fill:  rgba(255 255 255 / .3);
+            }
+            &:hover svg {
+                --stroke:       #fff;
+            }
         }
 
         > div.status {
