@@ -53,6 +53,16 @@ extdProto(String, "toStartCase", function() {
     return str;
 });
 
+// Don't need for now. Uses eval-adjacent code. Proabaly don't use or strictly
+// limit input string to known variables and strip anything else.
+// Was thinking about using for templated strings in JSON, specifically for an
+// external SVG JSON database.
+// https://stackoverflow.com/a/41015840
+// String.prototype.interpolate = function(params) {
+//   const names = Object.keys(params);
+//   const vals = Object.values(params);
+//   return new Function(...names, `return \`${this}\`;`)(...vals);
+// };
 
 // Array/Iterable ----------------------------------------------------------- //
 

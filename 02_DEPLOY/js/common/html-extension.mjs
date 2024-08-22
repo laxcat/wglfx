@@ -5,7 +5,7 @@
 */
 import { extdProto } from "./common-extension.mjs"
 
-extdProto(HTMLElement, "appendHTML", function(html) {
+extdProto(Element, "appendHTML", function(html) {
     const oldLen = this.children.length;
     this.insertAdjacentHTML("beforeend", html);
     const newLen = this.children.length;
@@ -19,7 +19,21 @@ extdProto(HTMLElement, "appendHTML", function(html) {
     return this.children.slice(oldLen, newLen);
 });
 
-extdProto(HTMLElement, "insertHTMLAfter", function(html) {
+extdProto(Element, "prependHTML", function(html) {
+    const oldLen = this.children.length;
+    this.insertAdjacentHTML("afterbegin", html);
+    const newLen = this.children.length;
+
+    // exactly one node added, return one node
+    if (newLen === oldLen + 1) {
+        return this.children[0];
+    }
+
+    // otherwise, return an array, maybe an empty array if nothing added
+    return this.children.slice(0, newLen - oldLen);
+});
+
+extdProto(Element, "insertHTMLAfter", function(html) {
     const parent = this.parentElement;
     const thisIndex = parent.children.indexOf(this);
     const oldLen = parent.children.length;

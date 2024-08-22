@@ -45,6 +45,33 @@ dialog {
     }
 }
 
+svg {
+    /* symbol viewbox assumed to be 0 0 100 100 */
+
+    /* applied to .fill */
+    --fill:         #fff;
+    --fill-stroke:  none;
+    /* applied to .stroke */
+    --stroke:       #fff;
+    --stroke-width: 8px;
+    --stroke-fill:  none;
+
+    &.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .fill {
+        stroke: var(--fill-stroke);
+        fill: var(--fill);
+    }
+    .stroke {
+        stroke: var(--stroke);
+        stroke-width: var(--stroke-width);
+        fill: var(--stroke-fill);
+    }
+}
+
 /* UI GENERAL RULES ********************************************************* */
 #ui {
     width: calc(100% - 20px);
