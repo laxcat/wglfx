@@ -1,4 +1,5 @@
 import Serializable from "./common/Serializable.mjs"
+import SVG from "./common/SVG.mjs"
 import { confirmDialog } from "./common/util.mjs"
 
 import App from "./App.mjs"
@@ -23,6 +24,7 @@ export default class ProjectList extends Serializable {
     }
     el;
     selectEl;
+    renameEl;
     statusEl;
 
     // default construction of ProjectList when none found on dist
@@ -158,18 +160,22 @@ export default class ProjectList extends Serializable {
         const inputEl = this.selectEl.insertHTMLAfter(`<input type="text">`);
 
         this.selectEl.classList.toggle("hidden", true);
+        this.renameEl.classList.toggle("hidden", true);
         inputEl.value = this.selected.name;
         inputEl.focus();
         inputEl.select();
 
         const cleanup = () => {
             this.selectEl.classList.toggle("hidden", false);
+            this.renameEl.classList.toggle("hidden", false);
             this.updateStatusUI();
             this.resetProjListUI();
             inputEl.remove();
         };
 
+        // cancel if user loses focus
         inputEl.addEventListener("blur", cleanup);
+        // submit with Enter key
         inputEl.addEventListener("keydown", e => {
             // some other key
             if (e.key !== "Enter") return;
@@ -185,6 +191,10 @@ export default class ProjectList extends Serializable {
             App.project.name = newName;
             App.project.timeChanged = new Date();
             cleanup();
+        });
+        // cancel with Esc key
+        inputEl.addEventListener("keydown", e => {
+            if (e.key === "Escape") cleanup();
         });
     }
 
@@ -255,6 +265,7 @@ export default class ProjectList extends Serializable {
             `
             <section id="projList">
                 <select></select>
+                <button>${SVG.get("edit")}</button>
                 <div class="status">${proj.statusStr}</div>
                 ${this.#getAboutLinkUI()}
             </section>
@@ -271,6 +282,9 @@ export default class ProjectList extends Serializable {
             case "delete":  return this.deleteCurrentProject();
             }
         });
+
+        this.renameEl = this.el.querySelector("button");
+        this.renameEl.addEventListener("click", () => this.renameCurrentProject());
 
         this.statusEl = this.el.querySelector(".status");
     }

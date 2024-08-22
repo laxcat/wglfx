@@ -42,8 +42,6 @@ export default class App {
 
         if (info) App.info = info;
 
-        console.log("App.gl.hasErrors", App.gl.hasErrors);
-
         this.uiEl = document.getElementById("ui");
 
         // create keyboard shortcuts, window resize, etc

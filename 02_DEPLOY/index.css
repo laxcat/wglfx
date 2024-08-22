@@ -181,6 +181,21 @@ svg {
             font-size: 13px;
         }
 
+        > button:has(svg.edit) {
+            float: left;
+            width: fit-content;
+            height: fit-content;
+            margin: -2px 0 0 10px;
+            padding: 0;
+/*            -webkit-appearance: menulist-button;*/
+            background-color: transparent;
+            border-color: transparent;
+            cursor: hand;
+
+            svg         { --stroke: rgba(255 255 255 / .7); }
+            &:hover svg { --stroke: #fff; }
+        }
+
         > div.status {
             float: left;
             font-size: 12px;
