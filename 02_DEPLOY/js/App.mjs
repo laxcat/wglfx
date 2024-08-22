@@ -122,9 +122,7 @@ export default class App {
         App.project = null;
         App.project = createProjFn();
         App.instance.createProjectUI();
-        App.projectList.selectedId = App.project.id;
-        App.projectList.resetProjListUI();
-        App.projectList.updateStatusUI(App.project);
+        App.projectList.setSelected(App.project);
     }
 
     get uiShowing() {

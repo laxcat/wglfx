@@ -173,4 +173,8 @@ export default class Project extends Serializable {
         console.log(serialObj);
         this.#listenForChanges = true;
     }
+
+    deleteSaved() {
+        localStorage.removeItem(this.storageKey);
+    }
 }

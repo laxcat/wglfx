@@ -1,6 +1,7 @@
 import App from "./App.mjs"
 import Project from "./Project.mjs"
 import Serializable from "./Serializable.mjs"
+import { confirmDialog } from "./util.mjs"
 import * as ui from "./util-ui.mjs"
 
 /*
@@ -75,9 +76,16 @@ export default class ProjectList extends Serializable {
     updateStatusUI(proj) {
         if (!this.statusEl) return;
         if (!proj) proj = App.project;
-        if (proj.id !== this.selectedId) return;
+        if (proj?.id !== this.selectedId) return;
         this.statusEl.classList.toggle("changed", proj.hasChanged());
         this.statusEl.innerHTML = proj.statusStr;
+    }
+
+    setSelected(proj) {
+        this.selectedId = App.project.id;
+        this.resetProjListUI();
+        this.updateStatusUI(App.project);
+        this.save();
     }
 
 // PROJECT CREATION --------------------------------------------------------- //
@@ -127,15 +135,22 @@ export default class ProjectList extends Serializable {
 // LIST ACTIONS ------------------------------------------------------------- //
 
     switchProject(id) {
-        let proj = this.#createProjectFromId(id);
-        while (!proj && this.projectCount) {
-            this.findNewSelected();
-            proj = this.#createProjectFromId(this.selectedId);
+        const newProjInit = Project.load(id, this.itemForId(id)?.name);
+
+        // could not load project, delete list entry and switch to something else
+        if (!newProjInit) {
+            this.removeItem(id);
+            // if we still have projects in the list, try switching to one of them
+            if (this.projectCount) {
+                // recurse
+                this.switchProject(this.selectedId);
+                return;
+            }
+            // no projects in list at all!
+            return App.setProject(() => this.#createNewProject());
         }
-        if (!proj) {
-            proj = this.#createNewProject();
-        }
-        return proj;
+
+        App.setProject(() => new Project(newProjInit));
     }
 
     renameCurrentProject() {
@@ -172,8 +187,32 @@ export default class ProjectList extends Serializable {
         });
     }
 
-    deleteCurrentProject() {
+    deleteCurrentProject(userConfirmed = false) {
+        if (!userConfirmed) {
+            confirmDialog(
+                `Really permanently delete "${App.project.name}".<br>`+
+                "This cannot be undone!",
 
+                "Cancel",
+                null,
+
+                "Delete Project",
+                () => this.deleteCurrentProject(true)
+            );
+            this.updateStatusUI();
+            this.resetProjListUI();
+            return;
+        }
+
+        App.project.deleteSaved();
+        this.removeItem(this.selectedId);
+
+        App.setProject(() => {
+            return (
+                (this.selectedId) ? this.#createProjectFromId(this.selectedId) :
+                this.#createNewProject()
+            );
+        });
     }
 
     addItem(id, name, selected) {
@@ -225,10 +264,10 @@ export default class ProjectList extends Serializable {
         this.selectEl.addEventListener("change", e => {
             let opt = this.selectEl.options[this.selectEl.selectedIndex].dataset;
             switch(opt.action) {
-            case "load":    return App.setProject(() => this.switchProject(opt.id));
+            case "load":    return this.switchProject(parseInt(opt.id));
             case "new":     return App.setProject(() => this.#createNewProject(opt.key));
             case "rename":  return this.renameCurrentProject();
-            case "delete":  return App.setProject(() => this.deleteCurrentProject());
+            case "delete":  return this.deleteCurrentProject();
             }
         });
 
