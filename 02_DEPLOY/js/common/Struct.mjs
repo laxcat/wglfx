@@ -43,7 +43,7 @@ export default class Struct {
 
     constructor(layout, buffer, offset=0) {
         if (layout.hasOwnProperty("setPtr")) {
-            throw new Error(`Struct can't use reserved property "setPtr".`);
+            throw new Error(`Struct can't use reserved property “setPtr”.`);
         }
 
         // store the layout, allowing to set pointer later

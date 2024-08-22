@@ -100,8 +100,8 @@ export default class App {
         // guard if user has not confirmed
         if (App.project.hasChanged() && !userConfirmed) {
             confirmDialog(
-                `Project "${App.project.name}" has unsaved changes.<br>`+
-                "Discard changes and continue?",
+                `Project “${App.project.name}” has unsaved changes.<br>`+
+                `Discard changes and continue?`,
 
                 "Cancel",
                 () => App.projectList.resetProjListUI(),

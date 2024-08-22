@@ -178,7 +178,13 @@ svg {
         > select,
         > input[type="text"] {
             float: left;
+            margin-left: 4px;
             font-size: 13px;
+            height: 22px;
+        }
+
+        > input[type="text"] {
+            padding: 1px 6px;
         }
 
         > button:has(svg.edit) {
@@ -203,7 +209,7 @@ svg {
         > div.status {
             float: left;
             font-size: 12px;
-            line-height: 20px;
+            line-height: 22px;
             margin-left: 10px;
         }
         > div.status.changed {
@@ -213,7 +219,7 @@ svg {
         > a {
             float: right;
             font-size: 12px;
-            line-height: 20px;
+            line-height: 22px;
             margin-right: 10px;
         }
     }

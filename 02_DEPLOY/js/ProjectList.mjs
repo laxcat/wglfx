@@ -201,7 +201,7 @@ export default class ProjectList extends Serializable {
     deleteCurrentProject(userConfirmed = false) {
         if (!userConfirmed) {
             confirmDialog(
-                `Really permanently delete "${App.project.name}".<br>`+
+                `Really permanently delete “${App.project.name}”.<br>`+
                 "This cannot be undone!",
 
                 "Cancel",
@@ -312,8 +312,8 @@ export default class ProjectList extends Serializable {
                 ).join('\n')}
             </optgroup>
             <optgroup label="Project Actions">
-                <option data-action="rename">Rename ${projLI.name}</option>
-                <option data-action="delete">Delete ${projLI.name}</option>
+                <option data-action="rename">Rename “${projLI.name}”</option>
+                <option data-action="delete">Delete “${projLI.name}”</option>
             </optgroup>
             `
         );

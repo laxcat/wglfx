@@ -37,7 +37,7 @@ export default class ShaderProgram extends Serializable {
     }
 
     compile(uboBlockName=null) {
-        console.log(`program compile, UBO Block Name:"${uboBlockName}"`);
+        console.log(`program compile, UBO Block Name:“${uboBlockName}”`);
 
         const gl = App.gl;
 
@@ -65,7 +65,7 @@ export default class ShaderProgram extends Serializable {
             // but i couldn't find documentation for it
             if (uboBlockIndex !== 0xffffffff) {
                 gl.uniformBlockBinding(this.glObj, uboBlockIndex, 0);
-                console.log(`Attaching uniform block "${uboBlockName}" to UBO index 0.`);
+                console.log(`Attaching uniform block “${uboBlockName}” to UBO index 0.`);
             }
         }
 
