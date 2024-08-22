@@ -83,9 +83,9 @@ export default class ProjectList extends Serializable {
     }
 
     setSelected(proj) {
-        this.selectedId = App.project.id;
+        this.selectedId = proj.id;
         this.resetProjListUI();
-        this.updateStatusUI(App.project);
+        this.updateStatusUI(proj);
         this.save();
     }
 
