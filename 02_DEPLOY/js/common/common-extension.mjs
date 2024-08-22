@@ -75,7 +75,7 @@ extend(Array, "last", function() {
     console.log(a.findByKeyOrDefault(0)   );  // returns a[2]
     console.log(a.findByKeyOrDefault("7") );  // no strict match, returns default a[0]
     delete a[0].default;
-    console.log(a.findByKeyOrDefault("7") );  // no strict match, no default, returns null
+    console.log(a.findByKeyOrDefault("7") );  // no strict match, no default, returns first item a[0]
 */
 extend(Array, "findByKeyOrDefault", function(key, keyProp="key", defaultProp="default") {
     // shortcut quickly if array is empty
