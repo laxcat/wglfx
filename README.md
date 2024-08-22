@@ -14,4 +14,5 @@ Supports some keyboard shortcuts:
 This project includes a WebAssembly [Z85](https://rfc.zeromq.org/spec/32/) encoder/decoder based on the C code from the [Z85 reference spec](https://github.com/zeromq/rfc/blob/master/src/spec_32.c). To facilitate the wasm module and its build pipeline this project also includes some useful generic tools for working with WebAssembly.
 
 - [`WASM.mjs`](02_DEPLOY/js/common/WASM.mjs) / [`wasm.h`](01_DEVELOP/wasm/wasm.h): A basic wasm module handler class and coresponding header. Designed to run small modules with no standard library or memory allocation requirements. Facilitates the basics of loading the compiled wasm module and comunicating between the JavaScript and WebAssembly runtimes.
+- See [`WASMTest.mjs`](02_DEPLOY/js/WASMTest.mjs) / [`test.c`](01_DEVELOP/wasm/test.c) for a simple example.
 - [`build_wasm`](01_DEVELOP/wasm/build_wasm): A sample build script intended to build very small WebAssembly modules. Uses `clang` and llvm's `wasm-ld` directly. (Thanks to [ern0](https://github.com/ern0/howto-wasm-minimal), [jaredkrinke](https://github.com/jaredkrinke/wasm-c-string))
