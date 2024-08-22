@@ -3,9 +3,9 @@
 
     Add html insertion helpers, and WebGL shortcut export.
 */
-import { extend } from "./common-extension.mjs"
+import { extdProto } from "./common-extension.mjs"
 
-HTMLElement.prototype.appendHTML = function(html) {
+extdProto(HTMLElement, "appendHTML", function(html) {
     const oldLen = this.children.length;
     this.insertAdjacentHTML("beforeend", html);
     const newLen = this.children.length;
@@ -17,9 +17,9 @@ HTMLElement.prototype.appendHTML = function(html) {
 
     // otherwise, return an array, maybe an empty array if nothing added
     return this.children.slice(oldLen, newLen);
-}
+});
 
-HTMLElement.prototype.insertHTMLAfter = function(html) {
+extdProto(HTMLElement, "insertHTMLAfter", function(html) {
     const parent = this.parentElement;
     const thisIndex = parent.children.indexOf(this);
     const oldLen = parent.children.length;
@@ -35,18 +35,18 @@ HTMLElement.prototype.insertHTMLAfter = function(html) {
 
     // multiple added, return added elements
     return this.children.slice(thisIndex+1, thisIndex+1+addedCount);
-}
+});
 
 // scans from end first
-HTMLCollection.prototype.indexOf = function(el) {
+extdProto(HTMLCollection, "indexOf", function(el) {
     let i = this.length;
     while (i--) {
         if (this[i] === el) return i;
     }
     return undefined;
-}
+});
 
-HTMLCollection.prototype.slice = function(start, end) {
+extdProto(HTMLCollection, "slice", function(start, end) {
     let ret = [];
     let i = start;
     while (i < end) {
@@ -54,8 +54,8 @@ HTMLCollection.prototype.slice = function(start, end) {
         ++i;
     }
     return ret;
-}
+});
 
-HTMLCollection.prototype.last = function() {
+extdProto(HTMLCollection, "last", function() {
     return this.length ? this[this.length - 1] : null;
-}
+});

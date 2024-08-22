@@ -3,22 +3,28 @@
 */
 
 // Add a property to prototype of builtIn (or anything really)
-export function extend(builtIn, propName, propValue) {
-    if (builtIn.prototype.hasOwnProperty(propName) === false) {
-        builtIn.prototype[propName] = propValue;
+export function extd(builtIn, propName, options) {
+    // do nothing if set already
+    if (builtIn.hasOwnProperty(propName)) {
+        console.error(`WARNING COULD NOT SET ${builtIn}.${propName}!`);
+        return;
     }
+    Object.defineProperty(builtIn, propName, options);
 }
 
-// Add a property to class/object itself on builtIn (or anything really)
-export function extendStatic(builtIn, propName, propValue) {
-    if (builtIn.hasOwnProperty(propName) === false) {
-        builtIn[propName] = propValue;
-    }
+// extd(Foo.prototype, "newKey", {value:0, writeable:true});
+// replace w shortcut:
+// extdProto(Foo, "newKey", 0, true);
+export function extdProto(builtIn, propName, propValue, writeable=false) {
+    extd(builtIn.prototype, propName, {
+        value: propValue,
+        writable: writeable,
+    });
 }
 
 // String ------------------------------------------------------------------- //
 
-extend(String, "toStartCase", function() {
+extdProto(String, "toStartCase", function() {
     let str = "";
     const len = this.length;
     // was previous character whitespace?
@@ -50,7 +56,7 @@ extend(String, "toStartCase", function() {
 
 // Array/Iterable ----------------------------------------------------------- //
 
-extend(Array, "last", function() {
+extdProto(Array, "last", function() {
     return this.length ? this[this.length - 1] : null;
 });
 
@@ -77,7 +83,7 @@ extend(Array, "last", function() {
     delete a[0].default;
     console.log(a.findByKeyOrDefault("7") );  // no strict match, no default, returns first item a[0]
 */
-extend(Array, "findByKeyOrDefault", function(key, keyProp="key", defaultProp="default") {
+extdProto(Array, "findByKeyOrDefault", function(key, keyProp="key", defaultProp="default") {
     // shortcut quickly if array is empty
     const e = this.length;
     if (e === 0) return null;
@@ -111,7 +117,7 @@ extend(Array, "findByKeyOrDefault", function(key, keyProp="key", defaultProp="de
 
 // Base64 Encoding/Decoding ------------------------------------------------- //
 
-extend(ArrayBuffer, "toBase64", function() {
+extdProto(ArrayBuffer, "toBase64", function() {
     let arr = new Uint8Array(this);
     let str = "";
     arr.forEach(byte => str += String.fromCodePoint(byte));
@@ -128,11 +134,11 @@ extend(ArrayBuffer, "toBase64", function() {
     Float64Array,
     BigInt64Array,
     BigUint64Array
-].forEach(builtIn=>extend(builtIn, "toBase64", function() {
+].forEach(builtIn=>extdProto(builtIn, "toBase64", function() {
     return this.buffer.toBase64();
 }));
 
-extend(String, "fromBase64", function() {
+extdProto(String, "fromBase64", function() {
     const arr = window.atob(this)
                 .split("")
                 .map(byteStr => byteStr.codePointAt(0));

@@ -18,7 +18,7 @@ import WASMZ85 from "./WASMZ85.mjs";
 */
 export default class App {
     // Settings
-    static get NAME()               { return this.info?.repository.name.toLowerCase() ?? "gfxtoy"; }
+    static get NAME()               { return this.info?.repository.name.toLowerCase() ?? "wglfx"; }
     static get KEY_PROJ_LIST()      { return `${App.NAME}_projlist`; }
     static get KEY_PROJ_PREFIX()    { return `${App.NAME}_proj_`; }
 
@@ -41,6 +41,8 @@ export default class App {
         App.instance = this;
 
         if (info) App.info = info;
+
+        console.log("App.gl.hasErrors", App.gl.hasErrors);
 
         this.uiEl = document.getElementById("ui");
 
@@ -99,7 +101,7 @@ export default class App {
     static setProject(createProjFn, userConfirmed=false) {
         // guard if user has not confirmed
         if (App.project.hasChanged() && !userConfirmed) {
-            util.confirmDialog(
+            confirmDialog(
                 `Project "${App.project.name}" has unsaved changes.<br>`+
                 "Discard changes and continue?",
 
