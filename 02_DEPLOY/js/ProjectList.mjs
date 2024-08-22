@@ -66,7 +66,8 @@ export default class ProjectList extends Serializable {
         if (proj) {
             return proj
         }
-        // project not found, create new one and update list
+        // project did not load, remove dead list item and create new project
+        this.removeItem(this.selectedId);
         proj = this.#createNewProject();
         this.resetProjListUI();
         this.updateStatusUI(proj);
