@@ -1,5 +1,5 @@
 # WGLFX
-WGLFX (“WebGL Effects” or “wiggle fix”) is a WebGL playground app written in ES module JavaScript. The project’s main goal is to create a simple tool to play directly with shader code, but allow for (and create tools to easily facilitate) advanced, multi-pass set-ups. Currently a work in progress and is mostly still a proof of concept. So far: supports a one-pass basic vert/frag shader setup, some simple mesh data, some UBO variable capability, multiple projects and some basic project management.
+WGLFX (“WebGL Effects” or “wiggle fix”) is a WebGL2 playground app written in ES module JavaScript. The project’s main goal is to create a simple tool to play directly with shader code, but allow for (and create tools to easily facilitate) advanced, multi-pass set-ups. Currently a work in progress and is mostly still a proof of concept. So far: supports a one-pass basic vert/frag shader setup, some simple mesh data, some UBO variable capability, multiple projects and some basic project management. The primary feature of editing shader code in real time is implemented, with a [feature rich editor](https://ace.c9.io) and in-line compile error indicators.
 
 Feel free to play with this [Live Version](https://tylermartin.net/wglfx), but do expect many bugs and probably incompatible project saves as development continues.
 
