@@ -15,16 +15,18 @@ This project uses [ES modules](https://developer.mozilla.org/en-US/docs/Web/Java
 
 There are two main reasons for being aggressive with requiring such modern features (and not bothering with any polyfills). The first is an acknowledgment of the specific audience for a shader/graphics development app. The author has little concern generally as these new features are broadly available, but especially when concidering the audience in question.
 
-The second reason is more personal, as the primary contributor is simply enjoying catching up on modern JavaScript after years of only occasional check-ins. It is useful and educational to explore and experiment cutting-edge features in exactly this sort of toy-app scenario.
+The second reason is more personal, as the primary contributor is simply enjoying catching up on modern JavaScript after years of only occasional check-ins. It is useful and educational to explore and experiment with cutting-edge features in exactly this sort of toy-app scenario.
 
-This project also uses extensions to the built-in types and prototypes (“monkey patching”). The author justifies the out-of-vogue practice by reminding potential critics that this code, while hopefully useful and portable, is not intended for *automated* inclusion into any ecosystem, and the convenience to the development process easily overrides any theoretical concerns about unlikely deployment scenarios. Also, all extensions are added through a central function (see [extd](02_DEPLOY/js/common/common-extension.mjs#L5-L13)) so the policy can be changed in once place if necessary. As it is this app’s additions will never override anything, and simply break this app if they fail, which is an extremely acceptable (and again, unlikely) outcome.
+This project also uses extensions to the built-in types and prototypes (“monkey patching”). The author justifies the out-of-vogue practice by reminding potential critics that this code, while hopefully useful and portable, is not intended for *automated* inclusion into any ecosystem, and the convenience to the development process easily overrides any theoretical concerns about unlikely deployment scenarios. Also, all extensions are added through a central function (see [extd](02_DEPLOY/js/common/common-extension.mjs#L5-L13)) so the policy can be changed in once place if necessary. As it is, this app’s additions will never override anything, and simply break this app if they fail, which is an extremely acceptable (and again, unlikely) outcome.
 
 ## WebAssembly + z85.wasm
 This project includes a WebAssembly [Z85](https://rfc.zeromq.org/spec/32/) encoder/decoder based on the C code from the [Z85 reference spec](https://github.com/zeromq/rfc/blob/master/src/spec_32.c). To facilitate the wasm module and its build pipeline this project also includes some useful generic tools for working with WebAssembly.
 
 - [`WASM.mjs`](02_DEPLOY/js/common/WASM.mjs) / [`wasm.h`](01_DEVELOP/wasm/wasm.h): A basic wasm module handler class and corresponding header. Designed to run small modules with no standard library or memory allocation requirements. Facilitates the basics of loading the compiled wasm module and communicating between the JavaScript and WebAssembly runtimes.
 - See [`WASMTest.mjs`](02_DEPLOY/js/WASMTest.mjs) / [`test.c`](01_DEVELOP/wasm/test.c) for a simple example.
-- [`build_wasm`](01_DEVELOP/wasm/build_wasm): A sample build script intended to build very small WebAssembly modules. Uses `clang` and llvm's `wasm-ld` directly.
+- [`build_wasm`](01_DEVELOP/wasm/build_wasm): A sample build script intended to build very small WebAssembly modules. Uses `clang` and llvm's `wasm-ld` directly.  
+  Usage:  
+  ```./build_wasm test.c test.wasm```
 
 ## 3rd party libraries and contributions
 | Library/Function | Credit |
