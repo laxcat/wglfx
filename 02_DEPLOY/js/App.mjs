@@ -18,9 +18,9 @@ import WASMZ85 from "./WASMZ85.mjs";
 */
 export default class App {
     // Settings
-    static NAME             = "gfxtoy"
-    static KEY_PROJ_LIST    = `${App.NAME}_projlist`;
-    static KEY_PROJ_PREFIX  = `${App.NAME}_proj_`;
+    static get NAME()               { return this.info?.repository.name.toLowerCase() ?? "gfxtoy"; }
+    static get KEY_PROJ_LIST()      { return `${App.NAME}_projlist`; }
+    static get KEY_PROJ_PREFIX()    { return `${App.NAME}_proj_`; }
 
     // All members are available for global access
     static gl           = WebGL2.create();
