@@ -44,7 +44,7 @@ export default class App {
 
         this.uiEl = document.getElementById("ui");
 
-        // create keyboard shortcuts and anything that opperates on whole App
+        // create keyboard shortcuts, window resize, etc
         this.setupGlobalHandlers();
 
         // load settings/src from user's localStorage. will set defaults if none found.
@@ -154,6 +154,12 @@ export default class App {
                 e.preventDefault();
                 this.toggleUI();
             }
+        });
+
+        window.addEventListener("resize", e => {
+            App.gl.canvas.width = window.innerWidth;
+            App.gl.canvas.height = window.innerHeight;
+            App.gl.viewport(0, 0, window.innerWidth, window.innerHeight);
         });
     }
 
