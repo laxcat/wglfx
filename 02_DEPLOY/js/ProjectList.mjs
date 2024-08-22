@@ -321,7 +321,8 @@ export default class ProjectList extends Serializable {
 
     #getAboutLinkUI() {
         const url = App.info?.repository?.url;
-        if (!url) return "";
-        return `<a href="${url}" target="_blank">About</a>`
+        const name = App.info?.repository?.name;
+        if (!url || !name) return "";
+        return `<a href="${url}" target="_blank">${name.toUpperCase()}</a>`
     }
 }
