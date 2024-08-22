@@ -5,6 +5,7 @@
     Add context creation, helpers for errors, and WebGL shortcut export.
 */
 import { extend, extendStatic } from "./common-extension.mjs"
+import { isStr, is } from "./util.mjs"
 
 // Export a shortcut name for this bad-boy
 const WebGL2 = WebGL2RenderingContext;
@@ -19,17 +20,17 @@ extend(WebGL2, "hasErrors", false);
 // creates WebGL2RenderingContext instance
 extendStatic(WebGL2, "create", function(canvasElOrQuery) {
     // find canvas
-    let canvas = (c => {
+    const canvas = (c => {
         // if falsy find first canvas in document
         if (!c) {
             c = document.getElementsByTagName("canvas")[0];
         }
         // query document if string
-        if (typeof c === "string") {
+        if (isStr(c)) {
             c = document.querySelector(c);
         }
         // we have a canvas
-        if (c instanceof HTMLCanvasElement) {
+        if (is(c, HTMLCanvasElement)) {
             return c;
         }
         throw new Error(

@@ -1,11 +1,12 @@
+import Serializable from "./common/Serializable.mjs"
+import Color from "./common/Color.mjs"
+import { confirmDialog } from "./common/util.mjs"
+import { parse as uiParse } from "./common/util-ui.mjs"
+
 import App from "./App.mjs"
-import Color from "./Color.mjs"
 import Mesh from "./Mesh.mjs"
 import Project from "./Project.mjs"
-import Serializable from "./Serializable.mjs"
 import VertexAttrib from "./VertexAttrib.mjs"
-import { confirmDialog } from "./util.mjs"
-import { parse as uiParse } from "./util-ui.mjs"
 
 /*
     A draw pass, with necessary objects, data, and UI.

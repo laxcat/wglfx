@@ -1,8 +1,8 @@
+import Serializable from "./common/Serializable.mjs"
+import { confirmDialog } from "./common/util.mjs"
+
 import App from "./App.mjs"
 import Project from "./Project.mjs"
-import Serializable from "./Serializable.mjs"
-import { confirmDialog } from "./util.mjs"
-import * as ui from "./util-ui.mjs"
 
 /*
     A list of projects, and operations to manage projects.

@@ -1,7 +1,7 @@
+import Serializable from "./common/Serializable.mjs"
+
 import App from "./App.mjs"
 import Shader from "./Shader.mjs"
-import Serializable from "./Serializable.mjs"
-import * as util from "./util.mjs"
 
 /*
     Shader Program, with editable UI.

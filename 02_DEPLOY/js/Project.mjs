@@ -1,9 +1,9 @@
+import Serializable from "./common/Serializable.mjs"
+
 import App from "./App.mjs"
 import ShaderProgram from "./ShaderProgram.mjs"
 import Pass from "./Pass.mjs"
-import Serializable from "./Serializable.mjs"
 import UniformBuffer from "./UniformBuffer.mjs"
-import * as ui from "./util-ui.mjs"
 
 /*
     A project, holding all information and UI.

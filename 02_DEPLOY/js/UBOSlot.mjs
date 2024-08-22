@@ -1,5 +1,5 @@
 import Project from "./Project.mjs"
-import Serializable from "./Serializable.mjs"
+import Serializable from "./common/Serializable.mjs"
 
 export default class UBOSlot extends Serializable {
     static initProps = {

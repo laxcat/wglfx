@@ -1,5 +1,5 @@
-import WASM from "./WASM.mjs"
-import Struct from "./Struct.mjs"
+import WASM from "./common/WASM.mjs"
+import Struct from "./common/Struct.mjs"
 
 /*
     Z85 encoder/decoder

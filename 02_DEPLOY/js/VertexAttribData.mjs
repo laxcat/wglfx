@@ -1,8 +1,9 @@
+import Serializable from "./common/Serializable.mjs"
+import { isStr } from "./common/util.mjs"
+import { aceIt } from "./common/util-ui.mjs"
+
 import App from "./App.mjs"
 import Project from "./Project.mjs"
-import Serializable from "./Serializable.mjs"
-import { isStr } from "./util.mjs"
-import * as ui from "./util-ui.mjs"
 
 /*
     Vertex attribute data, related operations and UI.
@@ -169,7 +170,7 @@ export default class VertexAttribData extends Serializable {
                 <pre>${this.dataStr}</pre>
             </li>`
         );
-        this.editor = ui.aceit(dataEl.querySelector("pre"), "ace/mode/text");
+        this.editor = aceIt(dataEl.querySelector("pre"), "ace/mode/text");
         this.editor.addEventListener("change", e => {
             this.#uiDirty = true;
             dataEl.dispatchEvent(Project.makeChangeEvent(`${this.key}Data`));

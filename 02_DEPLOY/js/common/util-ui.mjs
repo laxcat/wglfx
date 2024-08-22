@@ -19,7 +19,7 @@ export function makeCollapsible(el) {
     }
 }
 
-export function aceit(idOrEl, mode="ace/mode/glsl") {
+export function aceIt(idOrEl, mode="ace/mode/glsl") {
     const editor = ace.edit(idOrEl);
     editor.setTheme("ace/theme/solarized_dark");
     editor.setKeyboardHandler("ace/keyboard/sublime");

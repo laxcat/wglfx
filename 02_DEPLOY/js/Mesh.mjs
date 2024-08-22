@@ -1,6 +1,6 @@
+import Serializable from "./common/Serializable.mjs"
 import App from "./App.mjs"
 import Project from "./Project.mjs"
-import Serializable from "./Serializable.mjs"
 import VertexAttribData from "./VertexAttribData.mjs"
 
 /*

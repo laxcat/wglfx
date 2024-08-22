@@ -1,8 +1,9 @@
+import Serializable from "./common/Serializable.mjs"
+import { loadFileSync } from "./common/util.mjs"
+import { aceIt } from "./common/util-ui.mjs"
+
 import App from "./App.mjs"
 import Project from "./Project.mjs"
-import Serializable from "./Serializable.mjs"
-import * as util from "./util.mjs"
-import * as ui from "./util-ui.mjs"
 
 /*
     Individual shader (frag or vert) source and UI.
@@ -26,7 +27,7 @@ export default class Shader extends Serializable {
         {key: "blank", src:""},
     ];
     static makeTemplate(key) {
-        return {key, src: ()=>util.loadFileSync(`./glsl/${key}.glsl`), }
+        return {key, src: ()=>loadFileSync(`./glsl/${key}.glsl`), }
     }
 
     // webgl shader type
@@ -152,7 +153,7 @@ export default class Shader extends Serializable {
             <pre></pre>
             </li>`
         );
-        this.editor = ui.aceit(this.el.querySelector("pre"));
+        this.editor = aceIt(this.el.querySelector("pre"));
         this.editor.session.setUseWrapMode(true);
         this.editor.session.setWrapLimit(100);
         this.editor.addEventListener("change", () => {

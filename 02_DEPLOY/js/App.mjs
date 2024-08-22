@@ -1,13 +1,14 @@
-import "./extend/common-extension.mjs"
-import "./extend/html-extension.mjs"
-import WebGL2 from "./extend/webgl-extension.mjs"
+import "./common/common-extension.mjs"
+import "./common/html-extension.mjs"
+import WebGL2 from "./common/webgl-extension.mjs"
+
+import { confirmDialog } from "./common/util.mjs"
+import { parse as uiParse } from "./common/util-ui.mjs"
 
 import Project from "./Project.mjs"
 import ProjectList from "./ProjectList.mjs"
 import Time from "./Time.mjs"
 import WASMZ85 from "./WASMZ85.mjs";
-import * as util from "./util.mjs"
-import * as ui from "./util-ui.mjs"
 
 /*
     Root class for the project. Singleton.
@@ -188,11 +189,11 @@ export default class App {
         App.projectList.createUI(this.uiEl);
         this.projectEl = App.project.createUI(this.uiEl);
         // adds systematic handlers, etc
-        ui.parse(this.uiEl);
+        uiParse(this.uiEl);
     }
 
     createProjectUI() {
         this.projectEl = App.project.createUI(this.uiEl);
-        ui.parse(this.projectEl);
+        uiParse(this.projectEl);
     }
 }

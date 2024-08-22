@@ -1,6 +1,6 @@
+import Serializable from "./common/Serializable.mjs"
+
 import App from "./App.mjs"
-import Serializable from "./Serializable.mjs"
-import * as ui from "./util-ui.mjs"
 
 /*
     Vertex attrib information for each attrib in VertexLayout.
