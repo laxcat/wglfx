@@ -60,7 +60,7 @@ export default class SVG {
 
         // ...for now here are some basic built-in icons
         const symbolStr = ((w, h) => {
-            const pathStr = (() => {
+            const innerStr = (() => {
                 switch(key) {
                         
                 // edit icon
@@ -88,12 +88,12 @@ export default class SVG {
                     />`;
                 }
             })();
-            return (pathStr) ?
-                `<symbol viewbox="0 0 ${w} ${h}">${pathStr}</symbol>` : 
+            return (innerStr) ?
+                `<symbol viewbox="0 0 ${w} ${h}">${innerStr}</symbol>` :
                 "";
         })(w ?? 100, h ?? 100);
 
-        return (symbolStr) this.instance.#add(key, w, h, symbolStr) : "";
+        return (symbolStr) ? this.instance.#add(key, w, h, symbolStr) : "";
     }
 
     #getCached(key, w, h) {
