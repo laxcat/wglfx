@@ -36,6 +36,8 @@ export default class Pass extends Serializable {
             layout: [
                 {key: "pos",   size: 4},
                 {key: "color", size: 4},
+                {key: "norm",  size: 3},
+                {key: "tan",   size: 3},
             ],
             meshes: ["debugTriangles"],
         },
@@ -96,16 +98,7 @@ export default class Pass extends Serializable {
                 <input type="text" class="color" value="#${this.clearColor.toRGBAStr()}">
 
                 <label class="collapsible">Layout</label>
-                <section class="layout">
-                    <ul></ul>
-                    <form>
-                        <label>Size</label>
-                        <input type="number" min="1" max="4">
-                        <label>Name</label>
-                        <input type="text" pattern="[a-z]{3,12}" placeholder="[a-z]{3,12}">
-                        <input type="submit" value="Add Attribute">
-                    </form>
-                </section>
+                <table class="layout"><tbody></tbody></table>
 
                 <label class="collapsible">Meshes</label>
                 <ul class="meshes"></ul>
@@ -128,22 +121,19 @@ export default class Pass extends Serializable {
         Coloris(colorEl);
 
         // create attributes list (layout)
-        const layoutEl = this.el.querySelector("section.layout > ul");
+        const layoutEl = this.el.querySelector("table.layout tbody");
         this.layout.forEach(attrib => attrib.createUI(layoutEl));
+        layoutEl.addEventListener(VertexAttrib.REORDER_EVENT, e => {
+            // reorder array
+            const oldAttrib = this.layout.splice(e.detail.oldIndex, 1)[0];
+            this.layout.splice(e.detail.newIndex, 0, oldAttrib);
+            this.layout.forEach((child, index) => child.index = index);
+            this.el.dispatchEvent(Project.makeChangeEvent("layoutReorder"));
+        });
 
         // create mesh list
         const meshesEl = this.el.querySelector("ul.meshes");
         this.meshes.forEach(mesh => mesh.createUI(meshesEl));
-
-        // add form handler
-        const form = this.el.querySelector("form");
-        const size = form.querySelectorAll("input")[0];
-        const key  = form.querySelectorAll("input")[1];
-        form.addEventListener("submit", e => {
-            if (this.addAttrib(parseInt(size.value), key.value)) {
-                form.reset();
-            }
-        });
 
         // add restore default handler
         const defaultButtonEl = this.el.querySelector("button.action");
@@ -181,16 +171,6 @@ export default class Pass extends Serializable {
 
         this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
 
-        // TODO: not sure about this. maybe leave mesh data alone?
-        // // create data ui for each mesh in mesh list
-        // this.meshes.forEach(mesh => {
-        //     const meshAttrib = mesh.layout.addAttrib({
-        //         size: size,
-        //         name: name,
-        //         data: new Float32Array(mesh.nVerts * size),
-        //     });
-        //     meshAttrib.createDataUI(mesh.el.querySelector("ul.layout"));
-        // });
         return true;
     }
 

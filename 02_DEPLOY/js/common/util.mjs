@@ -29,6 +29,10 @@ export function isStr(arg) {
     return (typeof arg === "string");
 }
 
+export function isNumber(arg) {
+    return (typeof arg === "number");
+}
+
 export function is(arg, Type) {
     return (arg instanceof Type);
 }
