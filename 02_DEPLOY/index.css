@@ -72,6 +72,27 @@ svg {
     }
 }
 
+button:has(>svg) {
+    width: fit-content;
+    height: fit-content;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    border-color: transparent;
+    cursor: hand;
+}
+
+button:has(svg.edit) {
+    svg {
+        --stroke:       rgba(255 255 255 / .7);
+        --stroke-fill:  rgba(255 255 255 / .3);
+    }
+    &:hover svg {
+        --stroke:       #fff;
+    }
+}
+
+
 /* UI GENERAL RULES ********************************************************* */
 #ui {
     width: calc(100% - 20px);
@@ -187,23 +208,9 @@ svg {
             padding: 1px 6px;
         }
 
-        > button:has(svg.edit) {
+        > button {
             float: left;
-            width: fit-content;
-            height: fit-content;
             margin: -1px 0 0 10px;
-            padding: 0;
-            background-color: transparent;
-            border-color: transparent;
-            cursor: hand;
-
-            svg {
-                --stroke:       rgba(255 255 255 / .7);
-                --stroke-fill:  rgba(255 255 255 / .3);
-            }
-            &:hover svg {
-                --stroke:       #fff;
-            }
         }
 
         > div.status {
