@@ -72,6 +72,27 @@ svg {
     }
 }
 
+button:has(>svg) {
+    width: fit-content;
+    height: fit-content;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    border-color: transparent;
+    cursor: hand;
+}
+
+button:has(svg.edit) {
+    svg {
+        --stroke:       rgba(255 255 255 / .7);
+        --stroke-fill:  rgba(255 255 255 / .3);
+    }
+    &:hover svg {
+        --stroke:       #fff;
+    }
+}
+
+
 /* UI GENERAL RULES ********************************************************* */
 #ui {
     width: calc(100% - 20px);
@@ -187,23 +208,9 @@ svg {
             padding: 1px 6px;
         }
 
-        > button:has(svg.edit) {
+        > button {
             float: left;
-            width: fit-content;
-            height: fit-content;
             margin: -1px 0 0 10px;
-            padding: 0;
-            background-color: transparent;
-            border-color: transparent;
-            cursor: hand;
-
-            svg {
-                --stroke:       rgba(255 255 255 / .7);
-                --stroke-fill:  rgba(255 255 255 / .3);
-            }
-            &:hover svg {
-                --stroke:       #fff;
-            }
         }
 
         > div.status {
@@ -235,15 +242,33 @@ svg {
         > section {
             margin: 0 0 20px 30px;
 
-            > section.layout {
+            > table.layout {
                 margin: 0 0 15px 30px;
 
-                ul > li {
-                    white-space: pre;
-                }
+                border-collapse: collapse;
 
-                form {
-                    margin: 0;
+                tr {
+                    cursor: move;
+
+                    td {
+                        padding: 1px 10px;
+                    }
+                }
+                tr.dragging {
+                    opacity: .5;
+                }
+                tr.draggingHover.before td {
+                    border-top-color: #fff;
+                }
+                tr.draggingHover.after td,
+                tr:has(+tr.draggingHover.before) td {
+                    border-bottom-color: #fff;
+                }
+                td {
+                    border: 1px solid rgba(255 255 255 / 0);
+                }
+                tr.hover {
+                    background-color: rgba(255 255 255 / 0.2);
                 }
             }
 

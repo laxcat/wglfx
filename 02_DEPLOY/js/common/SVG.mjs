@@ -59,53 +59,41 @@ export default class SVG {
         // TODO: search and return from external JSON database here?
 
         // ...for now here are some basic built-in icons
-        switch(key) {
-
-        // edit
-        case "edit": {
-            const ww = w ?? 100;
-            const hh = h ?? 100;
-            const p = 10;
-            const i = 27;
-            return this.instance.#add(key, w, h,
-                `
-                <symbol viewbox="0 0 ${ww} ${hh}">
-                    <path
-                        class="stroke"
+        const symbolStr = ((w, h) => {
+            const innerStr = (() => {
+                switch(key) {
+                        
+                // edit icon
+                case "edit": 
+                    const p = 10;
+                    const i = 27;
+                    return `
+                    <path class="stroke"
                         d="
-                            m   ${p}        ${hh-p}
-                            L   ${p+i}      ${hh-p}
-                                ${ww-p}     ${p+i}
-                                ${ww-p-i}   ${p}
-                                ${p}        ${hh-p-i}
+                            m   ${p}        ${h-p}
+                            L   ${p+i}      ${h-p}
+                                ${w-p}      ${p+i}
+                                ${w-p-i}    ${p}
+                                ${p}        ${h-p-i}
                             z
                         "
-                    />
-                </symbol>
+                    />`;
 
-                `
-            );
-        }
-
-        // refresh, reload
-        case "refresh":
-        case "reload": {
-            return this.instance.#add(key, w, h,
-                `
-                <symbol viewbox="0 -10 100 110">
-                    <path
-                        class="stroke"
+                // refresh/reload icon
+                case "refresh":
+                case "reload":
+                    return `
+                    <path class="stroke"
                         d="m 20 80 A 40 40 0 1 0 20 20"
-                        fill="none"
-                        stroke-width="10"
-                    />
-                    <path class="fill" d="M 10 0 v 40 h 40" />
-                </symbol>
+                    />`;
+                }
+            })();
+            return (innerStr) ?
+                `<symbol viewbox="0 0 ${w} ${h}">${innerStr}</symbol>` :
+                "";
+        })(w ?? 100, h ?? 100);
 
-                `
-            );
-        }
-        }
+        return (symbolStr) ? this.instance.#add(key, w, h, symbolStr) : "";
     }
 
     #getCached(key, w, h) {

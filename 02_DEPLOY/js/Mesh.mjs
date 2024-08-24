@@ -64,7 +64,7 @@ export default class Mesh extends Serializable {
     }
 
     destroy() {
-        this.attribsData.forEach(a => a.destroy());
+        this.attribsData.forEach(attrib => attrib.destroy());
         this.attribsData.clear();
     }
 
