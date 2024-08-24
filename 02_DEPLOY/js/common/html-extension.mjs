@@ -77,3 +77,12 @@ extdProto(HTMLCollection, "slice", function(start, end) {
 extdProto(HTMLCollection, "last", function() {
     return this.length ? this[this.length - 1] : null;
 });
+
+extdProto(HTMLCollection, "forEach", function(fn) {
+    const e = this.length;
+    let i = 0;
+    while (i < e) {
+        fn(this[i], i);
+        ++i;
+    }
+});
