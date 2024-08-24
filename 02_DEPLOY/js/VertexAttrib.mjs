@@ -31,7 +31,6 @@ export default class VertexAttrib extends Serializable {
         if (!isNumber(i)) {
             throw new TypeError(`${value} not a valid index (${i}).`);
         }
-        // console.log(`index ${this._index} -> ${i}`);
         this._index = i;
         if (this.rowEl) {
             this.rowEl.dataset.index = i;
@@ -50,7 +49,7 @@ export default class VertexAttrib extends Serializable {
         this.parentEl = parentEl;
         this.rowEl = parentEl.appendHTML(
             `
-            <tr draggable="true">
+            <tr>
                 <td>${this.index}</td>
                 <td>${this.key}</td>
                 <td>${this.sizeStr} (${this.size * 4} bytes)</td>
@@ -58,37 +57,6 @@ export default class VertexAttrib extends Serializable {
             </tr>
             `
         );
-
-        this.rowEl.addEventListener("mouseenter", e => this.rowEl.classList.add("hover"));
-        this.rowEl.addEventListener("dragstart",  e => this.rowEl.classList.add("dragging"));
-        this.rowEl.addEventListener("dragenter",  e => this.rowEl.classList.add("draggingHover"));
-        this.rowEl.addEventListener("mouseleave", e => this.rowEl.classList.remove("hover"));
-        this.rowEl.addEventListener("dragleave",  e => this.rowEl.classList.remove("draggingHover", "before", "after", "hover"));
-        this.rowEl.addEventListener("dragend",    e => this.rowEl.classList.remove("dragging"));
-
-        this.rowEl.addEventListener("dragover", e => {
-            e.preventDefault();
-            if (this.rowEl === this.draggingEl) return;
-            const yp = e.offsetY / this.rowEl.offsetHeight;
-            const before = (yp < .5);
-            this.rowEl.classList.toggle("before",  before);
-            this.rowEl.classList.toggle("after",  !before);
-        });
-        this.rowEl.addEventListener("drop", e => {
-            e.preventDefault();
-            const draggingEl = this.draggingEl;
-            const oldIndex = draggingEl.getIndex();
-            if (this.rowEl.classList.contains("before")) {
-                this.rowEl.before(draggingEl);
-            }
-            else {
-                this.rowEl.after(draggingEl);
-            }
-            const newIndex = draggingEl.getIndex();
-            this.rowEl.classList.remove("draggingHover", "before", "after");
-            // console.log("drop", oldIndex, newIndex);
-            this.rowEl.dispatchEvent(VertexAttrib.makeReorderEvent(oldIndex, newIndex));
-        });
     }
 }
 

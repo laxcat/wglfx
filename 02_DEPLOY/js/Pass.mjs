@@ -1,7 +1,7 @@
 import Serializable from "./common/Serializable.mjs"
 import Color from "./common/Color.mjs"
 import { confirmDialog } from "./common/util.mjs"
-import { parse as uiParse } from "./common/util-ui.mjs"
+import { parse as uiParse, makeReorderable } from "./common/util-ui.mjs"
 
 import App from "./App.mjs"
 import Mesh from "./Mesh.mjs"
@@ -123,12 +123,14 @@ export default class Pass extends Serializable {
         // create attributes list (layout)
         const layoutEl = this.el.querySelector("table.layout tbody");
         this.layout.forEach(attrib => attrib.createUI(layoutEl));
-        layoutEl.addEventListener(VertexAttrib.REORDER_EVENT, e => {
-            // reorder array
-            const oldAttrib = this.layout.splice(e.detail.oldIndex, 1)[0];
-            this.layout.splice(e.detail.newIndex, 0, oldAttrib);
-            this.layout.forEach((child, index) => child.index = index);
-            this.el.dispatchEvent(Project.makeChangeEvent("layoutReorder"));
+        // make rows drag-and-drop reorderable
+        makeReorderable(layoutEl, {
+            onReorder: (oldIndex, newIndex) => {
+                const oldAttrib = this.layout.splice(oldIndex, 1)[0];
+                this.layout.splice(newIndex, 0, oldAttrib);
+                this.layout.forEach((child, index) => child.index = index);
+                this.el.dispatchEvent(Project.makeChangeEvent("layoutReorder"));
+            }
         });
 
         // create mesh list
