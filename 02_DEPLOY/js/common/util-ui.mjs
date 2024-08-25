@@ -30,23 +30,33 @@ export function aceIt(idOrEl, mode="ace/mode/glsl") {
     return editor;
 }
 
+// Make parentEl's children reorderable using HTML5's drag/drop API.
+// see defaultOptions. override anything with options.
 export function makeReorderable(parentEl, options) {
     const defaultOptions = {
+        // called on drop. override to handle data
+        onReorder: (oldIndex,newIndex)=>{},
+        // given this xy in the drop target size, should apply beforeClass?
         isBefore: (x,y,w,h)=>(y / h < .5),
-        draggingEl: ()=>parentEl.querySelector(".dragging"),
+        // these classes get applied. set css accordingly.
         hoverClass: "hover",
         draggingClass: "dragging",
         draggingHoverClass: "draggingHover",
         beforeClass: "before",
         afterClass: "after",
-        onReorder: (oldIndex,newIndex)=>{},
     }
     const o = {...defaultOptions, ...options};
 
+    // dragging element is found with a document query, now set
+    const getDraggingEl = ()=>parentEl.querySelector("."+o.draggingClass);
+
+    // for each child of parentEl
     parentEl.children.forEach(childEl => {
 
+        // set the draggable attribute on html element
         childEl.setAttribute("draggable", true);
 
+        // add listeners to add and remove classes on the relevant children
         childEl.addEventListener("mouseenter", e => childEl.classList.add(o.hoverClass));
         childEl.addEventListener("dragstart",  e => childEl.classList.add(o.draggingClass));
         childEl.addEventListener("dragenter",  e => childEl.classList.add(o.draggingHoverClass));
@@ -54,9 +64,10 @@ export function makeReorderable(parentEl, options) {
         childEl.addEventListener("dragleave",  e => childEl.classList.remove(o.draggingHoverClass, o.beforeClass, o.afterClass, o.hoverClass));
         childEl.addEventListener("dragend",    e => childEl.classList.remove(o.draggingClass));
 
+        // called while dragging element over target... decides the before/after classes
         childEl.addEventListener("dragover", e => {
             e.preventDefault();
-            if (childEl === o.draggingEl()) return;
+            if (childEl === getDraggingEl()) return;
 
             const dragBounds = childEl.getBoundingClientRect();
             const targBounds = e.target.getBoundingClientRect();
@@ -67,9 +78,11 @@ export function makeReorderable(parentEl, options) {
             childEl.classList.toggle(o.beforeClass, before);
             childEl.classList.toggle(o.afterClass, !before);
         });
+        // moves the html element and calls onReorder callback
+        // doesn't get called if user cancels drop
         childEl.addEventListener("drop", e => {
             e.preventDefault();
-            const draggingEl = o.draggingEl();
+            const draggingEl = getDraggingEl();
             const oldIndex = draggingEl.getIndex();
             if (childEl.classList.contains(o.beforeClass)) {
                 childEl.before(draggingEl);
