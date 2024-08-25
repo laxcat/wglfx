@@ -48,8 +48,10 @@ export function makeReorderable(parentEl, options) {
     }
     const o = {...defaultOptions, ...options};
 
-    // dragging element is found with a document query, now set
+    // dragging element is found with a document query
     // const getDraggingEl = ()=>parentEl.querySelector("."+o.draggingClass);
+
+    // dragging element can be found quicker by just looking at known draggable children
     const getDraggingEl = ()=>{
         let i = parentEl.children.length;
         while (i--) {
