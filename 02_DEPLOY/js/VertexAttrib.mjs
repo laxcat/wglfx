@@ -53,7 +53,7 @@ export default class VertexAttrib extends Serializable {
                 <td>${this.index}</td>
                 <td>${this.key}</td>
                 <td>${this.sizeStr} (${this.size * 4} bytes)</td>
-                <td><button>${SVG.get("edit")}</button></td>
+                <td class="noDrag"><button>${SVG.get("edit")}</button></td>
             </tr>
             `
         );

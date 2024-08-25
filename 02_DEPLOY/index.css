@@ -253,6 +253,10 @@ button:has(svg.edit) {
                     td {
                         padding: 1px 10px;
                     }
+                    .noDrag {
+                        cursor: default;
+                        padding: 1px 0;
+                    }
                 }
                 tr.dragging {
                     opacity: .5;
