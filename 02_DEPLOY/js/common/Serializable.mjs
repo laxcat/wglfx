@@ -8,9 +8,9 @@ import { isPOJO, isArray, isFn, isStr, is } from "./util.mjs"
 
     The main purpose is to be able to serialize object into plain data objects,
     then reverse the process back into JavaScript class instances with as little
-    boilerplate code as possible. But this also creates a system that also
-    allows for default initialization, initialization templates, so it provides
-    that functionality as well.
+    boilerplate code as possible. But this also creates a system that allows for
+    default initialization, initialization templates, etc, so that functionality
+    is provided as well.
 
     Consider the following example:
 
