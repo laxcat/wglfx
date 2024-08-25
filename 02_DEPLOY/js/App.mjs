@@ -11,10 +11,10 @@ import Time from "./Time.mjs"
 import WASMZ85 from "./WASMZ85.mjs";
 
 /*
-    Root class for the project. Singleton.
-    Handles renderer, run-loop, saving/loading, keyboard shortcuts, project list
-    and other global asset handling, anything that is not the graphics code,
-    which is all in Project.
+    Root class for the application. Singleton.
+    Handles gl object, run-loop, saving/loading, keyboard shortcuts, project
+    list, and other global asset handling, anything that is not the graphics
+    code, which is all in Project.
 */
 export default class App {
     // Settings
@@ -77,8 +77,8 @@ export default class App {
         // setup project, load last selected project or create default
         App.project = App.projectList.createProject();
 
-        console.log("projectList", App.projectList);
-        console.log("project", App.project);
+        // console.log("projectList", App.projectList);
+        // console.log("project", App.project);
 
         // create the HTML UI
         this.createUI();
