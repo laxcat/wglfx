@@ -84,8 +84,10 @@ export default class SVG {
                 case "reload":
                     return `
                     <path class="stroke"
-                        d="m 20 80 A 40 40 0 1 0 20 20"
-                    />`;
+                        d="m ${w*.2} ${h*.8} A ${w*.4} ${h*.4} 0 1 0 ${w*.2} ${h*.2}"
+                    />
+                    <path class="fill" d="m ${w*.1} 0 v ${h*.4} h ${w*.4}" />
+                    `;
                 }
             })();
             return (innerStr) ?
