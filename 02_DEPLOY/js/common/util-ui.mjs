@@ -70,7 +70,7 @@ export function makeReorderable(parentEl, options) {
         childEl.addEventListener("mouseenter", e => childEl.classList.add(o.hoverClass));
         childEl.addEventListener("dragenter",  e => childEl.classList.add(o.draggingHoverClass));
         childEl.addEventListener("mouseleave", e => childEl.classList.remove(o.draggingHoverClass, o.beforeClass, o.afterClass, o.hoverClass));
-        childEl.addEventListener("dragleave",  e => childEl.classList.remove(o.draggingHoverClass, o.beforeClass, o.afterClass));
+        childEl.addEventListener("dragleave",  e => childEl.classList.remove(o.draggingHoverClass, o.beforeClass, o.afterClass, o.hoverClass));
         childEl.addEventListener("dragend",    e => childEl.classList.remove(o.draggingClass));
 
         // start drag, but only if not over a noDrag child

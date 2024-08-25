@@ -250,29 +250,41 @@ button:has(svg.edit) {
                 tr {
                     cursor: move;
 
+                    --row-size: 12px;
+                    --row-padding: 1px;
+                    --row-reorder-insert-color: #fff;
+
+                    &.hover {
+                        background-color: rgba(255 255 255 / 0.2);
+                    }
+                    &.dragging {
+                        opacity: .5;
+                    }
+
                     td {
-                        padding: 1px 10px;
+                        padding-left: 0;
+                        padding-right: 30px;
+                        padding-top: var(--row-padding);
+                        padding-bottom: var(--row-padding);
+                        font-size: var(--row-size);
+                        border: 1px solid rgba(255 255 255 / 0);
                     }
-                    .noDrag {
+                    td.noDrag {
                         cursor: default;
-                        padding: 1px 0;
+                        padding-right: 0;
                     }
-                }
-                tr.dragging {
-                    opacity: .5;
-                }
-                tr.draggingHover.before td {
-                    border-top-color: #fff;
-                }
-                tr.draggingHover.after td,
-                tr:has(+tr.draggingHover.before) td {
-                    border-bottom-color: #fff;
-                }
-                td {
-                    border: 1px solid rgba(255 255 255 / 0);
-                }
-                tr.hover {
-                    background-color: rgba(255 255 255 / 0.2);
+                    svg.icon {
+                        width: var(--row-size);
+                        height: var(--row-size);
+                    }
+                    &.draggingHover.before td {
+                        border-top-color: var(--row-reorder-insert-color);
+                    }
+                    &.draggingHover.after td,
+                    &:has(+tr.draggingHover.before) td {
+                        border-bottom-color: var(--row-reorder-insert-color);
+                    }
+
                 }
             }
 
