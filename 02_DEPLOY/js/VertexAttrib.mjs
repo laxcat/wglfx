@@ -1,6 +1,8 @@
 import Serializable from "./common/Serializable.mjs"
 import SVG from "./common/SVG.mjs"
+import Project from "./Project.mjs"
 import { isNumber } from "./common/util.mjs"
+import { makeRowForm } from "./common/util-ui.mjs"
 
 import App from "./App.mjs"
 
@@ -16,7 +18,6 @@ export default class VertexAttrib extends Serializable {
                             // key should match key in mesh attrib data
     };
     rowEl;
-    parentEl;
 
     static REORDER_EVENT = "vertexattribreorder";
     static makeReorderEvent(oldIndex, newIndex) {
@@ -41,22 +42,45 @@ export default class VertexAttrib extends Serializable {
 
     get sizeStr() { return (this.size === 1) ? "float" : `vec${this.size}` }
 
-    get draggingEl() {
-        return this.parentEl.querySelector(".dragging");
-    }
-
     createUI(parentEl) {
-        this.parentEl = parentEl;
         this.rowEl = parentEl.appendHTML(
             `
             <tr>
                 <td>${this.index}</td>
-                <td>${this.key}</td>
-                <td>${this.sizeStr} (${this.size * 4} bytes)</td>
-                <td class="noDrag"><button>${SVG.get("edit")}</button></td>
+                <td></td>
+                <td></td>
+                <td class="noDrag">
+                    <button>${SVG.get("edit")}</button>
+                    <button>✓</button>
+                    <button>×</button>
+                </td>
             </tr>
             `
         );
+        makeRowForm(this.rowEl, [
+            // key
+            {
+                slot: row=>row.children[1],
+                prop: [this,"key"],
+                pattern: "[a-z]{3,12}",
+                unique: true,
+            },
+            // size
+            {
+                slot: row=>row.children[2],
+                prop: [this,"size"],
+                getStr: ()=>`${this.sizeStr} (${this.size * 4} bytes)`,
+                limit: [1,4],
+            },
+        ], {
+            rows: ()=>parentEl.children,
+            onChanged: (row,changed)=>{
+                row.dispatchEvent(Project.makeChangeEvent("passLayout"));
+            },
+            showFormEl: row=>row.children[3].children[0],
+            submitFormEl: row=>row.children[3].children[1],
+            cancelFormEl: row=>row.children[3].children[2],
+        });
     }
 }
 
