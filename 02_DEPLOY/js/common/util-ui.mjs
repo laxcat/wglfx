@@ -144,48 +144,60 @@ export function makeReorderable(parentEl, options) {
     });
 }
 
-// returns function that will show form when called. user can confirm/cancel
-// with return/esc. optionally provide *FormEl in options to add click
-// handlers.
+// returns a showForm function
+// user can provide *FormEl options to add click handlers
 export function makeRowForm(row, items, options) {
     const defaultOptions = {
-        // will add click listener if defined
-        showFormEl: undefined,   // mapped to options.submit, optional
-        submitFormEl: undefined, // mapped to options.submit/enter, optional
-        cancelFormEl: undefined, // mapped to options.cancel/esc, optional
+        // optional functions that return HTMLElements to which click handers
+        // are added
+        // returned element automatically hidden and shown on showForm/cancel
+        showFormEl: undefined,
+        submitFormEl: undefined,
+        cancelFormEl: undefined,
 
-        // if set enables this row to be aware of other rows
+        // optional function that returns array or HTMLCollection
         // required for options.unique and items.unique
         rows: undefined,
 
-        // if set to not falsy, will maintain a makeRowForm-index data
-        // attribute on each row and the parent element, which will ensure only
-        // one row is showing its form at once
+        // if set to not falsy, will call cancel on other rows during showForm
+        // requires options.rows to be set
         unique: undefined,
 
-        // takes one parameter: arrayOfItemIndicesChanged
+        // function that takes one parameter: arrayOfItemIndicesChanged
+        // only called when an item value changed
         onChanged: undefined,
 
+        // call cancel on init, automatically setting values into slots
+        initCancel: true,
         // sets this class to show and hide elements
         hiddenClass: "hidden",
+        // event string
         otherRowCancelEvent: "makeRowForm_otherRowCancel"
     }
     const itemDefaults = {
         // REQUIRED
-        //
-        // function that returns html element when passed row
+
+        // function that returns HTMLElement when passed row
         // returned element gets populated with text/input on cancel/showForm
         slot: undefined,
 
         // OPTIONS
-        //
+
+        // object with get/set function properties
+        // can optionally have a getStr function property
+        // convenient to set with getSet() utility function
+        prop: undefined,
+
         // if set to not falsy, ensures this slot is a unique value, when
         // same slot compared on other option.rows. requires option.rows.
         unique: undefined,
+
         // TODO: implement this
         options: [],
+
         // if set, sets pattern and placeholder
         pattern: "",
+
         // if set sets type to number and applies min/max/step
         // n or [n], where n<=0, min of n, no max, no step
         // n or [n], where n>0, min of 0 max of n, no step
@@ -194,15 +206,8 @@ export function makeRowForm(row, items, options) {
         limit: [0, 0, 0],
 
         // CALCULATED, BUT OVERRIDEABLE BY USER
-        //
-        // array of [object,keyString]. automatically creates getter/setter.
-        prop: undefined,
-        // (value)=>{} function, typically not set if prop set
-        set: undefined,
-        // ()=>{return...} function, typically not set if prop set
-        get: undefined,
-        // if not defined, gets created as item.get().toString()
-        getStr: undefined,
+
+        // boolean
         // if set by user, forces input type="number", otherwise set by limits
         number: undefined,
 
@@ -220,19 +225,11 @@ export function makeRowForm(row, items, options) {
     const isFn = fn=>(typeof fn === "function");
     const isEl = el=>(el instanceof HTMLElement);
     const isEls = el=>(el instanceof HTMLCollection || isArr(el));
-    const showEl = (elfn,showing)=>{
-        let el;
-        if (isFn(elfn) && isEl(el = elfn(row))) {
-            el.classList.toggle(opt.hiddenClass, !showing);
-        }
-    }
-    const addClick = (elfn,fn)=>{
-        let el;
-        if (isFn(elfn) && isEl(el = elfn(row))) {
-            el.addEventListener("click", e=>fn());
-        }
-    }
+    const ifEl = (elfn,fn)=>{ let el; if (isFn(elfn) && isEl(el = elfn(row))) fn(el); }
+    const showEl = (elfn,showing)=>ifEl(elfn, el=>el.classList.toggle(opt.hiddenClass, !showing));
+    const addClick = (elfn,fn)=>ifEl(elfn, el=>el.addEventListener("click", e=>fn()));
 
+    // if rows are set, we can dispatch to other rows
     const rowsSet = (opt.rows !== undefined && isEls(opt.rows()));
     const dispatchToOtherRows = eventStr=>{
         if (!rowsSet) {
@@ -248,19 +245,21 @@ export function makeRowForm(row, items, options) {
         }
     };
 
-    const cancel = ()=>{
-        items.forEach(item=>item.hideForm());
-        showEl(opt.showFormEl, true);
-        showEl(opt.submitFormEl, false);
-        showEl(opt.cancelFormEl, false);
-    };
-    row.addEventListener(opt.otherRowCancelEvent, e=>cancel());
+    // main actions
     const showForm = ()=>{
         items.forEach(item=>item.showForm());
         showEl(opt.showFormEl, false);
         showEl(opt.submitFormEl, true);
         showEl(opt.cancelFormEl, true);
-        dispatchToOtherRows(opt.otherRowCancelEvent);
+        if (opt.unique) {
+            dispatchToOtherRows(opt.otherRowCancelEvent);
+        }
+    };
+    const cancel = ()=>{
+        items.forEach(item=>item.hideForm());
+        showEl(opt.showFormEl, true);
+        showEl(opt.submitFormEl, false);
+        showEl(opt.cancelFormEl, false);
     };
     const submit = ()=>{
         let changed = [];
@@ -277,9 +276,20 @@ export function makeRowForm(row, items, options) {
         }
     };
 
+    // add actions as button click handlers
     addClick(opt.showFormEl, showForm);
-    addClick(opt.submitFormEl, submit);
     addClick(opt.cancelFormEl, cancel);
+    addClick(opt.submitFormEl, submit);
+
+    // listen for cancel from other rows
+    if (opt.unique) {
+        if (rowsSet) {
+            row.addEventListener(opt.otherRowCancelEvent, e=>cancel());
+        }
+        else {
+            console.error(`WARNING, cannot honor option unique; option rows not set`);
+        }
+    }
 
     // configure each item
     items.forEach(item => {
@@ -288,28 +298,25 @@ export function makeRowForm(row, items, options) {
         Object.assign(itemDef, item); // user item settings take precedence
         Object.assign(item, itemDef); // modify item in array
 
+        // syntax error if item.slot not set
         if (item.slot === undefined || !isEl(item.slot(row))) {
             throw new SyntaxError("slot must return HTMLElement");
         }
 
-        // setup getter/setter
-        if (isArr(item.prop) && item.prop.length === 2) {
-            if (item.get !== undefined && item.set !== undefined) {
-                console.error(`WARNING, prop ignored on item because both getter and setter set.`);
-            }
-            if (item.get === undefined) item.get = ()=>{ return (item.prop[0])[item.prop[1]]; }
-            if (item.set === undefined) item.set = v=>{ (item.prop[0])[item.prop[1]] = v; }
+        // setup getters/setters
+        if (item.prop === undefined) {
+            item.prop = {};
         }
-        if (item.get === undefined) {
+        if (item.prop.get === undefined) {
             console.error(`WARNING, no getter set on item.`);
-            item.get = ()=>{};
+            item.prop.get = ()=>{};
         }
-        if (item.set === undefined) {
+        if (item.prop.set === undefined) {
             console.error(`WARNING, no setter set on item.`);
-            item.set = v=>{};
+            item.prop.set = v=>{};
         }
-        if (item.getStr === undefined) {
-            item.getStr = ()=>item.get().toString()
+        if (item.prop.getStr === undefined) {
+            item.prop.getStr = ()=>item.prop.get().toString()
         }
 
         // set item.number if not set by user
@@ -354,7 +361,7 @@ export function makeRowForm(row, items, options) {
                 item.inputEl = item.slot(row).appendHTML(`
                     <input
                         type="${item.number?"number":"text"}"
-                        value="${item.get()}"
+                        value="${item.prop.get()}"
                         required
                         ${item.pattern ?
                             `placeholder="${item.pattern}" `+
@@ -365,7 +372,7 @@ export function makeRowForm(row, items, options) {
                     >
                 `);
 
-                item.capturedValue = item.get();
+                item.capturedValue = item.prop.get();
                 item.isDirty = ()=>(item.inputEl.value != item.capturedValue);
 
                 item.inputEl.addEventListener("keydown", e=>{
@@ -378,7 +385,7 @@ export function makeRowForm(row, items, options) {
         };
 
         item.hideForm = ()=>{
-            item.slot(row).innerHTML = item.getStr();
+            item.slot(row).innerHTML = item.prop.getStr();
             item.inputEl = undefined;
             delete item.capturedValue;
             item.isDirty = ()=>false;
@@ -386,7 +393,7 @@ export function makeRowForm(row, items, options) {
 
         const itemUniqueSet = (item.unique !== undefined && item.unique);
         if (itemUniqueSet && !rowsSet) {
-            console.error("WARNING cannot check item unique, rows not set");
+            console.error("WARNING cannot check item unique; option rows not set");
         }
         const isNotUnique = (itemUniqueSet && rowsSet) ?
             // check other slots
@@ -420,18 +427,20 @@ export function makeRowForm(row, items, options) {
             const dirty = item.isDirty();
             if (dirty) {
                 if (item.number) {
-                    item.set(parseInt(item.inputEl.value));
+                    item.prop.set(parseFloat(item.inputEl.value));
                 }
                 else {
-                    item.set(item.inputEl.value);
+                    item.prop.set(item.inputEl.value);
                 }
             }
             return dirty;
         };
     });
 
-    // set text on call, TODO: optionally don't?
-    cancel();
+    // set initial values
+    if (opt.initCancel) {
+        cancel();
+    }
 
     return showForm;
 }

@@ -263,7 +263,7 @@ button:has(svg.edit) {
 
                     td {
                         padding-left: 0;
-                        padding-right: 30px;
+                        padding-right: 20px;
                         padding-top: var(--row-padding);
                         padding-bottom: var(--row-padding);
                         font-size: var(--row-size);
@@ -285,6 +285,12 @@ button:has(svg.edit) {
                         border-bottom-color: var(--row-reorder-insert-color);
                     }
 
+                    td:nth-child(2) {
+                        width: 100px;
+                        input {
+                            width: 100%;
+                        }
+                    }
                 }
             }
 

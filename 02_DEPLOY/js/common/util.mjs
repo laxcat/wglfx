@@ -71,6 +71,17 @@ export function objectMap(obj, fn) {
     );
 }
 
+// make getter/setter object
+export function getSet(obj, prop, getStrProp) {
+    return {
+        get: () => { return obj[prop]; },
+        getStr: (getStrProp === undefined) ?
+                () => { return obj[prop].toString(); } :
+                () => { return obj[getStrProp]; },
+        set: v => { obj[prop] = v; },
+    }
+}
+
 // msg, button1Text, button1Action, button2Text, button2Action...etc
 export function confirmDialog(msg, ...buttonArgs) {
     const nArgs = buttonArgs.length;
