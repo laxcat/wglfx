@@ -86,3 +86,14 @@ extdProto(HTMLCollection, "forEach", function(fn) {
         ++i;
     }
 });
+
+extdProto(HTMLCollection, "map", function(fn) {
+    let ret = [];
+    const e = this.length;
+    let i = 0;
+    while (i < e) {
+        ret.push(fn(this[i], i, ret));
+        ++i;
+    }
+    return ret;
+});
