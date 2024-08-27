@@ -143,3 +143,295 @@ export function makeReorderable(parentEl, options) {
         });
     });
 }
+
+// returns function that will show form when called. user can confirm/cancel
+// with return/esc. optionally provide *FormEl in options to add click
+// handlers.
+export function makeRowForm(row, items, options) {
+    const defaultOptions = {
+        // will add click listener if defined
+        showFormEl: undefined,   // mapped to options.submit, optional
+        submitFormEl: undefined, // mapped to options.submit/enter, optional
+        cancelFormEl: undefined, // mapped to options.cancel/esc, optional
+
+        // if set enables this row to be aware of other rows
+        // required for options.unique and items.unique
+        rows: undefined,
+
+        // if set to not falsy, will maintain a makeRowForm-index data
+        // attribute on each row and the parent element, which will ensure only
+        // one row is showing its form at once
+        unique: undefined,
+
+        // takes one parameter: arrayOfItemIndicesChanged
+        onChanged: undefined,
+
+        // sets this class to show and hide elements
+        hiddenClass: "hidden",
+        otherRowCancelEvent: "makeRowForm_otherRowCancel"
+    }
+    const itemDefaults = {
+        // REQUIRED
+        //
+        // function that returns html element when passed row
+        // returned element gets populated with text/input on cancel/showForm
+        slot: undefined,
+
+        // OPTIONS
+        //
+        // if set to not falsy, ensures this slot is a unique value, when
+        // same slot compared on other option.rows. requires option.rows.
+        unique: undefined,
+        // TODO: implement this
+        options: [],
+        // if set, sets pattern and placeholder
+        pattern: "",
+        // if set sets type to number and applies min/max/step
+        // n or [n], where n<=0, min of n, no max, no step
+        // n or [n], where n>0, min of 0 max of n, no step
+        // [n, m], where n < m, set min/max, no step
+        // [n, m, s], same as above, set step
+        limit: [0, 0, 0],
+
+        // CALCULATED, BUT OVERRIDEABLE BY USER
+        //
+        // array of [object,keyString]. automatically creates getter/setter.
+        prop: undefined,
+        // (value)=>{} function, typically not set if prop set
+        set: undefined,
+        // ()=>{return...} function, typically not set if prop set
+        get: undefined,
+        // if not defined, gets created as item.get().toString()
+        getStr: undefined,
+        // if set by user, forces input type="number", otherwise set by limits
+        number: undefined,
+
+        // the following is always set automatically
+        // reference to the input html element if showForm has been called
+        inputEl: undefined,
+    };
+
+    // global options
+    const opt = {...defaultOptions, ...options};
+
+    // some shortcut functions
+    const isArr = arr=>(arr instanceof Array);
+    const isNum = num=>(typeof num === "number");
+    const isFn = fn=>(typeof fn === "function");
+    const isEl = el=>(el instanceof HTMLElement);
+    const isEls = el=>(el instanceof HTMLCollection || isArr(el));
+    const showEl = (elfn,showing)=>{
+        let el;
+        if (isFn(elfn) && isEl(el = elfn(row))) {
+            el.classList.toggle(opt.hiddenClass, !showing);
+        }
+    }
+    const addClick = (elfn,fn)=>{
+        let el;
+        if (isFn(elfn) && isEl(el = elfn(row))) {
+            el.addEventListener("click", e=>fn());
+        }
+    }
+
+    const rowsSet = (opt.rows !== undefined && isEls(opt.rows()));
+    const dispatchToOtherRows = eventStr=>{
+        if (!rowsSet) {
+            return;
+        }
+        const rows = opt.rows();
+        let i = rows.length;
+        while (i--) {
+            if (rows[i] === row) {
+                continue;
+            }
+            rows[i].dispatchEvent(new CustomEvent(eventStr));
+        }
+    };
+
+    const cancel = ()=>{
+        items.forEach(item=>item.hideForm());
+        showEl(opt.showFormEl, true);
+        showEl(opt.submitFormEl, false);
+        showEl(opt.cancelFormEl, false);
+    };
+    row.addEventListener(opt.otherRowCancelEvent, e=>cancel());
+    const showForm = ()=>{
+        items.forEach(item=>item.showForm());
+        showEl(opt.showFormEl, false);
+        showEl(opt.submitFormEl, true);
+        showEl(opt.cancelFormEl, true);
+        dispatchToOtherRows(opt.otherRowCancelEvent);
+    };
+    const submit = ()=>{
+        let changed = [];
+        if (items.every(item=>item.validate())) {
+            items.forEach((item, index)=>{
+                if (item.update()) {
+                    changed.push(index);
+                }
+            });
+            cancel();
+        }
+        if (opt.onChanged && changed.length > 0) {
+            opt.onChanged(row, changed);
+        }
+    };
+
+    addClick(opt.showFormEl, showForm);
+    addClick(opt.submitFormEl, submit);
+    addClick(opt.cancelFormEl, cancel);
+
+    // configure each item
+    items.forEach(item => {
+        // merge item defaults and item user settings
+        const itemDef = {...itemDefaults}; // copy defaults
+        Object.assign(itemDef, item); // user item settings take precedence
+        Object.assign(item, itemDef); // modify item in array
+
+        if (item.slot === undefined || !isEl(item.slot(row))) {
+            throw new SyntaxError("slot must return HTMLElement");
+        }
+
+        // setup getter/setter
+        if (isArr(item.prop) && item.prop.length === 2) {
+            if (item.get !== undefined && item.set !== undefined) {
+                console.error(`WARNING, prop ignored on item because both getter and setter set.`);
+            }
+            if (item.get === undefined) item.get = ()=>{ return (item.prop[0])[item.prop[1]]; }
+            if (item.set === undefined) item.set = v=>{ (item.prop[0])[item.prop[1]] = v; }
+        }
+        if (item.get === undefined) {
+            console.error(`WARNING, no getter set on item.`);
+            item.get = ()=>{};
+        }
+        if (item.set === undefined) {
+            console.error(`WARNING, no setter set on item.`);
+            item.set = v=>{};
+        }
+        if (item.getStr === undefined) {
+            item.getStr = ()=>item.get().toString()
+        }
+
+        // set item.number if not set by user
+        // will be true if limit is valid, see limit rules above
+        if (item.limit) {
+            if (isNum(item.limit)) item.limit = [item.limit];
+            if (isArr(item.limit) &&
+                item.limit.length >= 1) {
+                item.getMinMaxStepStr = ()=>{
+                    const lim = item.limit;
+                    if (lim.length === 1) {
+                        return (lim[0] <= 0) ?
+                            `min="${lim[0]}"` :
+                            `min="0" max="${lim[0]}"`;
+                    }
+                    // min >= max, invalid
+                    if (lim[0] >= lim[1]) {
+                        return "";
+                    }
+                    // 2-3 items
+                    return (lim.length === 2) ?
+                        `min="${lim[0]}" max="${lim[1]}"` :
+                        `min="${lim[0]}" max="${lim[1]}" step="${lim[2]}"`;
+                };
+            }
+        }
+        if (item.getMinMaxStepStr === undefined) {
+            item.getMinMaxStepStr = ()=>"";
+        }
+        if (item.number === undefined) {
+            item.number = !!item.getMinMaxStepStr();
+        }
+
+        item.showForm = ()=>{
+            item.slot(row).innerHTML = "";
+            // if select
+            if (item.options && item.options.length > 0) {
+
+            }
+            // input
+            else {
+                item.inputEl = item.slot(row).appendHTML(`
+                    <input
+                        type="${item.number?"number":"text"}"
+                        value="${item.get()}"
+                        required
+                        ${item.pattern ?
+                            `placeholder="${item.pattern}" `+
+                            `pattern="${item.pattern}"` :
+                            ""
+                        }
+                        ${item.getMinMaxStepStr()}
+                    >
+                `);
+
+                item.capturedValue = item.get();
+                item.isDirty = ()=>(item.inputEl.value != item.capturedValue);
+
+                item.inputEl.addEventListener("keydown", e=>{
+                    if (e.key==="Enter") submit();
+                });
+                item.inputEl.addEventListener("keydown", e=>{
+                    if (e.key==="Escape") cancel();
+                });
+            }
+        };
+
+        item.hideForm = ()=>{
+            item.slot(row).innerHTML = item.getStr();
+            item.inputEl = undefined;
+            delete item.capturedValue;
+            item.isDirty = ()=>false;
+        };
+
+        const itemUniqueSet = (item.unique !== undefined && item.unique);
+        if (itemUniqueSet && !rowsSet) {
+            console.error("WARNING cannot check item unique, rows not set");
+        }
+        const isNotUnique = (itemUniqueSet && rowsSet) ?
+            // check other slots
+            ()=>{
+                const rows = opt.rows();
+                let i = rows.length;
+                while (i--) {
+                    if (rows[i] === row) continue;
+                    if (item.slot(rows[i]).innerHTML == item.inputEl.value) return true;
+                }
+                return false;
+            } :
+            // no unique array set, always passes check
+            ()=>false;
+
+        item.validate = ()=>{
+            item.inputEl.setCustomValidity("");
+            if (!item.isDirty()) {
+                return true;
+            }
+            if (item.inputEl.validity.patternMismatch) {
+                item.inputEl.setCustomValidity(`Match the pattern ${item.pattern}`);
+            }
+            if (isNotUnique()) {
+                item.inputEl.setCustomValidity("Must be unique");
+            }
+            return item.inputEl.reportValidity();
+        }
+
+        item.update = ()=>{
+            const dirty = item.isDirty();
+            if (dirty) {
+                if (item.number) {
+                    item.set(parseInt(item.inputEl.value));
+                }
+                else {
+                    item.set(item.inputEl.value);
+                }
+            }
+            return dirty;
+        };
+    });
+
+    // set text on call, TODO: optionally don't?
+    cancel();
+
+    return showForm;
+}
