@@ -1,6 +1,6 @@
 import Serializable from "./common/Serializable.mjs"
 import SVG from "./common/SVG.mjs"
-import { confirmDialog } from "./common/util.mjs"
+import { confirmDialog } from "./common/util-ui.mjs"
 
 import App from "./App.mjs"
 import Project from "./Project.mjs"

@@ -2,8 +2,7 @@ import "./common/common-extension.mjs"
 import "./common/html-extension.mjs"
 import WebGL2 from "./common/webgl-extension.mjs"
 
-import { confirmDialog } from "./common/util.mjs"
-import { parse as uiParse } from "./common/util-ui.mjs"
+import { parse as uiParse, confirmDialog } from "./common/util-ui.mjs"
 
 import Project from "./Project.mjs"
 import ProjectList from "./ProjectList.mjs"

@@ -30,6 +30,53 @@ export function aceIt(idOrEl, mode="ace/mode/glsl") {
     return editor;
 }
 
+// msg, button1Text, button1Action, button2Text, button2Action...etc
+export function confirmDialog(msg, ...buttonArgs) {
+    const nArgs = buttonArgs.length;
+    if (nArgs % 2) { // odd number of buttonArgs args
+        throw new SyntaxError(`Odd number of parameters expected. ${nArgs} found.`);
+    }
+    // convenience
+    const isStr = str=>(typeof str === "string");
+    const isFn = str=>(typeof str === "function");
+    // create button html
+    let buttonEls = "";
+    let i = 0; // button index
+    let n = nArgs / 2; // number of buttons
+    while (i < n) {
+        const buttonText = buttonArgs[i*2];
+        if (!isStr(buttonText)) {
+            throw new SyntaxError(`Paremeter ${i*2+1} (${buttonText}) must be a string.`);
+        }
+        buttonEls += `<button tabindex=${i+1} value=${i+1}>${buttonText}</button>\n`;
+        ++i;
+    }
+    // add dialog to end of body
+    const dialog = document.body.appendHTML(`
+        <dialog>
+            <p>${msg}</p>
+            ${buttonEls}
+        </dialog>
+    `);
+    // add click event listeners to buttons
+    i = 0;
+    while (i < n) {
+        const fn = buttonArgs[i*2+1] ?? (()=>{});
+        if (!isFn(fn)) {
+            throw new SyntaxError(`Paremeter ${i*2+2} (${fn}) must be a function.`);
+        }
+        dialog.children[i+1].addEventListener("click", e => {
+            fn(e);
+            dialog.close();
+        });
+        ++i;
+    }
+    // remove dialog html on close
+    dialog.addEventListener("close", e => dialog.remove());
+    // show it!
+    dialog.showModal();
+}
+
 // Make parentEl's children reorderable using HTML5's drag/drop API.
 // see defaultOptions. override anything with options.
 export function makeReorderable(parentEl, options) {
@@ -46,16 +93,16 @@ export function makeReorderable(parentEl, options) {
         afterClass: "after",
         noDragClass: "noDrag",
     }
-    const o = {...defaultOptions, ...options};
+    const opt = {...defaultOptions, ...options};
 
     // dragging element is found with a document query
-    // const getDraggingEl = ()=>parentEl.querySelector("."+o.draggingClass);
+    // const getDraggingEl = ()=>parentEl.querySelector("."+opt.draggingClass);
 
     // dragging element can be found quicker by just looking at known draggable children
-    const getDraggingEl = ()=>{
+    opt.getDraggingEl = ()=>{
         let i = parentEl.children.length;
         while (i--) {
-            if (parentEl.children[i].classList.contains(o.draggingClass)) {
+            if (parentEl.children[i].classList.contains(opt.draggingClass)) {
                 return parentEl.children[i];
             }
         }
@@ -64,87 +111,110 @@ export function makeReorderable(parentEl, options) {
 
     // for each child of parentEl
     parentEl.children.forEach(childEl => {
+        makeReorderableItem(childEl, opt);
+    });
 
-        // set the draggable attribute on html element
-        childEl.setAttribute("draggable", true);
+    return opt;
+}
 
-        // add listeners to add and remove classes on the relevant children
-        childEl.addEventListener("mouseenter", e => childEl.classList.add(o.hoverClass));
-        childEl.addEventListener("dragenter",  e => childEl.classList.add(o.draggingHoverClass));
-        childEl.addEventListener("mouseleave", e => childEl.classList.remove(o.draggingHoverClass, o.beforeClass, o.afterClass, o.hoverClass));
-        childEl.addEventListener("dragleave",  e => childEl.classList.remove(o.draggingHoverClass, o.beforeClass, o.afterClass, o.hoverClass));
-        childEl.addEventListener("dragend",    e => childEl.classList.remove(o.draggingClass));
+export function makeReorderableItem(childEl, opt) {
+    // set the draggable attribute on html element
+    childEl.setAttribute("draggable", true);
 
-        // start drag, but only if not over a noDrag child
-        childEl.addEventListener("dragstart",  e => {
-            // check all "noDrag" children for dead zones and cancel if found
-            const noDragEls = e.target.querySelectorAll("."+o.noDragClass);
-            if (noDragEls) {
-                const mez = e.target.getBoundingClientRect();
-                const x = mez.x + e.offsetX;
-                const y = mez.y + e.offsetY;
-                const end = noDragEls.length;
-                let i = 0;
-                while (i < end) {
-                    const dz = noDragEls[i].getBoundingClientRect();
-                    // if withing deadzone bounds, cancel the drag
-                    if (dz.x < x && x < dz.x + dz.width &&
-                        dz.y < y && y < dz.y + dz.height) {
-                        e.preventDefault();
-                        return;
-                    }
-                    ++i;
+    // add listeners to add and remove classes on the relevant children
+    const hoverClasses = [
+        opt.draggingHoverClass,
+        opt.beforeClass,
+        opt.afterClass,
+        opt.hoverClass,
+    ];
+    childEl.addEventListener("mouseenter",
+        e => childEl.classList.add(opt.hoverClass)
+    );
+    childEl.addEventListener("dragenter",
+        e => childEl.classList.add(opt.draggingHoverClass)
+    );
+    childEl.addEventListener("mouseleave",
+        e => childEl.classList.remove(...hoverClasses)
+    );
+    childEl.addEventListener("dragleave",
+        e => childEl.classList.remove(...hoverClasses)
+    );
+    childEl.addEventListener("dragend",
+        e => childEl.classList.remove(opt.draggingClass)
+    );
+
+    // start drag, but only if not over a noDrag child
+    childEl.addEventListener("dragstart",  e => {
+        // check all "noDrag" children for dead zones and cancel if found
+        const noDragEls = e.target.querySelectorAll("."+opt.noDragClass);
+        if (noDragEls) {
+            const mez = e.target.getBoundingClientRect();
+            const x = mez.x + e.offsetX;
+            const y = mez.y + e.offsetY;
+            const end = noDragEls.length;
+            let i = 0;
+            while (i < end) {
+                const dz = noDragEls[i].getBoundingClientRect();
+                // if withing deadzone bounds, cancel the drag
+                if (dz.x < x && x < dz.x + dz.width &&
+                    dz.y < y && y < dz.y + dz.height) {
+                    e.preventDefault();
+                    return;
                 }
+                ++i;
             }
-            // normal operation, just adding a class
-            childEl.classList.add(o.draggingClass);
-        });
+        }
+        // normal operation, just adding a class
+        childEl.classList.add(opt.draggingClass);
+    });
 
-        // called while dragging element over target... decides the before/after classes
-        childEl.addEventListener("dragover", e => {
-            e.preventDefault();
+    // called while dragging element over target... decides the before/after classes
+    childEl.addEventListener("dragover", e => {
+        e.preventDefault();
 
-            const dragBounds = childEl.getBoundingClientRect();
-            const targBounds = e.target.getBoundingClientRect();
-            const x = targBounds.x - dragBounds.x + e.offsetX;
-            const y = targBounds.y - dragBounds.y + e.offsetY;
-            const before = o.isBefore(x, y, dragBounds.width, dragBounds.height);
+        const dragBounds = childEl.getBoundingClientRect();
+        const targBounds = e.target.getBoundingClientRect();
+        const x = targBounds.x - dragBounds.x + e.offsetX;
+        const y = targBounds.y - dragBounds.y + e.offsetY;
+        const before = opt.isBefore(x, y, dragBounds.width, dragBounds.height);
 
-            childEl.classList.add(o.draggingHoverClass);
-            childEl.classList.toggle(o.beforeClass, before);
-            childEl.classList.toggle(o.afterClass, !before);
-        });
+        childEl.classList.add(opt.draggingHoverClass);
+        childEl.classList.toggle(opt.beforeClass, before);
+        childEl.classList.toggle(opt.afterClass, !before);
+    });
 
-        // moves the html element and calls onReorder callback
-        // doesn't get called if user cancels drop
-        childEl.addEventListener("drop", e => {
-            // prevent drop default and remove all draggingHover classes
-            e.preventDefault();
-            const isBefore = childEl.classList.contains(o.beforeClass);
-            childEl.classList.remove(o.draggingHover, o.beforeClass, o.afterClass);
-            // dropping the dragged on itself, do nothing
-            const draggingEl = getDraggingEl();
-            if (childEl === draggingEl) {
-                return;
-            }
-            // move the draggingEl to its new location
-            const oldIndex = draggingEl.getIndex();
-            if (isBefore) {
-                childEl.before(draggingEl);
-            }
-            else {
-                childEl.after(draggingEl);
-            }
-            const newIndex = draggingEl.getIndex();
-            // only dispatch if different
-            if (oldIndex !== newIndex) {
-                o.onReorder(oldIndex, newIndex);
-            }
-        });
+    // moves the html element and calls onReorder callback
+    // doesn't get called if user cancels drop
+    childEl.addEventListener("drop", e => {
+        // prevent drop default and remove all draggingHover classes
+        e.preventDefault();
+        const isBefore = childEl.classList.contains(opt.beforeClass);
+        childEl.classList.remove(opt.draggingHover, opt.beforeClass, opt.afterClass);
+        // dropping the dragged on itself, do nothing
+        const draggingEl = opt.getDraggingEl();
+        if (childEl === draggingEl) {
+            return;
+        }
+        // move the draggingEl to its new location
+        const oldIndex = draggingEl.elementIndex();
+        if (isBefore) {
+            childEl.before(draggingEl);
+        }
+        else {
+            childEl.after(draggingEl);
+        }
+        const newIndex = draggingEl.elementIndex();
+        // only dispatch if different
+        if (oldIndex !== newIndex) {
+            opt.onReorder(oldIndex, newIndex);
+        }
     });
 }
 
-// returns a showForm function
+// returns a configuration object with:
+// all defaultOptions+options
+// submit, cancel, showForm, hideForm, dispatchToOtherRows functions
 // user can provide *FormEl options to add click handlers
 export function makeRowForm(row, items, options) {
     const defaultOptions = {
@@ -165,7 +235,7 @@ export function makeRowForm(row, items, options) {
 
         // function that takes one parameter: arrayOfItemIndicesChanged
         // only called when an item value changed
-        onChanged: undefined,
+        onChange: undefined,
 
         // call cancel on init, automatically setting values into slots
         initCancel: true,
@@ -216,8 +286,8 @@ export function makeRowForm(row, items, options) {
         inputEl: undefined,
     };
 
-    // global options
-    const opt = {...defaultOptions, ...options};
+    // global config, return object
+    const opt = {...defaultOptions, ...options, items, row};
 
     // some shortcut functions
     const isArr = arr=>(arr instanceof Array);
@@ -229,9 +299,11 @@ export function makeRowForm(row, items, options) {
     const showEl = (elfn,showing)=>ifEl(elfn, el=>el.classList.toggle(opt.hiddenClass, !showing));
     const addClick = (elfn,fn)=>ifEl(elfn, el=>el.addEventListener("click", e=>fn()));
 
-    // if rows are set, we can dispatch to other rows
+    // hard set
     const rowsSet = (opt.rows !== undefined && isEls(opt.rows()));
-    const dispatchToOtherRows = eventStr=>{
+
+    // main actions
+    opt.dispatchToOtherRows = eventStr=>{
         if (!rowsSet) {
             return;
         }
@@ -244,47 +316,51 @@ export function makeRowForm(row, items, options) {
             rows[i].dispatchEvent(new CustomEvent(eventStr));
         }
     };
-
-    // main actions
-    const showForm = ()=>{
-        items.forEach(item=>item.showForm());
+    opt.showForm = ()=>{
+        opt.items.forEach(item=>item.showForm());
         showEl(opt.showFormEl, false);
         showEl(opt.submitFormEl, true);
         showEl(opt.cancelFormEl, true);
         if (opt.unique) {
-            dispatchToOtherRows(opt.otherRowCancelEvent);
+            opt.dispatchToOtherRows(opt.otherRowCancelEvent);
         }
     };
-    const cancel = ()=>{
-        items.forEach(item=>item.hideForm());
+    opt.hideForm = ()=>{
+        opt.items.forEach(item=>item.hideForm());
         showEl(opt.showFormEl, true);
         showEl(opt.submitFormEl, false);
         showEl(opt.cancelFormEl, false);
     };
-    const submit = ()=>{
+    opt.cancel = ()=>{
+        opt.hideForm();
+        if (opt.onCancel) {
+            opt.onCancel(row);
+        }
+    };
+    opt.submit = ()=>{
         let changed = [];
-        if (items.every(item=>item.validate())) {
-            items.forEach((item, index)=>{
+        if (opt.items.every(item=>item.validate())) {
+            opt.items.forEach((item, index)=>{
                 if (item.update()) {
                     changed.push(index);
                 }
             });
-            cancel();
+            opt.hideForm();
         }
-        if (opt.onChanged && changed.length > 0) {
-            opt.onChanged(row, changed);
+        if (opt.onChange && changed.length > 0) {
+            opt.onChange(row, changed);
         }
     };
 
     // add actions as button click handlers
-    addClick(opt.showFormEl, showForm);
-    addClick(opt.cancelFormEl, cancel);
-    addClick(opt.submitFormEl, submit);
+    addClick(opt.showFormEl, opt.showForm);
+    addClick(opt.cancelFormEl, opt.cancel);
+    addClick(opt.submitFormEl, opt.submit);
 
     // listen for cancel from other rows
     if (opt.unique) {
         if (rowsSet) {
-            row.addEventListener(opt.otherRowCancelEvent, e=>cancel());
+            row.addEventListener(opt.otherRowCancelEvent, e=>opt.cancel());
         }
         else {
             console.error(`WARNING, cannot honor option unique; option rows not set`);
@@ -292,7 +368,7 @@ export function makeRowForm(row, items, options) {
     }
 
     // configure each item
-    items.forEach(item => {
+    opt.items.forEach(item => {
         // merge item defaults and item user settings
         const itemDef = {...itemDefaults}; // copy defaults
         Object.assign(itemDef, item); // user item settings take precedence
@@ -373,13 +449,16 @@ export function makeRowForm(row, items, options) {
                 `);
 
                 item.capturedValue = item.prop.get();
-                item.isDirty = ()=>(item.inputEl.value != item.capturedValue);
+                item.isDirty = ()=>(
+                    item.inputEl.value === "" ||
+                    item.inputEl.value != item.capturedValue
+                );
 
                 item.inputEl.addEventListener("keydown", e=>{
-                    if (e.key==="Enter") submit();
+                    if (e.key==="Enter") opt.submit();
                 });
                 item.inputEl.addEventListener("keydown", e=>{
-                    if (e.key==="Escape") cancel();
+                    if (e.key==="Escape") opt.cancel();
                 });
             }
         };
@@ -439,8 +518,8 @@ export function makeRowForm(row, items, options) {
 
     // set initial values
     if (opt.initCancel) {
-        cancel();
+        opt.cancel();
     }
 
-    return showForm;
+    return opt;
 }

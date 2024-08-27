@@ -1,7 +1,11 @@
 import Serializable from "./common/Serializable.mjs"
 import Color from "./common/Color.mjs"
-import { confirmDialog } from "./common/util.mjs"
-import { parse as uiParse, makeReorderable } from "./common/util-ui.mjs"
+import {
+    parse as uiParse,
+    makeReorderable,
+    makeReorderableItem,
+    confirmDialog
+    } from "./common/util-ui.mjs"
 
 import App from "./App.mjs"
 import Mesh from "./Mesh.mjs"
@@ -99,6 +103,7 @@ export default class Pass extends Serializable {
 
                 <label class="collapsible">Layout</label>
                 <table class="layout"><tbody></tbody></table>
+                <button>+</button>
 
                 <label class="collapsible">Meshes</label>
                 <ul class="meshes"></ul>
@@ -122,15 +127,52 @@ export default class Pass extends Serializable {
 
         // create attributes list (layout)
         const layoutEl = this.el.querySelector("table.layout tbody");
-        this.layout.forEach(attrib => attrib.createUI(layoutEl));
+        const layoutFormConfigs = this.layout.map(attrib => attrib.createUI(layoutEl));
         // make rows drag-and-drop reorderable
-        makeReorderable(layoutEl, {
+        const reorderableConfig = makeReorderable(layoutEl, {
             onReorder: (oldIndex, newIndex) => {
                 const oldAttrib = this.layout.splice(oldIndex, 1)[0];
                 this.layout.splice(newIndex, 0, oldAttrib);
                 this.layout.forEach((child, index) => child.index = index);
                 this.el.dispatchEvent(Project.makeChangeEvent("layoutReorder"));
             }
+        });
+        const addButton = this.el.querySelector("table.layout+button");
+        addButton.addEventListener("click", e=>{
+            const newAttrib = new VertexAttrib({index:this.layout.length,key:"",size:3})
+            const addRowConfig = newAttrib.createUI(layoutEl);
+            addRowConfig.showForm();
+            addRowConfig.onCancel = row=>{
+                addRowConfig.row.remove();
+                addButton.classList.remove("hidden");
+            };
+            addRowConfig.onChange = row=>{
+                makeReorderableItem(row, reorderableConfig);
+                this.layout.push(newAttrib);
+                this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
+                addButton.classList.remove("hidden");
+            };
+            addButton.classList.add("hidden");
+        });
+        layoutFormConfigs.forEach(config=>{
+            config.onDelete = row=>{
+                const index = row.elementIndex();
+                const attrib = this.layout[index];
+                confirmDialog(
+                    `Remove vertex attribute “${attrib.key}”?`,
+
+                    "Cancel",
+                    null,
+
+                    "Remove Attribute",
+                    () => {
+                        this.layout.splice(index, 1);
+                        row.remove();
+                        this.layout.forEach((c,i)=>c.index=i);
+                        this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
+                    }
+                );
+            };
         });
 
         // create mesh list
@@ -151,29 +193,4 @@ export default class Pass extends Serializable {
             );
         });
     }
-
-    addAttrib(size, key) {
-        key = key.trim();
-
-        // basic error checking
-        if (!Number.isInteger(size) ||
-            size < 1 ||
-            size > 4 ||
-            key.length < 3 ||
-            this.layout.find(i => (i.key === key))
-            ) {
-            console.log("Did not create new attribute.", size, key);
-            return false;
-        }
-
-        const attrib = new VertexAttrib({size:size, key:key, index:this.layout.legnth});
-        this.layout.push(attrib);
-        // create list ui for new attrib in layout ul
-        attrib.createUI(this.el.querySelector("section.layout > ul"));
-
-        this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
-
-        return true;
-    }
-
 }

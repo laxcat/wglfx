@@ -53,13 +53,15 @@ export default class VertexAttrib extends Serializable {
                 <td></td>
                 <td class="noDrag">
                     <button>${SVG.get("edit")}</button>
+                    <button>🚫</button>
                     <button>×</button>
                     <button>✓</button>
                 </td>
             </tr>
             `
         );
-        makeRowForm(this.rowEl, [
+        const button = (row,i)=>row.children[3].children[i];
+        const formConfig = makeRowForm(this.rowEl, [
             // key
             {
                 slot: row=>row.children[1],
@@ -79,9 +81,16 @@ export default class VertexAttrib extends Serializable {
             onChanged: (row,changed)=>{
                 row.dispatchEvent(Project.makeChangeEvent("passLayout"));
             },
-            showFormEl: row=>row.children[3].children[0],
-            cancelFormEl: row=>row.children[3].children[1],
-            submitFormEl: row=>row.children[3].children[2],
+            showFormEl: row=>button(row, 0),
+            cancelFormEl: row=>button(row, 2),
+            submitFormEl: row=>button(row, 3),
         });
+
+        button(this.rowEl,1).addEventListener("click", e=>{
+            if (formConfig.onDelete) formConfig.onDelete(this.rowEl);
+            // console.log("delete me!!!!");
+        });
+
+        return formConfig;
     }
 }

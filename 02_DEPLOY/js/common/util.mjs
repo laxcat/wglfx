@@ -74,56 +74,15 @@ export function objectMap(obj, fn) {
 // make getter/setter object
 export function getSet(obj, prop, getStrProp) {
     return {
-        get: () => { return obj[prop]; },
-        getStr: (getStrProp === undefined) ?
-                () => { return obj[prop].toString(); } :
-                () => { return obj[getStrProp]; },
-        set: v => { obj[prop] = v; },
+        obj,
+        prop,
+        getStrProp,
+        get() { return this.obj[this.prop]; },
+        getStr() { return (this.getStrProp === undefined) ?
+                this.obj[this.prop].toString() :
+                this.obj[this.getStrProp]; },
+        set(v) { obj[prop] = v; },
     }
-}
-
-// msg, button1Text, button1Action, button2Text, button2Action...etc
-export function confirmDialog(msg, ...buttonArgs) {
-    const nArgs = buttonArgs.length;
-    if (nArgs % 2) { // odd number of buttonArgs args
-        throw new SyntaxError(`Odd number of parameters expected. ${nArgs} found.`);
-    }
-    // create button html
-    let buttonEls = "";
-    let i = 0; // button index
-    let n = nArgs / 2; // number of buttons
-    while (i < n) {
-        const buttonText = buttonArgs[i*2];
-        if (!isStr(buttonText)) {
-            throw new SyntaxError(`Paremeter ${i*2+1} (${buttonText}) must be a string.`);
-        }
-        buttonEls += `<button tabindex=${i+1} value=${i+1}>${buttonText}</button>\n`;
-        ++i;
-    }
-    // add dialog to end of body
-    const dialog = document.body.appendHTML(`
-        <dialog>
-            <p>${msg}</p>
-            ${buttonEls}
-        </dialog>
-    `);
-    // add click event listeners to buttons
-    i = 0;
-    while (i < n) {
-        const fn = buttonArgs[i*2+1] ?? (()=>{});
-        if (!isFn(fn)) {
-            throw new SyntaxError(`Paremeter ${i*2+2} (${fn}) must be a function.`);
-        }
-        dialog.children[i+1].addEventListener("click", e => {
-            fn(e);
-            dialog.close();
-        });
-        ++i;
-    }
-    // remove dialog html on close
-    dialog.addEventListener("close", e => dialog.remove());
-    // show it!
-    dialog.showModal();
 }
 
 // 3RD PARTY ---------------------------------------------------------------- //

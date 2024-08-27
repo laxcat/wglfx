@@ -51,7 +51,7 @@ extdProto(Element, "insertHTMLAfter", function(html) {
     return this.children.slice(thisIndex+1, thisIndex+1+addedCount);
 });
 
-extdProto(Element, "getIndex", function() {
+extdProto(Element, "elementIndex", function() {
     return this.parentElement.children.indexOf(this);
 });
 
