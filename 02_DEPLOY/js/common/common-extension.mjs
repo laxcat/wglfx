@@ -9,7 +9,7 @@ export const defProp = Object.defineProperty;
 export function extd(builtIn, propName, options) {
     // do nothing if set already
     if (builtIn.hasOwnProperty(propName)) {
-        console.error(`WARNING COULD NOT SET ${builtIn}.${propName}!`);
+        console.error("WARNING COULD NOT SET!", builtIn, propName);
         return;
     }
     Object.defineProperty(builtIn, propName, options);
@@ -144,20 +144,20 @@ extdProto(ArrayBuffer, "toBase64", function() {
     arr.forEach(byte => str += String.fromCodePoint(byte));
     return window.btoa(str);
 });
-[   Int8Array,
-    Uint8Array,
-    Uint8ClampedArray,
-    Int16Array,
-    Uint16Array,
-    Int32Array,
-    Uint32Array,
-    Float32Array,
-    Float64Array,
-    BigInt64Array,
-    BigUint64Array
-].forEach(builtIn=>extdProto(builtIn, "toBase64", function() {
-    return this.buffer.toBase64();
-}));
+// [   Int8Array,
+//     Uint8Array,
+//     Uint8ClampedArray,
+//     Int16Array,
+//     Uint16Array,
+//     Int32Array,
+//     Uint32Array,
+//     Float32Array,
+//     Float64Array,
+//     BigInt64Array,
+//     BigUint64Array
+// ].forEach(builtIn=>extdProto(builtIn, "toBase64", function() {
+//     return this.buffer.toBase64();
+// }));
 
 extdProto(String, "fromBase64", function() {
     const arr = window.atob(this)
