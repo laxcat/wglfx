@@ -88,7 +88,7 @@ export function objectMap(obj, fn) {
     );
 }
 
-// make getter/setter object
+// make getter/setter object (replaced by Accessor)
 export function getSet(obj, prop, getStrProp) {
     return {
         obj,

@@ -222,8 +222,9 @@ export function makeRowForm(row, items, options) {
         // are added
         // returned element automatically hidden and shown on showForm/cancel
         showFormEl: undefined,
-        submitFormEl: undefined,
-        cancelFormEl: undefined,
+        removeEl: undefined,
+        submitEl: undefined,
+        cancelEl: undefined,
 
         // optional function that returns array or HTMLCollection
         // required for options.unique and items.unique
@@ -319,8 +320,9 @@ export function makeRowForm(row, items, options) {
     opt.showForm = ()=>{
         opt.items.forEach(item=>item.showForm());
         showEl(opt.showFormEl, false);
-        showEl(opt.submitFormEl, true);
-        showEl(opt.cancelFormEl, true);
+        showEl(opt.removeEl, false);
+        showEl(opt.submitEl, true);
+        showEl(opt.cancelEl, true);
         if (opt.unique) {
             opt.dispatchToOtherRows(opt.otherRowCancelEvent);
         }
@@ -328,8 +330,9 @@ export function makeRowForm(row, items, options) {
     opt.hideForm = ()=>{
         opt.items.forEach(item=>item.hideForm());
         showEl(opt.showFormEl, true);
-        showEl(opt.submitFormEl, false);
-        showEl(opt.cancelFormEl, false);
+        showEl(opt.removeEl, true);
+        showEl(opt.submitEl, false);
+        showEl(opt.cancelEl, false);
     };
     opt.cancel = ()=>{
         opt.hideForm();
@@ -351,11 +354,15 @@ export function makeRowForm(row, items, options) {
             opt.onChange(row, changed);
         }
     };
+    opt.remove = ()=>{
+
+    }
 
     // add actions as button click handlers
     addClick(opt.showFormEl, opt.showForm);
-    addClick(opt.cancelFormEl, opt.cancel);
-    addClick(opt.submitFormEl, opt.submit);
+    addClick(opt.removeEl, opt.remove);
+    addClick(opt.cancelEl, opt.cancel);
+    addClick(opt.submitEl, opt.submit);
 
     // listen for cancel from other rows
     if (opt.unique) {
@@ -500,7 +507,7 @@ export function makeRowForm(row, items, options) {
                 item.inputEl.setCustomValidity("Must be unique");
             }
             return item.inputEl.reportValidity();
-        }
+        };
 
         item.update = ()=>{
             const dirty = item.isDirty();
