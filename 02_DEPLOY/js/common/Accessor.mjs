@@ -1,5 +1,5 @@
 import { defProp } from "./common-extension.mjs"
-import { isEl, isArr, isNum, isStr } from "./util.mjs"
+import { isEl, isArr, isNum, isStr, isFn } from "./util.mjs"
 
 /*
     Setter/Getter object
@@ -19,16 +19,15 @@ import { isEl, isArr, isNum, isStr } from "./util.mjs"
         parent,     //  DataUI, to report back to larger data handler
         el,         //  HTMLElement, enables updateUI,setFromUI
         getStrKey,  //  String, if set, getStr uses obj[getStrKey]
-        type,       //  Class/Fn, default:String, used when setting from html:
-                    //      set(new type(inputEl.value))
         editable,   //  Boolean, enables isDirty,startEdit,cancelEdit,
                     //      validateEdit,submitEdit
 
-        // "hardened" on init, mostly to construct input html
+        // "hardened" on init
 
-        limit,      //  Number/Array that defines min/max/step
-                    //      forces type to be Number
-                    //      see see #getMinMaxStepStr below for rules.
+        fromStr,    //  Fn that wraps input.value in submitEdit,
+                    //      gets set to parseFloat if not set and limit set
+        limit,      //  Number/Array that defines min/max/step,
+                    //      see #getMinMaxStepStr below for value rules
         pattern,    //  String, set to input attribute, used in validation msg
     }
 */
@@ -41,14 +40,13 @@ export default class Accessor {
     #parent;        //  DataUI
     #el;            //  HTMLElement
     #getStrKey;     //  string, key used for getStr getter
-    #type;          //  optional if you want something other than a string
     #editable;      //  creates ability to inject input into el, and update from
                     //  user changes
 
     // calculated
     #inputEl;       //  an input (or other) html form element
 
-    get isNumber() { return this.#type === Number; }
+    // get isNumber() { return this.#type === Number; }
     get editable() { return this.#editable; }
 
     constructor(obj, key, config={}) {
@@ -58,110 +56,145 @@ export default class Accessor {
         this.#parent    = config.parent     ?? null;
         this.#el        = config.el         ?? null;
         this.#getStrKey = config.getStrKey  ?? null;
-        this.#type      = config.type       ?? String;
         this.#editable  = config.editable   ?? false;
 
         this.#inputEl = null;
 
-        // basic getters/setters
+        this.#setup();
+
+        // if el was provided, Accessor can handle syncing ui element too
+        if (isEl(this.#el)) {
+            this.#setupUI(config);
+            // if editable there a bunch more setters to set
+            if (this.#editable) {
+                this.#setupEditable(config);
+            }
+        }
+    }
+
+    // setup basic getters/setters
+    #setup() {
         defProp(this, "get", { value: function() {
             return this.#obj[this.#key];
         }});
+
         defProp(this, "set", { value: function(value) {
             this.#obj[this.#key] = value;
         }});
+
         defProp(this, "getStr", { value:
             (this.#getStrKey === null) ?
                 function() { return this.get().toString(); } :
                 function() { return this.#obj[this.#getStrKey];
         }});
+    }
 
-        // if el was provided, Accessor can handle syncing ui element too
-        if (isEl(this.#el)) {
-            // update the ui with the this.getStr()
-            defProp(this, "updateUI", { value: function() {
-                this.#el.innerHTML = this.getStr();
-            }});
-            // update the value from a value in the html. probably pretty rare,
-            // as this would usually happen from edit mode, and an input's value.
-            defProp(this, "setFromUI", { value: function() {
-                this.set(new (this.#type)(this.#el.innerHTML));
-            }});
+    // setup ui enabled functions
+    #setupUI(config) {
 
-            //
-            if (this.#editable) {
-                // if input is present (editing state), true if value has changed
-                defProp(this, "isDirty", { get: function() {
-                    const inp = this.#inputEl;
-                    if (!inp) return false;
-                    return (inp.value !== inp.dataset.prevValue);
-                }});
+        // update the ui with the this.getStr()
+        defProp(this, "updateUI", { value: function() {
+            this.#el.innerHTML = this.getStr();
+        }});
 
-                // create some hard strings that never need to be looked up
-                // later, so we're not setting this data to this.
-                // if limit was set...
-                const minMaxStepStr = this.#getMinMaxStepStr(config.limit);
-                let type = "text";
-                if (minMaxStepStr) {
-                    this.#type = Number;
-                    type = "number";
-                }
-                // if pattern was set
-                let patternStr = "";
-                const pattern = config.pattern;
-                if (isStr(pattern)) {
-                    patternStr = `placeholder="${pattern}" pattern="${pattern}"`;
-                }
+        // couldn't think of a single use case for this.
+        // how would innerHTML ever get modified if Accessor didn't set it?
+        // maybe useful when dealing with other systems?
+        // killing for now. -tm
+        // // update the value FROM el.innerHTML. probably pretty rare
+        // defProp(this, "setFromUI", { value: function() {
+        //     // this.set(new (this.#type)(this.#el.innerHTML));
+        //     this.setFromStr(this.#el.innerHTML);
+        // }});
+    }
 
-                // creates the input in el
-                defProp(this, "startEdit", { value: function() {
-                    this.#el.innerHTML = "";
-                    this.#inputEl = this.#el.appendHTML(`
-                        <input
-                            type="${type}"
-                            value="${this.get()}"
-                            data-prev-value="${this.get()}"
-                            required
-                            ${patternStr}
-                            ${minMaxStepStr}
-                        >
-                    `);
-                    this.#inputEl.addKeyListener("Enter", e=>this.#parent?.submitEdit());
-                    this.#inputEl.addKeyListener("Escape", e=>this.#parent?.cancelEdit());
-                }});
-
-                // clears the input, populates el with getStr
-                defProp(this, "cancelEdit", { value: function() {
-                    this.#inputEl = null;
-                    this.updateUI();
-                }});
-
-                // validate the current value in input, especially pattern
-                defProp(this, "validateEdit", {value: function() {
-                    this.#inputEl.setCustomValidity("");
-                    if (!this.isDirty) {
-                        return true;
-                    }
-                    if (this.#inputEl.validity.patternMismatch) {
-                        this.#inputEl.setCustomValidity(`Match the pattern ${pattern}`);
-                    }
-                    // if (isNotUnique()) {
-                    //     this.#inputEl.setCustomValidity("Must be unique");
-                    // }
-                    return this.#inputEl.reportValidity();
-                }});
-
-                //
-                defProp(this, "submitEdit", { value: function() {
-                    if (!this.validateEdit()) return;
-                    if (this.isDirty) {
-                        this.set(new (this.#type)(this.#inputEl.value));
-                        this.#parent?.didChange(this.#key);
-                    }
-                    this.updateUI();
-                }});
+    #setupEditable(config) {
+        // setup minMaxStepStr, used in startEdit
+        // setup patternStr, used in startEdit
+        // setup fromStr, used to determine how setFromStr is configured
+        const minMaxStepStr = this.#getMinMaxStepStr(config.limit);
+        let fromStr = config.fromStr;
+        let inputType = "text";
+        // if limit was set and valid, treat as a number
+        if (minMaxStepStr) {
+            inputType = "number";
+            if (!fromStr) {
+                fromStr = parseFloat;
             }
         }
+        // if pattern was set
+        let patternStr = "";
+        const pattern = config.pattern;
+        if (isStr(pattern)) {
+            patternStr = `placeholder="${pattern}" pattern="${pattern}"`;
+        }
+
+        // setting back from input.value means we need to convert from string
+        defProp(this, "setFromStr", { value:
+            (isFn(fromStr)) ?
+            // use fromStr wrapper
+            function(str) {
+                this.set(fromStr(str));
+            } :
+            // use set fn directly
+            this.set
+        });
+
+        // if input is present (editing state), true if value has changed
+        defProp(this, "isDirty", { get: function() {
+            const inp = this.#inputEl;
+            if (!inp) return false;
+            return (inp.value !== inp.dataset.prevValue);
+        }});
+
+        // creates the input in el
+        defProp(this, "startEdit", { value: function() {
+            this.#el.innerHTML = "";
+            this.#inputEl = this.#el.appendHTML(
+                `<input
+                    type="${inputType}"
+                    value="${this.get()}"
+                    data-prev-value="${this.get()}"
+                    required
+                    ${patternStr}
+                    ${minMaxStepStr}
+                >`
+            );
+            this.#inputEl.addKeyListener("Enter", e=>this.#parent?.submitEdit());
+            this.#inputEl.addKeyListener("Escape", e=>this.#parent?.cancelEdit());
+        }});
+
+        // clears the input, populates el with getStr
+        defProp(this, "cancelEdit", { value: function() {
+            this.#inputEl = null;
+            this.updateUI();
+        }});
+
+        // validate the current value in input, especially pattern
+        defProp(this, "validateEdit", {value: function() {
+            this.#inputEl.setCustomValidity("");
+            if (!this.isDirty) {
+                return true;
+            }
+            if (this.#inputEl.validity.patternMismatch) {
+                this.#inputEl.setCustomValidity(`Match the pattern ${pattern}`);
+            }
+            // if (isNotUnique()) {
+            //     this.#inputEl.setCustomValidity("Must be unique");
+            // }
+            return this.#inputEl.reportValidity();
+        }});
+
+        //
+        defProp(this, "submitEdit", { value: function() {
+            if (!this.validateEdit()) return;
+            if (this.isDirty) {
+                // this.set(new (this.#type)(this.#inputEl.value));
+                this.setFromStr(this.#inputEl.value);
+                this.#parent?.onChange?.(this.#key);
+            }
+            this.updateUI();
+        }});
     }
 
     // limit array/number -> min/max/step string

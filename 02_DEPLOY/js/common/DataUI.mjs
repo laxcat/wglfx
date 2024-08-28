@@ -1,14 +1,15 @@
+import { defProp } from "./common-extension.mjs"
 import Accessor from "./Accessor.mjs"
-import { ifElFn } from "./util.mjs"
+import { isStr, isFn, ifElFn } from "./util.mjs"
 
 /*
 
 config object:
 {
-    html: `<tr></tr>`,  // string, should have single base node
-    bind: {             // object
+    html: `<tr></tr>`,  // String, should have single base node
+    bind: {             // Object
                         // keys match bound keys
-        key: {          // values are Accessor config objects (see Accessor for options)
+        key: {          // values are config objects passed to Accessor
             ...
         }
     },
@@ -18,6 +19,8 @@ config object:
         cancelEdit: ,
         submitEdit: ,
     },
+
+    onChange:"..."      // String, key of callback on bound instance
 }
 
 */
@@ -51,6 +54,8 @@ export default class DataUI {
         this.#createUI();
         this.#bind(config.bind);
         this.#bindControls(config.control);
+        this.#bindHandlers(config);
+
         (this.cancelEdit) ? this.cancelEdit() : this.updateUI();
     }
     static #privateConstruction = false;
@@ -61,11 +66,6 @@ export default class DataUI {
     #html;      // string
     #keys;      // map of key accessors
     #control;   // map of actions
-
-    // called by the accessors in #keys to report changes
-    accessorDidChange(key) {
-
-    }
 
     #createUI() {
         this.#el = this.#parentEl.appendHTML(this.#html);
@@ -86,7 +86,7 @@ export default class DataUI {
 
         if (obj.startEdit) {
             this.#setControl(obj, "startEdit");
-            Object.defineProperty(this, "startEdit", { value: function() {
+            defProp(this, "startEdit", { value: function() {
                 this.#showControl("startEdit", false);
                 this.#showControl("cancelEdit", true);
                 this.#showControl("submitEdit", true);
@@ -99,7 +99,7 @@ export default class DataUI {
 
         if (obj.cancelEdit) {
             this.#setControl(obj, "cancelEdit");
-            Object.defineProperty(this, "cancelEdit", { value: function() {
+            defProp(this, "cancelEdit", { value: function() {
                 this.#showControl("startEdit", true);
                 this.#showControl("cancelEdit", false);
                 this.#showControl("submitEdit", false);
@@ -112,7 +112,7 @@ export default class DataUI {
 
         if (obj.submitEdit) {
             this.#setControl(obj, "submitEdit");
-            Object.defineProperty(this, "submitEdit", { value: function() {
+            defProp(this, "submitEdit", { value: function() {
                 this.#showControl("startEdit", true);
                 this.#showControl("cancelEdit", false);
                 this.#showControl("submitEdit", false);
@@ -123,7 +123,23 @@ export default class DataUI {
 
         if (obj.remove) {
             this.#setControl(obj, "remove");
-            Object.defineProperty(this, "remove", { value: function() {
+            defProp(this, "remove", { value: function() {
+            }});
+        }
+    }
+
+    #bindHandlers(obj) {
+        // called by the Accessors in #keys to report changes
+        this.#setHandler(obj, "onChange");
+    }
+
+    // a handler only gets set if set in config object AND bound instance can
+    // respond to it
+    #setHandler(obj, handlerKey) {
+        const boundKey = obj[handlerKey];
+        if (isStr(boundKey) && isFn(this.#t[boundKey])) {
+            defProp(this, handlerKey, { value: function(accKey) {
+                this.#t[boundKey](accKey);
             }});
         }
     }
