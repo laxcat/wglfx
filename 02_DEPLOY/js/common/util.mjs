@@ -17,7 +17,7 @@ export function isPOJO(arg) {
     return proto === Object.prototype;
 }
 
-export function isArray(arg) {
+export function isArr(arg) {
     return (arg instanceof Array);
 }
 
@@ -29,12 +29,29 @@ export function isStr(arg) {
     return (typeof arg === "string");
 }
 
-export function isNumber(arg) {
+export function isNum(arg) {
     return (typeof arg === "number");
 }
 
 export function is(arg, Type) {
     return (arg instanceof Type);
+}
+
+export function isEl(arg) {
+    return is(arg, HTMLElement);
+}
+
+export function isEls(arg) {
+    if (is(arg, HTMLCollection)) return true;
+    if (isArr(arg) && arg.every(a=>isEl(a))) return true;
+    return false;
+}
+
+// returns HTMLElement or null
+export function ifElFn(arg, ...args) {
+    let el;
+    if (!isFn(arg) || !isEl(el = arg(...args))) return null;
+    return el;
 }
 
 // UTILITY ------------------------------------------------------------------ //
@@ -89,14 +106,6 @@ export function getSet(obj, prop, getStrProp) {
 
 // https://stackoverflow.com/a/34749873 ------------------------------------- //
 /**
- * Simple object check.
- * @param item
- * @returns {boolean}
- */
-export function isObject(item) {
-  return (item && typeof item === 'object' && !Array.isArray(item));
-}
-/**
  * Deep merge two objects.
  * @param target
  * @param ...sources
@@ -104,6 +113,10 @@ export function isObject(item) {
 export function mergeDeep(target, ...sources) {
   if (!sources.length) return target;
   const source = sources.shift();
+
+  const isObject = item=>{
+    return (item && typeof item === 'object' && !Array.isArray(item));
+  }
 
   if (isObject(target) && isObject(source)) {
     for (const key in source) {

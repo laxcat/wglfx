@@ -97,3 +97,7 @@ extdProto(HTMLCollection, "map", function(fn) {
     }
     return ret;
 });
+
+extdProto(EventTarget, "addKeyListener", function(key, fn, options) {
+    this.addEventListener("keydown", e=>{if (e.key===key) fn(e)}, options);
+});

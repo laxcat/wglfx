@@ -1,4 +1,4 @@
-import { isPOJO, isArray, isFn, isStr, is } from "./util.mjs"
+import { isPOJO, isArr, isFn, isStr, is } from "./util.mjs"
 // also uses Array.prototype.findByKeyOrDefault
 
 /*
@@ -169,7 +169,7 @@ export default class Serializable {
             }
 
             // [SomeClass]
-            else if (isArray(prop)) {
+            else if (isArr(prop)) {
                 const Type = prop[0];
                 this[key] = value.map((child, i) => {
                     if (isPOJO(child) && child.index == null) child.index = i;
@@ -238,7 +238,7 @@ export default class Serializable {
         // with some considerations for some common types and patterns
         for (const key in serialObj) {
             // convert array to array of serialized items
-            if (isArray(this[key])) {
+            if (isArr(this[key])) {
                 serialObj[key] = this[key].map(
                     item => (isFn(item.serialize) ? item.serialize() : item)
                 );

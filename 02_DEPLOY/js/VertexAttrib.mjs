@@ -1,7 +1,7 @@
+import Project from "./Project.mjs"
 import Serializable from "./common/Serializable.mjs"
 import SVG from "./common/SVG.mjs"
-import Project from "./Project.mjs"
-import { isNumber, getSet } from "./common/util.mjs"
+import { isNum, getSet } from "./common/util.mjs"
 import { makeRowForm } from "./common/util-ui.mjs"
 
 import App from "./App.mjs"
@@ -29,7 +29,7 @@ export default class VertexAttrib extends Serializable {
 
     set index(value) {
         const i = parseInt(value);
-        if (!isNumber(i)) {
+        if (!isNum(i)) {
             throw new TypeError(`${value} not a valid index (${i}).`);
         }
         this._index = i;
