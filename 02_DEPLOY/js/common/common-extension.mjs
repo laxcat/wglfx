@@ -2,7 +2,10 @@
     String, Array, ArrayBuffer/typed-array built-in objects extension
 */
 
-// Add a property to prototype of builtIn (or anything really)
+// simple shortcut
+export const defProp = Object.defineProperty;
+
+// Shortcut for Object.defineProperty, but with check
 export function extd(builtIn, propName, options) {
     // do nothing if set already
     if (builtIn.hasOwnProperty(propName)) {
