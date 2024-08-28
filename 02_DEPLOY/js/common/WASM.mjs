@@ -263,25 +263,19 @@ export default class WASM extends EventTarget {
 
     // MEMORY ACCESS, STRING ------------------------------------------------ //
 
-    // encode js-string to c-string in UTF-8 into memory buffer
+    // encode js-string to UTF8-C-string into memory buffer
     encodeStr(str) {
         this.throwIfNotReady();
         const size = str.length;
         const ptr = this.fns.request_str_ptr(size);
-        return WASM.encodeStrInto(str, this.bytesAt(ptr, size));
+        return TextEncoder.encodeInto(str, this.bytesAt(ptr, size));
     };
 
     // same as encodeStr specifying specific memory location
     encodeStrInto(str, ptr) {
         this.throwIfNotReady();
-        return WASM.encodeStrInto(str, this.bytesAt(ptr, str.length));
+        return TextEncoder.encodeInto(str, this.bytesAt(ptr, str.length));
     };
-
-    static te = new TextEncoder();
-    static encodeStrInto(str, view) {
-        const {read, written} = WASM.te.encodeInto(str, view)
-        return [view.byteOffset, written]
-    }
 
     // decode c-style UTF-8 string in memory into js-string.
     // if size not defined, c-style string rules will apply and will

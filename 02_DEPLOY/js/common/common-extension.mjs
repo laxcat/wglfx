@@ -22,7 +22,7 @@ export function extdProto(builtIn, propName, propValue, writeable=false) {
     });
 }
 
-// String ------------------------------------------------------------------- //
+// String/TextEncoder ------------------------------------------------------- //
 
 extdProto(String, "toStartCase", function() {
     let str = "";
@@ -52,6 +52,14 @@ extdProto(String, "toStartCase", function() {
     }
     return str;
 });
+
+extd(TextEncoder, "encodeInto", {value: function(str, uint8Array) {
+    const te = new TextEncoder();
+    let obj = te.encodeInto(str, uint8Array);
+    obj.ptr = uint8Array.byteOffset;
+    obj.size = obj.written;
+    return obj;
+}});
 
 // Don't need for now. Uses eval-adjacent code. Proabaly don't use or strictly
 // limit input string to known variables and strip anything else.

@@ -25,7 +25,7 @@ export default class WASMTest extends WASM {
 
         // sending and recieving strings requires a little work before and after
         this.caps = str => {
-            const [ptr, size] = this.encodeStr(str);
+            const {ptr, size} = this.encodeStr(str);
             this.fns.caps(ptr);
             return this.decodeCStr(ptr, size);
         }
