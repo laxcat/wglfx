@@ -4,7 +4,7 @@
 
 export function parse(uiEl) {
     // add collapsible handlers
-    const collapsibles = uiEl.querySelectorAll("label.collapsible");
+    const collapsibles = uiEl.querySelectorAll(".collapsible");
     collapsibles.forEach(makeCollapsible);
 
     // add generic form handlers to always prevent default

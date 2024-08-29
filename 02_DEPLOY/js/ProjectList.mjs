@@ -263,12 +263,12 @@ export default class ProjectList extends Serializable {
         let v = 1;
         this.el = parentEl.appendHTML(
             `
-            <section id="projList">
+            <header id="projList">
                 <select></select>
                 <button>${SVG.get("edit")}</button>
                 <div class="status">${proj.statusStr}</div>
                 ${this.#getAboutLinkUI()}
-            </section>
+            </header>
             `
         );
         this.selectEl = this.el.querySelector("select");

@@ -19,6 +19,9 @@ body {
     --color-input-bg:   rgba(0 0 0 / 0.5);
     --color-bg:         transparent;
     --color-bg-hover:   rgba(255 255 255 / 0.3);
+
+    font-family: var(--font-family);
+    color: var(--color-text);
 }
 
 canvas {
@@ -105,9 +108,16 @@ button:has(svg.edit) {
     overflow-x: hidden;
     z-index: 1;
 
-    * {
-        font-family: var(--font-family);
+    /* do i really want this? */
+    -webkit-user-select: none;
+    user-select: none;
+
+    h2, h3 {
+        margin: 0;
+        padding: 0;
     }
+    h2 { font-size: 16px; }
+    h3 { font-size: 14px; }
 
     a {
         text-weight: normal;
@@ -125,10 +135,6 @@ button:has(svg.edit) {
         outline: none;
     }
 
-    label, section, li, input, button.action, td {
-        color: var(--color-text);
-    }
-
     ul {
         margin: 0;
         padding: 0;
@@ -138,14 +144,12 @@ button:has(svg.edit) {
         list-style: none;
     }
 
-    label.collapsible {
-        -webkit-user-select: none;
-        user-select: none;
+    .collapsible {
         cursor: ns-resize;
         display: block;
         background-color: var(--color-bg);
     }
-    label.collapsible:hover {
+    .collapsible:hover {
         background-color: var(--color-bg-hover);
     }
 
@@ -169,207 +173,215 @@ button:has(svg.edit) {
         padding: 4px 6px;
         color: #000;
     }
+}
 
 /* STRUCTURE **************************************************************** */
 
-    /* top level sections */
-    > section,
-    div#project > section {
-        width: fit-content;
-        min-width: 780px;
-        margin: 0 0 20px 0;
-        border: 1px solid var(--color-text);
+#ui header,
+#ui section {
+    width: fit-content;
+    min-width: 780px;
+    margin: 0 0 20px 0;
+    border: 1px solid var(--color-text);
 
-        > label:first-child {
-            padding: 3px 5px;
-        }
+    > h2 {
+        padding: 3px 5px;
     }
+}
 
 /* PROJECT LIST *************************************************** */
-    section#projList {
-        padding: 3px 0;
+#ui header#projList {
+    padding: 3px 0;
 
-        &::after {
-           content: " ";
-           display: block;
-           height: 0;
-           clear: both;
-        }
-
-        > select,
-        > input[type="text"] {
-            float: left;
-            margin-left: 4px;
-            font-size: 13px;
-            height: 22px;
-        }
-
-        > input[type="text"] {
-            padding: 1px 6px;
-        }
-
-        > button {
-            float: left;
-            margin: -1px 0 0 10px;
-        }
-
-        > div.status {
-            float: left;
-            font-size: 12px;
-            line-height: 22px;
-            margin-left: 10px;
-        }
-        > div.status.changed {
-            font-style: italic;
-        }
-
-        > a {
-            float: right;
-            font-size: 12px;
-            line-height: 22px;
-            margin-right: 10px;
-        }
+    &::after {
+       content: " ";
+       display: block;
+       height: 0;
+       clear: both;
     }
+
+    > select,
+    > input[type="text"] {
+        float: left;
+        margin-left: 4px;
+        font-size: 13px;
+        height: 22px;
+    }
+
+    > input[type="text"] {
+        padding: 1px 6px;
+    }
+
+    > button {
+        float: left;
+        margin: -1px 0 0 10px;
+    }
+
+    > div.status {
+        float: left;
+        font-size: 12px;
+        line-height: 22px;
+        margin-left: 10px;
+    }
+    > div.status.changed {
+        font-style: italic;
+    }
+
+    > a {
+        float: right;
+        font-size: 12px;
+        line-height: 22px;
+        margin-right: 10px;
+    }
+}
 
 /* PASS / LAYOUT / MESHES *************************************************** */
-    section#passes > ul > li {
-        border-top: 1px solid var(--color-text);
+#ui section#passes > ul > li {
+    border-top: 1px solid var(--color-text);
 
-        > label:first-child {
-            padding: 3px 5px;
+    > h3 {
+        padding: 3px 5px;
+    }
+
+    > div {
+        margin: 0 0 20px 30px;
+
+        > label {
+            font-size: 14px;
         }
 
-        > section {
-            margin: 0 0 20px 30px;
+        > table.layout {
+            margin: 0 0 15px 30px;
 
-            > table.layout {
-                margin: 0 0 15px 30px;
+            border-collapse: collapse;
 
-                border-collapse: collapse;
+            tr {
+                cursor: move;
 
-                tr {
-                    cursor: move;
+                --row-size: 12px;
+                --row-padding: 1px;
+                --row-reorder-insert-color: #fff;
 
-                    --row-size: 12px;
-                    --row-padding: 1px;
-                    --row-reorder-insert-color: #fff;
+                &.hover {
+                    background-color: rgba(255 255 255 / 0.2);
+                }
+                &.dragging {
+                    opacity: .5;
+                }
 
-                    &.hover {
-                        background-color: rgba(255 255 255 / 0.2);
-                    }
-                    &.dragging {
-                        opacity: .5;
-                    }
+                td {
+                    padding-left: 0;
+                    padding-right: 20px;
+                    padding-top: var(--row-padding);
+                    padding-bottom: var(--row-padding);
+                    font-size: var(--row-size);
+                    border: 1px solid rgba(255 255 255 / 0);
+                }
+                td.noDrag {
+                    cursor: default;
+                    padding-right: 0;
+                }
+                svg.icon {
+                    width: var(--row-size);
+                    height: var(--row-size);
+                }
+                &.draggingHover.before td {
+                    border-top-color: var(--row-reorder-insert-color);
+                }
+                &.draggingHover.after td,
+                &:has(+tr.draggingHover.before) td {
+                    border-bottom-color: var(--row-reorder-insert-color);
+                }
 
-                    td {
-                        padding-left: 0;
-                        padding-right: 20px;
-                        padding-top: var(--row-padding);
-                        padding-bottom: var(--row-padding);
-                        font-size: var(--row-size);
-                        border: 1px solid rgba(255 255 255 / 0);
-                    }
-                    td.noDrag {
-                        cursor: default;
-                        padding-right: 0;
-                    }
-                    svg.icon {
-                        width: var(--row-size);
-                        height: var(--row-size);
-                    }
-                    &.draggingHover.before td {
-                        border-top-color: var(--row-reorder-insert-color);
-                    }
-                    &.draggingHover.after td,
-                    &:has(+tr.draggingHover.before) td {
-                        border-bottom-color: var(--row-reorder-insert-color);
-                    }
-
-                    td:nth-child(2) {
-                        width: 100px;
-                        input {
-                            width: 100%;
-                        }
+                td:nth-child(2) {
+                    width: 100px;
+                    input {
+                        width: 100%;
                     }
                 }
             }
+        }
 
-            > ul.meshes {
-                margin: 0 0 15px 0;
+        > ul.meshes {
+            margin: 0 0 15px 0;
 
-                > li {
+            > li {
+                margin: 0 0 0 30px;
+
+                label {
+                    font-size: 14px;
+                }
+
+                > div {
                     margin: 0 0 0 30px;
 
-                    > section {
-                        margin: 0 0 0 30px;
+                    ul.attribs::after {
+                       content: " ";
+                       display: block;
+                       height: 0;
+                       clear: both;
+                    }
 
-                        ul.attribs::after {
-                           content: " ";
-                           display: block;
-                           height: 0;
-                           clear: both;
-                        }
+                    ul.attribs > li {
+                        width: 300px;
+                        float: left;
 
-                        ul.attribs > li {
-                            width: 300px;
-                            float: left;
-
-                            pre {
-                                margin: 0;
-                            }
+                        pre {
+                            margin: 0;
                         }
                     }
                 }
             }
         }
     }
+}
 
 /* UNIFORM ****************************************************************** */
-    section#uniform-buffer {
-        div {
-            margin: 0 0 10px 0;
-        }
-
-        table {
-            border-collapse: collapse;
-        }
-        td {
-            border: 1px solid var(--color-text);
-            margin: 0;
-            padding: 3px 5px;
-        }
+#ui section#uniform-buffer {
+    div {
+        margin: 0 0 10px 0;
     }
+
+    table {
+        border-collapse: collapse;
+    }
+    td {
+        border: 1px solid var(--color-text);
+        margin: 0;
+        padding: 3px 5px;
+    }
+}
 
 /* SHADER ******************************************************************* */
-    section#program {
-        > label {
+#ui section#program {
+    > label {
 
-        }
+    }
 
-        > ul {
-            > li {
-                margin: 10px 0 0 0;
-                > pre {
-                    margin: 0;
-                }
+    > ul {
+        > li {
+            margin: 10px 0 0 0;
+            > pre {
+                margin: 0;
             }
-            > li:first-child {
-                > pre {
-                    margin-bottom: 20px;
-                }
+        }
+        > li:first-child {
+            > pre {
+                margin-bottom: 20px;
             }
         }
     }
+}
 
 /* ACE EDITOR *************************************************************** */
-    .ace-error {
-        background-color: #800;
-        position: absolute;
-    }
+#ui .ace-error {
+    background-color: #800;
+    position: absolute;
+}
 
 /* COLORIS ****************************************************************** */
-    .clr-field > button {
-        border: var(--border-focus);
-    }
+#ui .clr-field > button {
+    border: var(--border-focus);
+}
 
 } /* #ui */

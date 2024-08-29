@@ -113,11 +113,11 @@ export default class Mesh extends Serializable {
             `
             <li>
                 <label class="collapsible">Mesh</label>
-                <section>
+                <div>
                     <label>Count</label>
                     <input type="number" value="${this.nVerts}">
                     <ul class="attribs"></ul>
-                </section>
+                </div>
             </li>
             `
         );

@@ -118,8 +118,8 @@ export default class UniformBuffer extends Serializable {
         this.el = parentEl.appendHTML(
             `
             <section id="uniform-buffer">
-                <label class="collapsible">Uniform Buffer</label>
-                <section>
+                <h2 class="collapsible">Uniform Buffer</h2>
+                <div>
                     <label>Name</label><div>${this.name}</div>
                     <label>Size</label><div>${this.size}</div>
                     <label>Vars</label>
@@ -133,7 +133,7 @@ export default class UniformBuffer extends Serializable {
                         </tr>
                         </tbody>
                     </table>
-                </section>
+                </div>
             </section>
             `
         );

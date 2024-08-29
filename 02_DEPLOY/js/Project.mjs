@@ -128,12 +128,12 @@ export default class Project extends Serializable {
     createUI(parentEl) {
         const projEl = parentEl.appendHTML(
             `
-            <div id="project">
-            <section id="passes">
-                <label class="collapsible">Passes</label>
-                <ul></ul>
-            </section>
-            </div>
+            <main id="project">
+                <section id="passes">
+                    <h2 class="collapsible">Passes</h2>
+                    <ul></ul>
+                </section>
+            </main>
             `
         );
 

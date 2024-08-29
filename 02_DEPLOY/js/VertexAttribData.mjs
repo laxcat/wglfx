@@ -166,7 +166,7 @@ export default class VertexAttribData extends Serializable {
     createUI(parentEl) {
         const dataEl = parentEl.appendHTML(
             `<li>
-                <div>${this.key}</div>
+                <label>${this.key}</label>
                 <pre>${this.dataStr}</pre>
             </li>`
         );
