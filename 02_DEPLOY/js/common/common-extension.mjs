@@ -135,7 +135,6 @@ extdProto(Array, "findByKeyOrDefault", function(key, keyProp="key", defaultProp=
     return defaultByProp || defaultByKey || this[0];
 });
 
-
 // Base64 Encoding/Decoding ------------------------------------------------- //
 
 extdProto(ArrayBuffer, "toBase64", function() {

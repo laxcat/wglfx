@@ -1,4 +1,5 @@
 import Serializable from "./common/Serializable.mjs"
+import DataUI from "./common/DataUI.mjs"
 import Color from "./common/Color.mjs"
 import {
     parse as uiParse,
@@ -30,7 +31,7 @@ export default class Pass extends Serializable {
         layout: [VertexAttrib],
         meshes: [Mesh],
     }
-    el = null;
+    // el = null;
 
     static templates = [
         { // first template is default unless otherwise indicated
@@ -52,6 +53,49 @@ export default class Pass extends Serializable {
             meshes: [],
         }
     ];
+
+
+    dataUI;
+    static dataUI = {
+        html:
+            `
+            <li>
+                <h3 class="collapsible"></h3>
+                <div>
+                    <label>Clear Color</label>
+                    <input type="text" class="color" value="">
+
+                    <label class="collapsible">Layout</label>
+                    <table class="layout"><tbody></tbody></table>
+                    <button>+</button>
+
+                    <label class="collapsible">Meshes</label>
+                    <ul class="meshes"></ul>
+
+                    <button class="action">Reset Pass To Default</button>
+                </div>
+            </li>
+            `,
+        bind: {
+            layout: {
+                el: liEl=>liEl.querySelector("table.layout tbody"),
+                type: [VertexAttrib],
+                reorderable: true,
+                add: liEl=>liEl.querySelector("table.layout+button"),
+            },
+        },
+        control: {
+            reset: liEl=>liEl.querySelector("button.action"),
+        },
+        onChange: "onChangeData",
+    };
+
+    get el() { return this.dataUI?.el; }
+
+    onChangeData(key) {
+        // console.log("onChangeData", key);
+        this.el.dispatchEvent(Project.makeChangeEvent("pass"+key));
+    }
 
     destroy() {
         this.meshes.forEach(mesh => mesh.destroy());
@@ -79,39 +123,44 @@ export default class Pass extends Serializable {
     }
 
     createUI(parentEl) {
-        this.el = parentEl.appendHTML(`<li></li>`);
-        this.#fillUI();
-    }
 
-    resetUI() {
-        // clear contents and listeners
-        this.el.innerHTML = "";
-        // refill and recreate listeners
-        this.#fillUI();
-        // add global listeners
-        uiParse(this.el);
-    }
+        // this.el = parentEl.appendHTML(`<li></li>`);
+    //     this.#fillUI();
+    // }
 
-    #fillUI() {
-        this.el.appendHTML(
-            `
-            <label class="collapsible">${this.name}</label>
-            <section>
+    // // resetUI() {
+    // //     // clear contents and listeners
+    // //     this.el.innerHTML = "";
+    // //     // refill and recreate listeners
+    // //     this.#fillUI();
+    // //     // add global listeners
+    // //     uiParse(this.el);
+    // // }
 
-                <label>Clear Color</label>
-                <input type="text" class="color" value="#${this.clearColor.toRGBAStr()}">
+    // #fillUI() {
 
-                <label class="collapsible">Layout</label>
-                <table class="layout"><tbody></tbody></table>
-                <button>+</button>
 
-                <label class="collapsible">Meshes</label>
-                <ul class="meshes"></ul>
+        // this.el = parentEl.appendHTML(
+        //     `
+        //     <li>
+        //         <h3 class="collapsible">${this.name}</h3>
+        //         <div>
+        //             <label>Clear Color</label>
+        //             <input type="text" class="color" value="#${this.clearColor.toRGBAStr()}">
 
-                <button class="action">Reset Pass To Default</button>
-            </section>
-            `
-        );
+        //             <label class="collapsible">Layout</label>
+        //             <table class="layout"><tbody></tbody></table>
+        //             <button>+</button>
+
+        //             <label class="collapsible">Meshes</label>
+        //             <ul class="meshes"></ul>
+
+        //             <button class="action">Reset Pass To Default</button>
+        //         </div>
+        //     </li>
+        //     `
+        // );
+        DataUI.bind(this, parentEl);
 
         // add clear color handler
         const colorEl = this.el.querySelector(`input.color`);
@@ -126,54 +175,54 @@ export default class Pass extends Serializable {
         Coloris(colorEl);
 
         // create attributes list (layout)
-        const layoutEl = this.el.querySelector("table.layout tbody");
-        const layoutFormConfigs = this.layout.map(attrib => attrib.createUI(layoutEl));
-        // make rows drag-and-drop reorderable
-        const reorderableConfig = makeReorderable(layoutEl, {
-            onReorder: (oldIndex, newIndex) => {
-                const oldAttrib = this.layout.splice(oldIndex, 1)[0];
-                this.layout.splice(newIndex, 0, oldAttrib);
-                this.layout.forEach((child, index) => child.index = index);
-                this.el.dispatchEvent(Project.makeChangeEvent("layoutReorder"));
-            }
-        });
-        const addButton = this.el.querySelector("table.layout+button");
-        addButton.addEventListener("click", e=>{
-            const newAttrib = new VertexAttrib({index:this.layout.length,key:"",size:3})
-            const addRowConfig = newAttrib.createUI(layoutEl);
-            addRowConfig.showForm();
-            addRowConfig.onCancel = row=>{
-                addRowConfig.row.remove();
-                addButton.classList.remove("hidden");
-            };
-            addRowConfig.onChange = row=>{
-                makeReorderableItem(row, reorderableConfig);
-                this.layout.push(newAttrib);
-                this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
-                addButton.classList.remove("hidden");
-            };
-            addButton.classList.add("hidden");
-        });
-        layoutFormConfigs.forEach(config=>{
-            config.onDelete = row=>{
-                const index = row.elementIndex();
-                const attrib = this.layout[index];
-                confirmDialog(
-                    `Remove vertex attribute “${attrib.key}”?`,
+        // const layoutEl = this.el.querySelector("table.layout tbody");
+        // const layoutFormConfigs = this.layout.map(attrib => attrib.createUI(layoutEl));
+        // // make rows drag-and-drop reorderable
+        // const reorderableConfig = makeReorderable(layoutEl, {
+        //     onReorder: (oldIndex, newIndex) => {
+        //         const oldAttrib = this.layout.splice(oldIndex, 1)[0];
+        //         this.layout.splice(newIndex, 0, oldAttrib);
+        //         this.layout.forEach((child, index) => child.index = index);
+        //         this.el.dispatchEvent(Project.makeChangeEvent("layoutReorder"));
+        //     }
+        // });
+        // const addButton = this.el.querySelector("table.layout+button");
+        // addButton.addEventListener("click", e=>{
+        //     const newAttrib = new VertexAttrib({index:this.layout.length,key:"",size:3})
+        //     const addRowConfig = newAttrib.createUI(layoutEl);
+        //     addRowConfig.showForm();
+        //     addRowConfig.onCancel = row=>{
+        //         addRowConfig.row.remove();
+        //         addButton.classList.remove("hidden");
+        //     };
+        //     addRowConfig.onChange = row=>{
+        //         makeReorderableItem(row, reorderableConfig);
+        //         this.layout.push(newAttrib);
+        //         this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
+        //         addButton.classList.remove("hidden");
+        //     };
+        //     addButton.classList.add("hidden");
+        // });
+        // layoutFormConfigs.forEach(config=>{
+        //     config.onRemove = row=>{
+        //         const index = row.elementIndex();
+        //         const attrib = this.layout[index];
+        //         confirmDialog(
+        //             `Remove vertex attribute “${attrib.key}”?`,
 
-                    "Cancel",
-                    null,
+        //             "Cancel",
+        //             null,
 
-                    "Remove Attribute",
-                    () => {
-                        this.layout.splice(index, 1);
-                        row.remove();
-                        this.layout.forEach((c,i)=>c.index=i);
-                        this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
-                    }
-                );
-            };
-        });
+        //             "Remove Attribute",
+        //             () => {
+        //                 this.layout.splice(index, 1);
+        //                 row.remove();
+        //                 this.layout.forEach((c,i)=>c.index=i);
+        //                 this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
+        //             }
+        //         );
+        //     };
+        // });
 
         // create mesh list
         const meshesEl = this.el.querySelector("ul.meshes");
@@ -188,7 +237,7 @@ export default class Pass extends Serializable {
                 "Cancel", null,
                 defaultButtonEl.innerHTML, () => {
                     this.reset(this.defaultTemplate);
-                    this.resetUI();
+                    // this.resetUI();
                 }
             );
         });

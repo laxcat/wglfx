@@ -1,5 +1,7 @@
 import { defProp } from "./common-extension.mjs"
-import { isEl, isArr, isNum, isStr, isFn } from "./util.mjs"
+import DataUI from "./DataUI.mjs"
+import { confirmDialog } from "./util-ui.mjs"
+import { isEl, isArr, isNum, isStr, isFn, ifElFn } from "./util.mjs"
 
 /*
     Setter/Getter object
@@ -40,14 +42,14 @@ export default class Accessor {
     #parent;        //  DataUI
     #el;            //  HTMLElement
     #getStrKey;     //  string, key used for getStr getter
-    #editable;      //  creates ability to inject input into el, and update from
-                    //  user changes
+    // #editable;      //  creates ability to inject input into el, and update from
+    //                 //  user changes
 
     // calculated
     #inputEl;       //  an input (or other) html form element
 
     // get isNumber() { return this.#type === Number; }
-    get editable() { return this.#editable; }
+    // get editable() { return this.#editable; }
 
     constructor(obj, key, config={}) {
         this.#obj = obj;
@@ -56,25 +58,81 @@ export default class Accessor {
         this.#parent    = config.parent     ?? null;
         this.#el        = config.el         ?? null;
         this.#getStrKey = config.getStrKey  ?? null;
-        this.#editable  = config.editable   ?? false;
+        // this.#editable  = config.editable   ?? false;
 
         this.#inputEl = null;
 
-        this.#setup();
 
-        // if el was provided, Accessor can handle syncing ui element too
-        if (isEl(this.#el)) {
-            this.#setupUI(config);
-            // if editable there a bunch more setters to set
-            if (this.#editable) {
-                this.#setupEditable(config);
+        if (isArr(config.type)) {
+            if (config.add) {
+                config.editable = true;
+            }
+            if (config.editable) {
+                defProp(this, "add", { value: function() {
+                    console.log("accessor add", this);
+                    const arr = this.#obj[this.#key];
+                    const type = config.type[0];
+                    const item = new type();
+                    arr.push(item);
+                    DataUI.bind(item, this.#el, {startEditOnInit:true})
+                        .set("index", arr.length - 1);
+                }});
+                defProp(this, "remove", { value: function(index) {
+                    console.log("accessor remove", this, index);
+                    confirmDialog(
+                        `Remove index ${index}?`,
+
+                        "Cancel",
+                        null,
+
+                        "Remove",
+                        () => {
+                            const arr = this.#obj[this.#key];
+                            const el = arr[index].dataUI.el;
+                            // console.log("!!!!", el, index);
+                            arr.splice(index, 1);
+                            el.remove();
+                            arr.forEach((c,i)=>c.index=i);
+                            this.#parent?.onChange?.(this.#key);
+                            // console.log("what do we have", this, this.#parent);
+
+
+                            // row.remove();
+                            // this.layout.forEach((c,i)=>c.index=i);
+                            // this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
+                        }
+                    );
+                }});
+            }
+            if (config.add) {
+                const el = ifElFn(config.add, this.#parent.el);
+                if (el === null) {
+                    throw new SyntaxError(`Could not get el for control add in ${key}.`);
+                }
+                el.addEventListener("click", e=>this.add());
+            }
+            console.log("array", config);
+
+        }
+        else {
+            // console.log("normal", key);
+            // build all the functions onto this Accessor
+            this.#setupMain();
+            // if el was provided, Accessor can handle syncing ui element too
+            if (isEl(this.#el)) {
+                this.#setupUI(config);
+                // if editable there a bunch more setters to set
+                if (config.editable) {
+                    this.#setupEditable(config);
+                }
             }
         }
     }
 
     // setup basic getters/setters
-    #setup() {
+    #setupMain() {
         defProp(this, "get", { value: function() {
+            // console.log("did get", this.#obj[this.#key], this.#obj, this.#key);
             return this.#obj[this.#key];
         }});
 
@@ -91,21 +149,10 @@ export default class Accessor {
 
     // setup ui enabled functions
     #setupUI(config) {
-
         // update the ui with the this.getStr()
         defProp(this, "updateUI", { value: function() {
             this.#el.innerHTML = this.getStr();
         }});
-
-        // couldn't think of a single use case for this.
-        // how would innerHTML ever get modified if Accessor didn't set it?
-        // maybe useful when dealing with other systems?
-        // killing for now. -tm
-        // // update the value FROM el.innerHTML. probably pretty rare
-        // defProp(this, "setFromUI", { value: function() {
-        //     // this.set(new (this.#type)(this.#el.innerHTML));
-        //     this.setFromStr(this.#el.innerHTML);
-        // }});
     }
 
     #setupEditable(config) {
@@ -144,6 +191,7 @@ export default class Accessor {
         defProp(this, "isDirty", { get: function() {
             const inp = this.#inputEl;
             if (!inp) return false;
+            if (inp.dataset.prevValue === "") return true;
             return (inp.value !== inp.dataset.prevValue);
         }});
 
@@ -187,7 +235,6 @@ export default class Accessor {
 
         //
         defProp(this, "submitEdit", { value: function() {
-            if (!this.validateEdit()) return;
             if (this.isDirty) {
                 // this.set(new (this.#type)(this.#inputEl.value));
                 this.setFromStr(this.#inputEl.value);
@@ -225,3 +272,17 @@ export default class Accessor {
             `min="${limit[0]}" max="${limit[1]}" step="${limit[2]}"`;
     }
 }
+
+
+
+
+
+        // couldn't think of a single use case for this.
+        // how would innerHTML ever get modified if Accessor didn't set it?
+        // maybe useful when dealing with other systems?
+        // killing for now. -tm
+        // // update the value FROM el.innerHTML. probably pretty rare
+        // defProp(this, "setFromUI", { value: function() {
+        //     // this.set(new (this.#type)(this.#el.innerHTML));
+        //     this.setFromStr(this.#el.innerHTML);
+        // }});

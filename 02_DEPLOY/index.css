@@ -153,6 +153,11 @@ button:has(svg.edit) {
         background-color: var(--color-bg-hover);
     }
 
+    input {
+        font-family: var(--font-family);
+        color: var(--color-text);
+    }
+
     input[type="text"],
     input[type="number"],
     .ace_editor {

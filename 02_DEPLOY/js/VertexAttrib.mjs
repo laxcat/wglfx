@@ -1,3 +1,4 @@
+import DataUI from "./common/DataUI.mjs"
 import Project from "./Project.mjs"
 import Serializable from "./common/Serializable.mjs"
 import SVG from "./common/SVG.mjs"
@@ -13,11 +14,10 @@ import App from "./App.mjs"
 export default class VertexAttrib extends Serializable {
     static initProps = {
         index: undefined,   // vertex attribute index
-        size: undefined,    // number of compoenents
         key: undefined,     // key to indicate nature of data. pos, norm, color, etc.
                             // key should match key in mesh attrib data
+        size: undefined,    // number of compoenents
     };
-    rowEl;
 
     static REORDER_EVENT = "vertexattribreorder";
     static makeReorderEvent(oldIndex, newIndex) {
@@ -27,15 +27,48 @@ export default class VertexAttrib extends Serializable {
         });
     }
 
+    static templates = [
+        {key:"", size:3},
+    ];
+
+    // binds data structure to this on createUI
+    dataUI;
+    static dataUI = {
+        html: `
+            <tr>
+                <td><!-- index --></td>
+                <td><!-- key   --></td>
+                <td><!-- size  --></td>
+                <td class="noDrag">
+                    <button>${SVG.get("edit")}</button>
+                    <button>🚫</button>
+                    <button>×</button>
+                    <button>✓</button>
+                </td>
+            </tr>`,
+        bind: {
+            index: {el:trEl=>trEl.children[0]},
+            key:   {el:trEl=>trEl.children[1], pattern:"[a-z]{3,12}", editable:true},
+            size:  {el:trEl=>trEl.children[2], limit:[1,4], editable:true, getStrKey:"sizeRowStr"},
+        },
+        control: {
+            startEdit:  trEl=>trEl.children[3].children[0],
+            remove:     trEl=>trEl.children[3].children[1],
+            cancelEdit: trEl=>trEl.children[3].children[2],
+            submitEdit: trEl=>trEl.children[3].children[3],
+        },
+        onChange: "onChangeData",
+    };
+
     set index(value) {
         const i = parseInt(value);
         if (!isNum(i)) {
             throw new TypeError(`${value} not a valid index (${i}).`);
         }
         this._index = i;
-        if (this.rowEl) {
-            this.rowEl.dataset.index = i;
-            this.rowEl.children[0].innerHTML = i;
+        if (this.el) {
+            this.el.dataset.index = i;
+            this.el.children[0].innerHTML = i;
         }
     }
     get index() { return this._index; }
@@ -44,11 +77,22 @@ export default class VertexAttrib extends Serializable {
 
     get sizeRowStr() { return `${this.sizeStr} (${this.size * 4} bytes)`; }
 
+    get el() { return this.dataUI?.el; }
+
+    onChangeData(key) {
+        this.el.dispatchEvent(Project.makeChangeEvent("passLayout"));
+    }
+
     createUI(parentEl) {
-        this.rowEl = parentEl.appendHTML(
+        return DataUI.bind(this, parentEl);
+        // this.el = parentEl.appendHTML(dataUI.html);
+    }
+
+    createUI_old(parentEl) {
+        this.el = parentEl.appendHTML(
             `
             <tr>
-                <td>${this.index}</td>
+                <td></td>
                 <td></td>
                 <td></td>
                 <td class="noDrag">
@@ -60,34 +104,35 @@ export default class VertexAttrib extends Serializable {
             </tr>
             `
         );
-        const button = (row,i)=>row.children[3].children[i];
-        const formConfig = makeRowForm(this.rowEl, [
+        const buttonEl = (el,i)=>el.children[3].children[i];
+        const formConfig = makeRowForm(this.el, [
             // key
             {
-                slot: row=>row.children[1],
+                slot: el=>el.children[1],
                 prop: getSet(this, "key"),
                 pattern: "[a-z]{3,12}",
                 unique: true,
             },
             // size
             {
-                slot: row=>row.children[2],
+                slot: el=>el.children[2],
                 prop: getSet(this, "size", "sizeRowStr"),
                 limit: [1,4],
             },
         ], {
             rows: ()=>parentEl.children,
             unique: true,
-            onChanged: (row,changed)=>{
-                row.dispatchEvent(Project.makeChangeEvent("passLayout"));
+            onChanged: (el,changed)=>{
+                el.dispatchEvent(Project.makeChangeEvent("passLayout"));
             },
-            showFormEl: row=>button(row, 0),
-            cancelFormEl: row=>button(row, 2),
-            submitFormEl: row=>button(row, 3),
+            showFormEl: el=>buttonEl(el,0),
+            removeEl:   el=>buttonEl(el,1),
+            cancelEl:   el=>buttonEl(el,2),
+            submitEl:   el=>buttonEl(el,3),
         });
 
-        button(this.rowEl,1).addEventListener("click", e=>{
-            if (formConfig.onDelete) formConfig.onDelete(this.rowEl);
+        buttonEl(this.el,1).addEventListener("click", e=>{
+            if (formConfig.onRemove) formConfig.onRemove(this.el);
             // console.log("delete me!!!!");
         });
 

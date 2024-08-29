@@ -1,9 +1,10 @@
 import { defProp } from "./common-extension.mjs"
 import Accessor from "./Accessor.mjs"
-import { isStr, isFn, ifElFn } from "./util.mjs"
+import { isStr, isArr, isFn, ifElFn } from "./util.mjs"
 
 /*
 
+INCOMPLETE / WIP
 config object:
 {
     html: `<tr></tr>`,  // String, should have single base node
@@ -30,9 +31,14 @@ export default class DataUI {
     // bind DataUI structure to an instance
     // calling DataUI.bind(this, parentEl) will look for a static dataUI config
     // object, and set this.dataUI with the an instance of DataUI, bound to this
-    static bind(t, parentEl) {
+    static bind(t, parentEl, addConfig={}) {
+        if (!t?.constructor?.dataUI) {
+            console.error("COULD NOT FIND static dataUI on", t);
+            return;
+        }
         this.#privateConstruction = true;
-        t.dataUI = new DataUI(t.constructor.dataUI, t, parentEl);
+        const config = {...t.constructor.dataUI, ...addConfig};
+        t.dataUI = new DataUI(config, t, parentEl);
         this.#privateConstruction = false;
         return t.dataUI;
     }
@@ -40,7 +46,11 @@ export default class DataUI {
     get el() { return this.#el; }
 
     updateUI() {
-        this.#keys.forEach(acc=>acc.updateUI());
+        this.#keys.forEach(acc=>acc.updateUI?.());
+    }
+
+    set(key, value) {
+        this.#keys.get(key)?.set?.(value);
     }
 
     // construct with DataUI.bind
@@ -48,100 +58,115 @@ export default class DataUI {
         if (!DataUI.#privateConstruction) {
             throw TypeError("Construct with DataUI.bind, eg: DataUI.bind(this, parentEl);")
         }
+        // console.log("binding", t, parentEl, config);
         this.#t = t;
         this.#parentEl = parentEl;
         this.#html = config.html;
+        this.#parentData = config.parentData ?? null;
+        this.#parentKey = config.parentKey ?? null;
         this.#createUI();
-        this.#bind(config.bind);
-        this.#bindControls(config.control);
+        this.#bind(config);
+        this.#bindControls(config);
         this.#bindHandlers(config);
 
-        (this.cancelEdit) ? this.cancelEdit() : this.updateUI();
+        if (config.startEditOnInit) this.startEdit();
+        else if (this.cancelEdit)   this.cancelEdit();
+        else                        this.updateUI();
     }
     static #privateConstruction = false;
 
-    #t;         // bound instance
-    #parentEl   // HTMLElement
-    #el;        // HTMLElement
-    #html;      // string
-    #keys;      // map of key accessors
-    #control;   // map of actions
+    #t;             // bound instance
+    #parentData     // DataUI
+    #parentKey      // DataUI
+    #parentEl       // HTMLElement
+    #el;            // HTMLElement
+    #html;          // string
+    #keys;          // map of key accessors
+    #control;       // map of actions
 
     #createUI() {
         this.#el = this.#parentEl.appendHTML(this.#html);
     }
 
-    #bind(obj) {
+    #bind(config) {
         this.#keys = new Map();
-        for (const key in obj) {
-            const config = {...obj[key]};
-            config.el = ifElFn(config.el, this.#el);
-            config.parent = this;
-            this.#keys.set(key, new Accessor(this.#t, key, config));
+        // for each bind key
+        for (const key in config.bind) {
+            const bindKey = {...config.bind[key]};
+            bindKey.el = ifElFn(bindKey.el, this.#el);
+            bindKey.parent = this;
+
+            if (isArr(bindKey.type) && bindKey.type[0]?.dataUI) {
+                this.#t[key].forEach(sub=>DataUI.bind(sub, bindKey.el, {parentData:this, parentKey:key}));
+                this.#keys.set(key, new Accessor(this.#t, key, bindKey));
+            }
+            else {
+                this.#keys.set(key, new Accessor(this.#t, key, bindKey));
+            }
         }
     }
 
-    #bindControls(obj) {
+    #bindControls(config) {
         this.#control = new Map();
 
-        if (obj.startEdit) {
-            this.#setControl(obj, "startEdit");
+        if (config.control.startEdit) {
+            this.#setControl(config.control, "startEdit");
             defProp(this, "startEdit", { value: function() {
                 this.#showControl("startEdit", false);
                 this.#showControl("cancelEdit", true);
                 this.#showControl("submitEdit", true);
                 this.#showControl("remove", false);
-                this.#keys.forEach(acc=>{if (acc.editable) acc.startEdit()});
+                this.#keys.forEach(acc=>acc.startEdit?.());
                 // this.#el.addKeyListener("Enter", e=>this.submitEdit());
                 // this.#el.addKeyListener("Escape", e=>this.cancelEdit());
             }});
         }
 
-        if (obj.cancelEdit) {
-            this.#setControl(obj, "cancelEdit");
+        if (config.control.cancelEdit) {
+            this.#setControl(config.control, "cancelEdit");
             defProp(this, "cancelEdit", { value: function() {
                 this.#showControl("startEdit", true);
                 this.#showControl("cancelEdit", false);
                 this.#showControl("submitEdit", false);
                 this.#showControl("remove", true);
                 this.#keys.forEach(acc=>
-                    (acc.editable) ? acc.cancelEdit() : acc.updateUI()
+                    (acc.cancelEdit) ? acc.cancelEdit() : acc.updateUI()
                 );
             }});
         }
 
-        if (obj.submitEdit) {
-            this.#setControl(obj, "submitEdit");
+        if (config.control.submitEdit) {
+            this.#setControl(config.control, "submitEdit");
             defProp(this, "submitEdit", { value: function() {
-                this.#showControl("startEdit", true);
-                this.#showControl("cancelEdit", false);
-                this.#showControl("submitEdit", false);
-                this.#showControl("remove", true);
-                this.#keys.forEach(acc=>{if (acc.editable) acc.submitEdit()});
+                if (this.#allValid()) {
+                    this.#showControl("startEdit", true);
+                    this.#showControl("cancelEdit", false);
+                    this.#showControl("submitEdit", false);
+                    this.#showControl("remove", true);
+                    this.#keys.forEach(acc=>acc.submitEdit?.());
+                }
             }});
         }
 
-        if (obj.remove) {
-            this.#setControl(obj, "remove");
+        if (config.control.remove) {
+            this.#setControl(config.control, "remove");
             defProp(this, "remove", { value: function() {
+                const index = this.#t.index;
+                console.log("index?", index);
+                this.#parentData?.#keys.get(this.#parentKey)?.remove(index);
+                // console.log("remove", );
             }});
         }
     }
 
-    #bindHandlers(obj) {
-        // called by the Accessors in #keys to report changes
-        this.#setHandler(obj, "onChange");
-    }
-
-    // a handler only gets set if set in config object AND bound instance can
-    // respond to it
-    #setHandler(obj, handlerKey) {
-        const boundKey = obj[handlerKey];
-        if (isStr(boundKey) && isFn(this.#t[boundKey])) {
-            defProp(this, handlerKey, { value: function(accKey) {
-                this.#t[boundKey](accKey);
-            }});
-        }
+    #allValid() {
+        let valid = true;
+        this.#keys.forEach(acc=>{
+            if (acc.validateEdit) {
+                valid &&= acc.validateEdit();
+            }
+        });
+        return valid;
     }
 
     #setControl(obj, key) {
@@ -155,5 +180,21 @@ export default class DataUI {
 
     #showControl(key, showing) {
         this.#control.get(key).classList.toggle("hidden", !showing);
+    }
+
+    #bindHandlers(config) {
+        // called by the Accessors in #keys to report changes
+        this.#setHandler(config, "onChange");
+    }
+
+    // a handler only gets set if set in config object AND bound instance can
+    // respond to it
+    #setHandler(config, handlerKey) {
+        const boundKey = config[handlerKey];
+        if (isStr(boundKey) && isFn(this.#t[boundKey])) {
+            defProp(this, handlerKey, { value: function(accKey) {
+                this.#t[boundKey](accKey);
+            }});
+        }
     }
 }
