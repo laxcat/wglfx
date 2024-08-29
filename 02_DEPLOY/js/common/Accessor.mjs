@@ -4,6 +4,8 @@ import { confirmDialog } from "./util-ui.mjs"
 import { isEl, isArr, isNum, isStr, isFn, ifElFn } from "./util.mjs"
 
 /*
+    TODO: NOT UP TO DATE
+
     Setter/Getter object
     Sometimes called a binding, value link, pointer, reference, etc
 
@@ -21,10 +23,11 @@ import { isEl, isArr, isNum, isStr, isFn, ifElFn } from "./util.mjs"
         parent,     //  DataUI, to report back to larger data handler
         el,         //  HTMLElement, enables updateUI,setFromUI
         getStrKey,  //  String, if set, getStr uses obj[getStrKey]
-        editable,   //  Boolean, enables isDirty,startEdit,cancelEdit,
-                    //      validateEdit,submitEdit
 
         // "hardened" on init
+
+        editable,   //  Boolean, enables isDirty,startEdit,cancelEdit,
+                    //      validateEdit,submitEdit
 
         fromStr,    //  Fn that wraps input.value in submitEdit,
                     //      gets set to parseFloat if not set and limit set
@@ -42,14 +45,9 @@ export default class Accessor {
     #parent;        //  DataUI
     #el;            //  HTMLElement
     #getStrKey;     //  string, key used for getStr getter
-    // #editable;      //  creates ability to inject input into el, and update from
-    //                 //  user changes
 
     // calculated
     #inputEl;       //  an input (or other) html form element
-
-    // get isNumber() { return this.#type === Number; }
-    // get editable() { return this.#editable; }
 
     constructor(obj, key, config={}) {
         this.#obj = obj;
@@ -58,64 +56,14 @@ export default class Accessor {
         this.#parent    = config.parent     ?? null;
         this.#el        = config.el         ?? null;
         this.#getStrKey = config.getStrKey  ?? null;
-        // this.#editable  = config.editable   ?? false;
 
         this.#inputEl = null;
 
 
         if (isArr(config.type)) {
-            if (config.add) {
-                config.editable = true;
-            }
-            if (config.editable) {
-                defProp(this, "add", { value: function() {
-                    console.log("accessor add", this);
-                    const arr = this.#obj[this.#key];
-                    const type = config.type[0];
-                    const item = new type();
-                    arr.push(item);
-                    DataUI.bind(item, this.#el, {startEditOnInit:true})
-                        .set("index", arr.length - 1);
-                }});
-                defProp(this, "remove", { value: function(index) {
-                    console.log("accessor remove", this, index);
-                    confirmDialog(
-                        `Remove index ${index}?`,
-
-                        "Cancel",
-                        null,
-
-                        "Remove",
-                        () => {
-                            const arr = this.#obj[this.#key];
-                            const el = arr[index].dataUI.el;
-                            // console.log("!!!!", el, index);
-                            arr.splice(index, 1);
-                            el.remove();
-                            arr.forEach((c,i)=>c.index=i);
-                            this.#parent?.onChange?.(this.#key);
-                            // console.log("what do we have", this, this.#parent);
-
-
-                            // row.remove();
-                            // this.layout.forEach((c,i)=>c.index=i);
-                            // this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
-                        }
-                    );
-                }});
-            }
-            if (config.add) {
-                const el = ifElFn(config.add, this.#parent.el);
-                if (el === null) {
-                    throw new SyntaxError(`Could not get el for control add in ${key}.`);
-                }
-                el.addEventListener("click", e=>this.add());
-            }
-            console.log("array", config);
-
+            this.#setupArray(config);
         }
         else {
-            // console.log("normal", key);
             // build all the functions onto this Accessor
             this.#setupMain();
             // if el was provided, Accessor can handle syncing ui element too
@@ -270,6 +218,55 @@ export default class Accessor {
         return (limit.length === 2) ?
             `min="${limit[0]}" max="${limit[1]}"` :
             `min="${limit[0]}" max="${limit[1]}" step="${limit[2]}"`;
+    }
+
+    #setupArray(config) {
+        // set some defaults
+        // if addControl present, automatically turn on editable
+        if (config.addControl) {
+            config.editable = true;
+        }
+
+        if (config.editable) {
+            // create add function
+            defProp(this, "add", { value: function() {
+                const arr = this.#obj[this.#key];
+                const type = config.type[0];
+                const item = new type();
+                arr.push(item);
+                DataUI.bind(item, this.#el, {startEditOnInit:true, parentData:this.#parent, parentKey:this.#key})
+                    .set("index", arr.length - 1);
+            }});
+
+            // create remove function
+            defProp(this, "remove", { value: function(index) {
+                confirmDialog(
+                    `Remove index ${index}?`,
+
+                    "Cancel",
+                    null,
+
+                    "Remove",
+                    () => {
+                        const arr = this.#obj[this.#key];
+                        const el = arr[index].dataUI.el;
+                        arr.splice(index, 1);
+                        el.remove();
+                        arr.forEach((c,i)=>c.index=i);
+                        this.#parent?.onChange?.(this.#key);
+                    }
+                );
+            }});
+
+            // add click handler to add control
+            if (config.addControl) {
+                const el = ifElFn(config.addControl, this.#parent.el);
+                if (el === null) {
+                    throw new SyntaxError(`Could not get el for control add in ${key}.`);
+                }
+                el.addEventListener("click", e=>this.add());
+            }
+        }
     }
 }
 

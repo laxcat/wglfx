@@ -81,7 +81,7 @@ export default class Pass extends Serializable {
                 el: liEl=>liEl.querySelector("table.layout tbody"),
                 type: [VertexAttrib],
                 reorderable: true,
-                add: liEl=>liEl.querySelector("table.layout+button"),
+                addControl: liEl=>liEl.querySelector("table.layout+button"),
             },
         },
         control: {
