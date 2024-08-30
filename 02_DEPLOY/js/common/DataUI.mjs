@@ -117,6 +117,15 @@ export default class DataUI {
         this.#keys.get(key)?.set?.(value);
     }
 
+    setEnabled(enabled) {
+        if (enabled) {
+            this.#control.forEach(c=>c.removeAttribute("disabled"));
+        }
+        else {
+            this.#control.forEach(c=>c.setAttribute("disabled", true));
+        }
+    }
+
     isAttached() { return (this.#t && this.#t.dataUI === this); }
 
     attach() {

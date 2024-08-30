@@ -78,11 +78,14 @@ import { isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
     cancelEdit()
     validateEdit()
     submitEdit()
+    arr
     addStart()
     addCancel(dataUI)
     addSubmit(dataUI)
     removeChild(index)
-    onReorder(oldIndex, newIndex)
+    setChildEnabled(index,enabled)
+    setAllExceptEnabled(index,enabled)
+    onReorder(oldIndex,newIndex)
     reorderableConfig
     reIndex(startIndex)
 */
@@ -277,11 +280,17 @@ export default class Accessor {
             config.editable = true;
         }
 
+        // make a read-only getter to the array
+        defProp(this, "arr", { get: function() {
+            return this.#obj[this.#key];
+        }});
+
         if (config.editable) {
             const Type = config.type[0];
             const isReorderable = !!config.reorderable;
             // create startAdd function, which presnts a new item form
             defProp(this, "addStart", { value: function() {
+                this.setAllExceptEnabled(this.arr.length, false);
                 const item = new Type();
                 const bindConfig = {
                     startEditOnInit: true,
@@ -289,6 +298,7 @@ export default class Accessor {
                     parentKey: this.#key
                 };
                 if (isReorderable) {
+                    this.reorderableConfig.enable(false);
                     const indexKey = this.reorderableConfig.indexKey;
                     if (Object.getOwnPropertyDescriptor(Type.prototype, indexKey)) {
                         item[indexKey] = this.#obj[this.#key].length;
@@ -304,18 +314,22 @@ export default class Accessor {
             }});
 
             defProp(this, "addCancel", { value: function(dataUI) {
+                this.reorderableConfig?.enable(true);
                 dataUI.el.remove();
                 // addButton.classList.remove("hidden");
+                this.setAllExceptEnabled(this.arr.length, true);
             }});
 
             // create add function
             defProp(this, "addSubmit", { value: function(dataUI) {
-                const arr = this.#obj[this.#key];
-                makeReorderableItem(dataUI.el, this.reorderableConfig);
-                arr.push(dataUI.instance);
+                this.arr.push(dataUI.instance);
                 dataUI.attach();
-                // this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
+                if (isReorderable) {
+                    this.reorderableConfig.enable(true);
+                    makeReorderableItem(dataUI.el, this.reorderableConfig);
+                }
                 // addButton.classList.remove("hidden");
+                this.setAllExceptEnabled(this.arr.length, true);
                 this.#parent?.onAdd?.(this.#key);
                 this.#parent?.onChange?.(this.#key);
             }});
@@ -330,15 +344,29 @@ export default class Accessor {
 
                     "Remove",
                     () => {
-                        const arr = this.#obj[this.#key];
-                        const el = arr[index].dataUI.el;
-                        arr.splice(index, 1);
+                        const el = this.arr[index].dataUI.el;
+                        this.arr.splice(index, 1);
                         el.remove();
                         this.reIndex(index);
                         this.#parent?.onRemoveChild?.(this.#key, index);
                         this.#parent?.onChange?.(this.#key);
                     }
                 );
+            }});
+
+            // create enable/disable functions
+            defProp(this, "setChildEnabled", { value: function(index, enabled) {
+                console.log("setChildEnabled", index, enabled);
+                this.arr[index]?.dataUI?.setEnabled(enabled);
+            }});
+            defProp(this, "setAllExceptEnabled", { value: function(index, enabled) {
+                const e = this.arr.length;
+                let i = 0;
+                while (i < e) {
+                    if (i === index) continue;
+                    this.setChildEnabled(i, enabled);
+                    ++i;
+                }
             }});
 
             // add click handler to add control
@@ -424,6 +452,19 @@ export function makeReorderable(parentEl, options) {
         }
         return null;
     };
+
+    opt.enable = enabled=> {
+        if (enabled) {
+            parentEl.children.forEach(childEl=>{
+                childEl.setAttribute("draggable", true);
+            });
+        }
+        else {
+            parentEl.children.forEach(childEl=>{
+                childEl.removeAttribute("draggable");
+            });
+        }
+    }
 
     // for each child of parentEl
     parentEl.children.forEach(childEl => {
