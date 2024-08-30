@@ -95,6 +95,9 @@ button:has(svg.edit) {
     }
 }
 
+*[draggable] {
+    cursor: move;
+}
 
 /* UI GENERAL RULES ********************************************************* */
 #ui {
@@ -261,8 +264,6 @@ button:has(svg.edit) {
             border-collapse: collapse;
 
             tr {
-                cursor: move;
-
                 --row-size: 12px;
                 --row-padding: 1px;
                 --row-reorder-insert-color: #fff;

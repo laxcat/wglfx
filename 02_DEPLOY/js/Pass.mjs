@@ -156,6 +156,7 @@ export default class Pass extends Serializable {
 
         // add clear color handler
         const colorEl = this.el.querySelector(`input.color`);
+        colorEl.value = "#"+this.clearColor.toRGBAStr();
         colorEl.addEventListener("input", e => {
             this.clearColor.set(colorEl.value);
             this.el.dispatchEvent(Project.makeChangeEvent("passClearColor"));

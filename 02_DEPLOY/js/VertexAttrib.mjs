@@ -18,14 +18,6 @@ export default class VertexAttrib extends Serializable {
         size: undefined,    // number of compoenents
     };
 
-    static REORDER_EVENT = "vertexattribreorder";
-    static makeReorderEvent(oldIndex, newIndex) {
-        return new CustomEvent(VertexAttrib.REORDER_EVENT, {
-            detail: {oldIndex,newIndex},
-            bubbles: true
-        });
-    }
-
     static templates = [
         {key:"", size:3},
     ];
