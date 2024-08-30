@@ -1,11 +1,10 @@
+import App from "./App.mjs"
 import DataUI from "./common/DataUI.mjs"
 import Project from "./Project.mjs"
 import Serializable from "./common/Serializable.mjs"
 import SVG from "./common/SVG.mjs"
 import { isNum, getSet } from "./common/util.mjs"
-import { makeRowForm } from "./common/util-ui.mjs"
 
-import App from "./App.mjs"
 
 /*
     Vertex attrib information for each attrib in VertexLayout.
@@ -53,11 +52,13 @@ export default class VertexAttrib extends Serializable {
         },
         control: {
             startEdit:  trEl=>trEl.children[3].children[0],
-            remove:     trEl=>trEl.children[3].children[1],
+            removeSelf: trEl=>trEl.children[3].children[1],
             cancelEdit: trEl=>trEl.children[3].children[2],
             submitEdit: trEl=>trEl.children[3].children[3],
         },
-        onChange: "onChangeData",
+        callback: {
+            onChange: "onChangeData",
+        }
     };
 
     set index(value) {
@@ -80,62 +81,62 @@ export default class VertexAttrib extends Serializable {
     get el() { return this.dataUI?.el; }
 
     onChangeData(key) {
-        this.el.dispatchEvent(Project.makeChangeEvent("passLayout"));
+        this.el.dispatchEvent(Project.makeChangeEvent(`pass.layout[${this.index}].${key}`));
     }
 
-    createUI(parentEl) {
-        return DataUI.bind(this, parentEl);
-        // this.el = parentEl.appendHTML(dataUI.html);
-    }
+    // createUI(parentEl) {
+    //     return DataUI.bind(this, parentEl);
+    //     // this.el = parentEl.appendHTML(dataUI.html);
+    // }
 
-    createUI_old(parentEl) {
-        this.el = parentEl.appendHTML(
-            `
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td class="noDrag">
-                    <button>${SVG.get("edit")}</button>
-                    <button>🚫</button>
-                    <button>×</button>
-                    <button>✓</button>
-                </td>
-            </tr>
-            `
-        );
-        const buttonEl = (el,i)=>el.children[3].children[i];
-        const formConfig = makeRowForm(this.el, [
-            // key
-            {
-                slot: el=>el.children[1],
-                prop: getSet(this, "key"),
-                pattern: "[a-z]{3,12}",
-                unique: true,
-            },
-            // size
-            {
-                slot: el=>el.children[2],
-                prop: getSet(this, "size", "sizeRowStr"),
-                limit: [1,4],
-            },
-        ], {
-            rows: ()=>parentEl.children,
-            unique: true,
-            onChanged: (el,changed)=>{
-                el.dispatchEvent(Project.makeChangeEvent("passLayout"));
-            },
-            showFormEl: el=>buttonEl(el,0),
-            removeEl:   el=>buttonEl(el,1),
-            cancelEl:   el=>buttonEl(el,2),
-            submitEl:   el=>buttonEl(el,3),
-        });
+    // createUI_old(parentEl) {
+    //     this.el = parentEl.appendHTML(
+    //         `
+    //         <tr>
+    //             <td></td>
+    //             <td></td>
+    //             <td></td>
+    //             <td class="noDrag">
+    //                 <button>${SVG.get("edit")}</button>
+    //                 <button>🚫</button>
+    //                 <button>×</button>
+    //                 <button>✓</button>
+    //             </td>
+    //         </tr>
+    //         `
+    //     );
+    //     const buttonEl = (el,i)=>el.children[3].children[i];
+    //     const formConfig = makeRowForm(this.el, [
+    //         // key
+    //         {
+    //             slot: el=>el.children[1],
+    //             prop: getSet(this, "key"),
+    //             pattern: "[a-z]{3,12}",
+    //             unique: true,
+    //         },
+    //         // size
+    //         {
+    //             slot: el=>el.children[2],
+    //             prop: getSet(this, "size", "sizeRowStr"),
+    //             limit: [1,4],
+    //         },
+    //     ], {
+    //         rows: ()=>parentEl.children,
+    //         unique: true,
+    //         onChanged: (el,changed)=>{
+    //             el.dispatchEvent(Project.makeChangeEvent("passLayout"));
+    //         },
+    //         showFormEl: el=>buttonEl(el,0),
+    //         removeEl:   el=>buttonEl(el,1),
+    //         cancelEl:   el=>buttonEl(el,2),
+    //         submitEl:   el=>buttonEl(el,3),
+    //     });
 
-        buttonEl(this.el,1).addEventListener("click", e=>{
-            if (formConfig.onRemove) formConfig.onRemove(this.el);
-            // console.log("delete me!!!!");
-        });
+    //     buttonEl(this.el,1).addEventListener("click", e=>{
+    //         if (formConfig.onRemove) formConfig.onRemove(this.el);
+    //         // console.log("delete me!!!!");
+    //     });
 
-        return formConfig;
-    }
+    //     return formConfig;
+    // }
 }

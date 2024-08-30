@@ -15,8 +15,9 @@ export function extd(builtIn, propName, options) {
     Object.defineProperty(builtIn, propName, options);
 }
 
+// replace:
 // extd(Foo.prototype, "newKey", {value:0, writeable:true});
-// replace w shortcut:
+// w/ shortcut:
 // extdProto(Foo, "newKey", 0, true);
 export function extdProto(builtIn, propName, propValue, writeable=false) {
     extd(builtIn.prototype, propName, {
@@ -82,7 +83,11 @@ extdProto(Array, "last", function() {
 });
 
 /*
-    Find item in Array where item[keyProp] === key.
+    Find item in Array by key
+    Designed to have maximum fallback, failing only if the array is empty.
+
+    RULES:
+    Prioritiezes finding item where item[keyProp] === key.
     key can be anything not nullish, including 0.
     If not found, returns item where item[defaultProp] is not falsy. (as in {default: true})
     If not found, returns item where item[keyProp] === defaultProp. (as in {key: "default"})
@@ -92,17 +97,18 @@ extdProto(Array, "last", function() {
     Example:
 
     const a = [
-        {key: "a", data: "stuff", default: true},
+        {key: "a", data: "stuff"},
         {key: "b", data: "junk"},
         {key: 0,   data: "things"},
-        {key: 7,   data: "garbage"},
+        {key: 7,   data: "bobbles", default: true},
     ];
-    console.log(a.findByKeyOrDefault()    );  // returns a[0]
-    console.log(a.findByKeyOrDefault("b") );  // returns a[1]
-    console.log(a.findByKeyOrDefault(0)   );  // returns a[2]
-    console.log(a.findByKeyOrDefault("7") );  // no strict match, returns default a[0]
-    delete a[0].default;
-    console.log(a.findByKeyOrDefault("7") );  // no strict match, no default, returns first item a[0]
+    console.log(a.findByKeyOrDefault()    );    // returns a[3]
+    console.log(a.findByKeyOrDefault("b") );    // returns a[1]
+    console.log(a.findByKeyOrDefault(0)   );    // returns a[2]
+    console.log(a.findByKeyOrDefault("7") );    // no strict match, returns a[0]
+    delete a[3].default;
+    console.log(a.findByKeyOrDefault("7") );    // no strict match, no default,
+                                                // returns first item a[0]
 */
 extdProto(Array, "findByKeyOrDefault", function(key, keyProp="key", defaultProp="default") {
     // shortcut quickly if array is empty

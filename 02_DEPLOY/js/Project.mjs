@@ -150,7 +150,7 @@ export default class Project extends Serializable {
 
         projEl.addEventListener(Project.CHANGE_EVENT, e => {
             if (this.#listenForChanges) {
-                // console.log(e);
+                console.log("Project changed", e.detail);
                 this.timeChanged = new Date();
                 App.projectList.updateStatusUI();
             }

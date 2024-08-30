@@ -98,16 +98,32 @@ export default class Pass extends Serializable {
             },
         },
         control: {
-            reset: liEl=>liEl.querySelector("button.action"),
+            // reset: liEl=>liEl.querySelector("button.action"),
         },
-        onChange: "onChangeData",
+        callback: {
+            onChange: "onChangeData",
+            onReorder: "onReorderData",
+            onRemoveChild: "onRemoveChildData",
+        }
     };
 
     get el() { return this.dataUI?.el; }
 
     onChangeData(key) {
         // console.log("onChangeData", key);
-        this.el.dispatchEvent(Project.makeChangeEvent("pass."+key));
+        if (key !== "layout") {
+            this.el.dispatchEvent(Project.makeChangeEvent("pass."+key));
+        }
+    }
+
+    onReorderData(key, oldIndex, newIndex) {
+        // console.log("onChangeData", key);
+        this.el.dispatchEvent(Project.makeChangeEvent(`pass.${key}[${oldIndex}→${newIndex}]`));
+    }
+
+    onRemoveChildData(key, index) {
+        // console.log("onChangeData", key);
+        this.el.dispatchEvent(Project.makeChangeEvent(`pass.${key}[${index}] removed`));
     }
 
     destroy() {
@@ -149,56 +165,6 @@ export default class Pass extends Serializable {
         });
         Coloris.wrap(colorEl);
         Coloris(colorEl);
-
-        // create attributes list (layout)
-        // const layoutEl = this.el.querySelector("table.layout tbody");
-        // const layoutFormConfigs = this.layout.map(attrib => attrib.createUI(layoutEl));
-        // // make rows drag-and-drop reorderable
-        // const reorderableConfig = makeReorderable(layoutEl, {
-        //     onReorder: (oldIndex, newIndex) => {
-        //         const oldAttrib = this.layout.splice(oldIndex, 1)[0];
-        //         this.layout.splice(newIndex, 0, oldAttrib);
-        //         this.layout.forEach((child, index) => child.index = index);
-        //         this.el.dispatchEvent(Project.makeChangeEvent("layoutReorder"));
-        //     }
-        // });
-        // const addButton = this.el.querySelector("table.layout+button");
-        // addButton.addEventListener("click", e=>{
-        //     const newAttrib = new VertexAttrib({index:this.layout.length,key:"",size:3})
-        //     const addRowConfig = newAttrib.createUI(layoutEl);
-        //     addRowConfig.showForm();
-        //     addRowConfig.onCancel = row=>{
-        //         addRowConfig.row.remove();
-        //         addButton.classList.remove("hidden");
-        //     };
-        //     addRowConfig.onChange = row=>{
-        //         makeReorderableItem(row, reorderableConfig);
-        //         this.layout.push(newAttrib);
-        //         this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
-        //         addButton.classList.remove("hidden");
-        //     };
-        //     addButton.classList.add("hidden");
-        // });
-        // layoutFormConfigs.forEach(config=>{
-        //     config.onRemove = row=>{
-        //         const index = row.elementIndex();
-        //         const attrib = this.layout[index];
-        //         confirmDialog(
-        //             `Remove vertex attribute “${attrib.key}”?`,
-
-        //             "Cancel",
-        //             null,
-
-        //             "Remove Attribute",
-        //             () => {
-        //                 this.layout.splice(index, 1);
-        //                 row.remove();
-        //                 this.layout.forEach((c,i)=>c.index=i);
-        //                 this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
-        //             }
-        //         );
-        //     };
-        // });
 
         // create mesh list
         const meshesEl = this.el.querySelector("ul.meshes");

@@ -6,23 +6,27 @@ import { isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
 /*
     TODO: NOT UP TO DATE
 
-    Setter/Getter object
-    Sometimes called a binding, value link, pointer, reference, etc
+    Accessor is a setter/getter object.
+    Sometimes called a binding, value link...basically a pointer or reference.
+
+    At its most basic, just takes a obj and a key, and creates set, get, and
+    getStr functions to read/write to that value.
 
     Additionally can optionally hold a reference to HTMLElement, adding ability
     to update to/from ui.
 
-    Additionally can optionally be "editable", swapping contents of HTMLElement
-    out with an input, validating, setting value back with setter on submit,
-    etc.
+    Additionally can be set as "editable", adding the ability to provide input
+    elements to the user, basic validating, setting value back with setter on
+    submit, etc.
 
     Accessors can be array-like. If so, they expect the bound property to be
-    an array of an expected type. Getters and setters become meaningless and
-    the accessor only modifies the bound array directly. Only meaningful if
-    editable and/or reorderable are set. To be clear, in this mode, this
-    Accessor instance manages the ENTIRE ARRAY. Each item in the array can
-    (and must, currently) have its own dataUI. Any Accessor binds a property to
-    an HTML node, and an array-like
+    an array of an expected type. get() and set() become meaningless and the
+    accessor only modifies the bound array directly. Only meaningful if editable
+    and/or reorderable are set. To be clear, in this mode, this Accessor
+    instance manages the ENTIRE ARRAY. Each item in the array can (and must,
+    currently) have its own dataUI. Any Accessor binds a property to an HTML
+    node, and an array-like is no different; the entire array is bound to the
+    one HTML element.
 
     Takes a config parameter with the following optional keys supported:
     {
@@ -36,19 +40,22 @@ import { isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
 
         editable,   //  Boolean,
                     //  if array-like, enables:
-                    //      add,remove
+                    //      addStart,addCancel,addSubmit,removeChild
                     //  if normal string/number value, enables:
-                    //      isDirty,startEdit,cancelEdit,validateEdit,submitEdit
+                    //      setFromStr,isDirty,startEdit,cancelEdit,
+                    //      validateEdit,submitEdit
 
-        type        // suported:
-                        [TypeWithDataUI], array-like,
+        type        //  suported:
+                        • [TypeWithDataUI], array-like,
                                             editable and/or reorderable must be
                                             set for any fns to get enabled
-                        TODO: TypeWithDataUI (we'll need this for other systems)
-                        undefined, normal string/number value
+                        • TODO: TypeWithDataUI (we'll need this for other systems)
+                        • undefined, normal string/number value
 
-        reorderable //  if array-like, enables:
-                            onReorder,reorderableConfig
+        reorderable //  Expects options object to pass to makeReorderable (see
+                    //      below). Can also be truthy if no options needed.
+                        if array-like, enables:
+                            onReorder,reorderableConfig,reIndex
 
         addControl  //  if set, automatically sets editable to be true
                             does nothing if not array-like
@@ -59,6 +66,25 @@ import { isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
                     //      see #getMinMaxStepStr below for value rules
         pattern,    //  String, set to input attribute, used in validation msg
     }
+
+    Complete list of possibly added properties:
+    get()
+    set(value)
+    getStr()
+    updateUI()
+    setFromStr(str)
+    isDirty()
+    startEdit(allDirty=false)
+    cancelEdit()
+    validateEdit()
+    submitEdit()
+    addStart()
+    addCancel(dataUI)
+    addSubmit(dataUI)
+    removeChild(index)
+    onReorder(oldIndex, newIndex)
+    reorderableConfig
+    reIndex(startIndex)
 */
 export default class Accessor {
     // required
@@ -83,26 +109,22 @@ export default class Accessor {
 
         this.#inputEl = null;
 
-
+        // build all the functions onto this Accessor
+        // array-like property
         if (isArr(config.type)) {
             this.#setupArray(config);
         }
+        // normal string/number property
         else {
-            // build all the functions onto this Accessor
-            this.#setupMain();
-            // if el was provided, Accessor can handle syncing ui element too
-            if (isEl(this.#el)) {
-                this.#setupUI(config);
-                // if editable there a bunch more setters to set
-                if (config.editable) {
-                    this.#setupEditable(config);
-                }
-            }
+            this.#setupMain(config);
+            this.#setupUI(config);
+            this.#setupEditable(config);
         }
+        Object.preventExtensions(this);
     }
 
     // setup basic getters/setters
-    #setupMain() {
+    #setupMain(config) {
         defProp(this, "get", { value: function() {
             // console.log("did get", this.#obj[this.#key], this.#obj, this.#key);
             return this.#obj[this.#key];
@@ -119,8 +141,10 @@ export default class Accessor {
         }});
     }
 
-    // setup ui enabled functions
+    // setup ui enabled functions if el is set
     #setupUI(config) {
+        if (!isEl(this.#el)) return;
+
         // update the ui with the this.getStr()
         defProp(this, "updateUI", { value: function() {
             this.#el.innerHTML = this.getStr();
@@ -128,6 +152,8 @@ export default class Accessor {
     }
 
     #setupEditable(config) {
+        if (!config.editable) return;
+
         // setup minMaxStepStr, used in startEdit
         // setup patternStr, used in startEdit
         // setup fromStr, used to determine how setFromStr is configured
@@ -168,13 +194,13 @@ export default class Accessor {
         }});
 
         // creates the input in el
-        defProp(this, "startEdit", { value: function() {
+        defProp(this, "startEdit", { value: function(allDirty=false) {
             this.#el.innerHTML = "";
             this.#inputEl = this.#el.appendHTML(
                 `<input
                     type="${inputType}"
                     value="${this.get()}"
-                    data-prev-value="${this.get()}"
+                    data-prev-value="${allDirty?"":this.get()}"
                     required
                     ${patternStr}
                     ${minMaxStepStr}
@@ -182,6 +208,7 @@ export default class Accessor {
             );
             this.#inputEl.addKeyListener("Enter", e=>this.#parent?.submitEdit());
             this.#inputEl.addKeyListener("Escape", e=>this.#parent?.cancelEdit());
+
         }});
 
         // clears the input, populates el with getStr
@@ -210,7 +237,6 @@ export default class Accessor {
             if (this.isDirty) {
                 // this.set(new (this.#type)(this.#inputEl.value));
                 this.setFromStr(this.#inputEl.value);
-                this.#parent?.onChange?.(this.#key);
             }
             this.updateUI();
         }});
@@ -252,33 +278,50 @@ export default class Accessor {
         }
 
         if (config.editable) {
-            // create add function
-            defProp(this, "add", { value: function() {
-                const arr = this.#obj[this.#key];
-                const type = config.type[0];
-                const item = new type();
-                arr.push(item);
+            const Type = config.type[0];
+            const isReorderable = !!config.reorderable;
+            // create startAdd function, which presnts a new item form
+            defProp(this, "addStart", { value: function() {
+                const item = new Type();
                 const bindConfig = {
                     startEditOnInit: true,
                     parentData: this.#parent,
                     parentKey: this.#key
                 };
-                if (config.reorderable) {
-                    console.log("item.dataUI", item.dataUI);
-                    // bindConfig.
-                    // this.reorderableConfig defined in reorderable below
-                    // makeReorderableItem(dataUI.el, this.reorderableConfig);
+                if (isReorderable) {
+                    const indexKey = this.reorderableConfig.indexKey;
+                    if (Object.getOwnPropertyDescriptor(Type.prototype, indexKey)) {
+                        item[indexKey] = this.#obj[this.#key].length;
+                    }
+
+                    bindConfig.tempCallback = {
+                        onCancelEdit: this.addCancel.bind(this),
+                        onSubmitEdit: this.addSubmit.bind(this),
+                    };
                 }
-                DataUI.bind(item, this.#el, bindConfig)
-                    .set("index", arr.length - 1);
+                // create dataUI
+                DataUI.create(item, this.#el, bindConfig);
+            }});
 
+            defProp(this, "addCancel", { value: function(dataUI) {
+                dataUI.el.remove();
+                // addButton.classList.remove("hidden");
+            }});
 
-
-
+            // create add function
+            defProp(this, "addSubmit", { value: function(dataUI) {
+                const arr = this.#obj[this.#key];
+                makeReorderableItem(dataUI.el, this.reorderableConfig);
+                arr.push(dataUI.instance);
+                dataUI.attach();
+                // this.el.dispatchEvent(Project.makeChangeEvent("passAddAttrib"));
+                // addButton.classList.remove("hidden");
+                this.#parent?.onAdd?.(this.#key);
+                this.#parent?.onChange?.(this.#key);
             }});
 
             // create remove function
-            defProp(this, "remove", { value: function(index) {
+            defProp(this, "removeChild", { value: function(index) {
                 confirmDialog(
                     `Remove index ${index}?`,
 
@@ -291,7 +334,8 @@ export default class Accessor {
                         const el = arr[index].dataUI.el;
                         arr.splice(index, 1);
                         el.remove();
-                        arr.forEach((c,i)=>c.index=i);
+                        this.reIndex(index);
+                        this.#parent?.onRemoveChild?.(this.#key, index);
                         this.#parent?.onChange?.(this.#key);
                     }
                 );
@@ -303,45 +347,63 @@ export default class Accessor {
                 if (el === null) {
                     throw new SyntaxError(`Could not get el for control add in ${key}.`);
                 }
-                el.addEventListener("click", e=>this.add());
+                el.addEventListener("click", e=>this.addStart());
             }
         }
 
         // configure reorderable
         if (config.reorderable) {
+            // config.reorderable cant be anything truthy, but we support a
+            // options object passed into makeReorderable
+            if (!isPOJO(config.reorderable)) {
+                config.reorderable = {};
+            }
+
             // create onReorder function
             defProp(this, "onReorder", { value: function(oldIndex, newIndex) {
                 const arr = this.#obj[this.#key];
                 const oldItem = arr.splice(oldIndex, 1)[0];
                 arr.splice(newIndex, 0, oldItem);
-                arr.forEach((c,i)=>c.index=i);
+                this.reIndex();
+                this.#parent?.onReorder?.(this.#key, oldIndex, newIndex);
                 this.#parent?.onChange?.(this.#key);
             }});
 
-            // might be anything truthy, but we support a options object passed
-            // into makeReorderable
-            if (!isPOJO(config.reorderable)) {
-                config.reorderable = {};
-            }
-
-            // create reorderableConfig getter, and make el's children reorderable
-            // simply set onReorder to this accessor's "onReorder" callback
+            // set onReorder callback
             config.reorderable.onReorder = this.onReorder.bind(this);
+            // create reorderableConfig getter, and make reorderable
             const reorderableConfig = makeReorderable(this.#el, config.reorderable);
             defProp(this, "reorderableConfig", {get:()=>reorderableConfig});
+
+            // create reIndex function
+            defProp(this, "reIndex", { value: function(startIndex=0) {
+                const arr = this.#obj[this.#key];
+                const indexKey = this.reorderableConfig.indexKey;
+                const e = arr.length;
+                let i = startIndex;
+                while (i < e) {
+                    arr[i][indexKey] = i;
+                    ++i;
+                }
+                this.#parent?.onReIndex?.(this.#key);
+            }});
         }
     }
 }
 
 // Make parentEl's children reorderable using HTML5's drag/drop API.
 // see defaultOptions. override anything with options.
-// Exportable as independent function
+// Operates directly on html without underlying data array. Uses html classes to
+// maintain state.
+// Exportable as independent function.
 export function makeReorderable(parentEl, options) {
     const defaultOptions = {
         // called on drop. override to handle data
         onReorder: (oldIndex,newIndex)=>{},
         // given this xy in the drop target size, should apply beforeClass?
         isBefore: (x,y,w,h)=>(y / h < .5),
+        // index key on item types
+        indexKey: "index",
         // these classes get applied. set css accordingly.
         hoverClass: "hover",
         draggingClass: "dragging",
@@ -465,16 +527,3 @@ export function makeReorderableItem(childEl, opt) {
         }
     });
 }
-
-
-
-
-        // couldn't think of a single use case for this.
-        // how would innerHTML ever get modified if Accessor didn't set it?
-        // maybe useful when dealing with other systems?
-        // killing for now. -tm
-        // // update the value FROM el.innerHTML. probably pretty rare
-        // defProp(this, "setFromUI", { value: function() {
-        //     // this.set(new (this.#type)(this.#el.innerHTML));
-        //     this.setFromStr(this.#el.innerHTML);
-        // }});

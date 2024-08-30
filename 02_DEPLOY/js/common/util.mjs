@@ -5,9 +5,9 @@
 // VARIABLE  "TYPE" DETECTION ----------------------------------------------- //
 
 // https://masteringjs.io/tutorials/fundamentals/pojo
-// "plain old javascript object"
+// is "plain old javascript object"?
 export function isPOJO(arg) {
-    if (arg == null || typeof arg !== 'object') {
+    if (arg == null || typeof arg !== "object") {
         return false;
     }
     const proto = Object.getPrototypeOf(arg);
