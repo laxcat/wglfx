@@ -1,7 +1,7 @@
 import { defProp } from "./common-extension.mjs"
 import DataUI from "./DataUI.mjs"
 import { confirmDialog } from "./util-ui.mjs"
-import { isEl, isArr, isNum, isStr, isFn, ifElFn } from "./util.mjs"
+import { isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
 
 /*
     TODO: NOT UP TO DATE
@@ -16,6 +16,14 @@ import { isEl, isArr, isNum, isStr, isFn, ifElFn } from "./util.mjs"
     out with an input, validating, setting value back with setter on submit,
     etc.
 
+    Accessors can be array-like. If so, they expect the bound property to be
+    an array of an expected type. Getters and setters become meaningless and
+    the accessor only modifies the bound array directly. Only meaningful if
+    editable and/or reorderable are set. To be clear, in this mode, this
+    Accessor instance manages the ENTIRE ARRAY. Each item in the array can
+    (and must, currently) have its own dataUI. Any Accessor binds a property to
+    an HTML node, and an array-like
+
     Takes a config parameter with the following optional keys supported:
     {
         // stored for live lookup later
@@ -26,8 +34,24 @@ import { isEl, isArr, isNum, isStr, isFn, ifElFn } from "./util.mjs"
 
         // "hardened" on init
 
-        editable,   //  Boolean, enables isDirty,startEdit,cancelEdit,
-                    //      validateEdit,submitEdit
+        editable,   //  Boolean,
+                    //  if array-like, enables:
+                    //      add,remove
+                    //  if normal string/number value, enables:
+                    //      isDirty,startEdit,cancelEdit,validateEdit,submitEdit
+
+        type        // suported:
+                        [TypeWithDataUI], array-like,
+                                            editable and/or reorderable must be
+                                            set for any fns to get enabled
+                        TODO: TypeWithDataUI (we'll need this for other systems)
+                        undefined, normal string/number value
+
+        reorderable //  if array-like, enables:
+                            onReorder,reorderableConfig
+
+        addControl  //  if set, automatically sets editable to be true
+                            does nothing if not array-like
 
         fromStr,    //  Fn that wraps input.value in submitEdit,
                     //      gets set to parseFloat if not set and limit set
@@ -234,8 +258,23 @@ export default class Accessor {
                 const type = config.type[0];
                 const item = new type();
                 arr.push(item);
-                DataUI.bind(item, this.#el, {startEditOnInit:true, parentData:this.#parent, parentKey:this.#key})
+                const bindConfig = {
+                    startEditOnInit: true,
+                    parentData: this.#parent,
+                    parentKey: this.#key
+                };
+                if (config.reorderable) {
+                    console.log("item.dataUI", item.dataUI);
+                    // bindConfig.
+                    // this.reorderableConfig defined in reorderable below
+                    // makeReorderableItem(dataUI.el, this.reorderableConfig);
+                }
+                DataUI.bind(item, this.#el, bindConfig)
                     .set("index", arr.length - 1);
+
+
+
+
             }});
 
             // create remove function
@@ -267,9 +306,165 @@ export default class Accessor {
                 el.addEventListener("click", e=>this.add());
             }
         }
+
+        // configure reorderable
+        if (config.reorderable) {
+            // create onReorder function
+            defProp(this, "onReorder", { value: function(oldIndex, newIndex) {
+                const arr = this.#obj[this.#key];
+                const oldItem = arr.splice(oldIndex, 1)[0];
+                arr.splice(newIndex, 0, oldItem);
+                arr.forEach((c,i)=>c.index=i);
+                this.#parent?.onChange?.(this.#key);
+            }});
+
+            // might be anything truthy, but we support a options object passed
+            // into makeReorderable
+            if (!isPOJO(config.reorderable)) {
+                config.reorderable = {};
+            }
+
+            // create reorderableConfig getter, and make el's children reorderable
+            // simply set onReorder to this accessor's "onReorder" callback
+            config.reorderable.onReorder = this.onReorder.bind(this);
+            const reorderableConfig = makeReorderable(this.#el, config.reorderable);
+            defProp(this, "reorderableConfig", {get:()=>reorderableConfig});
+        }
     }
 }
 
+// Make parentEl's children reorderable using HTML5's drag/drop API.
+// see defaultOptions. override anything with options.
+// Exportable as independent function
+export function makeReorderable(parentEl, options) {
+    const defaultOptions = {
+        // called on drop. override to handle data
+        onReorder: (oldIndex,newIndex)=>{},
+        // given this xy in the drop target size, should apply beforeClass?
+        isBefore: (x,y,w,h)=>(y / h < .5),
+        // these classes get applied. set css accordingly.
+        hoverClass: "hover",
+        draggingClass: "dragging",
+        draggingHoverClass: "draggingHover",
+        beforeClass: "before",
+        afterClass: "after",
+        noDragClass: "noDrag",
+    }
+    const opt = {...defaultOptions, ...options};
+
+    // dragging element can be found quicker by just looking at known draggable children
+    opt.getDraggingEl = ()=>{
+        let i = parentEl.children.length;
+        while (i--) {
+            if (parentEl.children[i].classList.contains(opt.draggingClass)) {
+                return parentEl.children[i];
+            }
+        }
+        return null;
+    };
+
+    // for each child of parentEl
+    parentEl.children.forEach(childEl => {
+        makeReorderableItem(childEl, opt);
+    });
+
+    return opt;
+}
+
+export function makeReorderableItem(childEl, opt) {
+    // set the draggable attribute on html element
+    childEl.setAttribute("draggable", true);
+
+    // add listeners to add and remove classes on the relevant children
+    const hoverClasses = [
+        opt.draggingHoverClass,
+        opt.beforeClass,
+        opt.afterClass,
+        opt.hoverClass,
+    ];
+    childEl.addEventListener("mouseenter",
+        e => childEl.classList.add(opt.hoverClass)
+    );
+    childEl.addEventListener("dragenter",
+        e => childEl.classList.add(opt.draggingHoverClass)
+    );
+    childEl.addEventListener("mouseleave",
+        e => childEl.classList.remove(...hoverClasses)
+    );
+    childEl.addEventListener("dragleave",
+        e => childEl.classList.remove(...hoverClasses)
+    );
+    childEl.addEventListener("dragend",
+        e => childEl.classList.remove(opt.draggingClass)
+    );
+
+    // start drag, but only if not over a noDrag child
+    childEl.addEventListener("dragstart",  e => {
+        // check all "noDrag" children for dead zones and cancel if found
+        const noDragEls = e.target.querySelectorAll("."+opt.noDragClass);
+        if (noDragEls) {
+            const mez = e.target.getBoundingClientRect();
+            const x = mez.x + e.offsetX;
+            const y = mez.y + e.offsetY;
+            const end = noDragEls.length;
+            let i = 0;
+            while (i < end) {
+                const dz = noDragEls[i].getBoundingClientRect();
+                // if withing deadzone bounds, cancel the drag
+                if (dz.x < x && x < dz.x + dz.width &&
+                    dz.y < y && y < dz.y + dz.height) {
+                    e.preventDefault();
+                    return;
+                }
+                ++i;
+            }
+        }
+        // normal operation, just adding a class
+        childEl.classList.add(opt.draggingClass);
+    });
+
+    // called while dragging element over target... decides the before/after classes
+    childEl.addEventListener("dragover", e => {
+        e.preventDefault();
+
+        const dragBounds = childEl.getBoundingClientRect();
+        const targBounds = e.target.getBoundingClientRect();
+        const x = targBounds.x - dragBounds.x + e.offsetX;
+        const y = targBounds.y - dragBounds.y + e.offsetY;
+        const before = opt.isBefore(x, y, dragBounds.width, dragBounds.height);
+
+        childEl.classList.add(opt.draggingHoverClass);
+        childEl.classList.toggle(opt.beforeClass, before);
+        childEl.classList.toggle(opt.afterClass, !before);
+    });
+
+    // moves the html element and calls onReorder callback
+    // doesn't get called if user cancels drop
+    childEl.addEventListener("drop", e => {
+        // prevent drop default and remove all draggingHover classes
+        e.preventDefault();
+        const isBefore = childEl.classList.contains(opt.beforeClass);
+        childEl.classList.remove(opt.draggingHover, opt.beforeClass, opt.afterClass);
+        // dropping the dragged on itself, do nothing
+        const draggingEl = opt.getDraggingEl();
+        if (childEl === draggingEl) {
+            return;
+        }
+        // move the draggingEl to its new location
+        const oldIndex = draggingEl.elementIndex();
+        if (isBefore) {
+            childEl.before(draggingEl);
+        }
+        else {
+            childEl.after(draggingEl);
+        }
+        const newIndex = draggingEl.elementIndex();
+        // only dispatch if different
+        if (oldIndex !== newIndex) {
+            opt.onReorder(oldIndex, newIndex);
+        }
+    });
+}
 
 
 

@@ -3,8 +3,6 @@ import DataUI from "./common/DataUI.mjs"
 import Color from "./common/Color.mjs"
 import {
     parse as uiParse,
-    makeReorderable,
-    makeReorderableItem,
     confirmDialog
     } from "./common/util-ui.mjs"
 
@@ -22,6 +20,21 @@ import VertexAttrib from "./VertexAttrib.mjs"
 */
 class PassColor extends Color {
     serialize() { return this.toRGBAStr(); }
+}
+
+class Temp {
+    dataUI;
+    static dataUI = {
+        html: `
+            <tr>
+                <td><!-- key   --></td>
+            </tr>`,
+        bind: {
+            key:   {el:trEl=>trEl.children[0]},
+        },
+        control: {
+        },
+    };
 }
 
 export default class Pass extends Serializable {
@@ -72,7 +85,7 @@ export default class Pass extends Serializable {
                     <label class="collapsible">Meshes</label>
                     <ul class="meshes"></ul>
 
-                    <button class="action">Reset Pass To Default</button>
+                    <!--<button class="action">Reset Pass To Default</button>-->
                 </div>
             </li>
             `,
@@ -94,7 +107,7 @@ export default class Pass extends Serializable {
 
     onChangeData(key) {
         // console.log("onChangeData", key);
-        this.el.dispatchEvent(Project.makeChangeEvent("pass"+key));
+        this.el.dispatchEvent(Project.makeChangeEvent("pass."+key));
     }
 
     destroy() {
@@ -123,43 +136,6 @@ export default class Pass extends Serializable {
     }
 
     createUI(parentEl) {
-
-        // this.el = parentEl.appendHTML(`<li></li>`);
-    //     this.#fillUI();
-    // }
-
-    // // resetUI() {
-    // //     // clear contents and listeners
-    // //     this.el.innerHTML = "";
-    // //     // refill and recreate listeners
-    // //     this.#fillUI();
-    // //     // add global listeners
-    // //     uiParse(this.el);
-    // // }
-
-    // #fillUI() {
-
-
-        // this.el = parentEl.appendHTML(
-        //     `
-        //     <li>
-        //         <h3 class="collapsible">${this.name}</h3>
-        //         <div>
-        //             <label>Clear Color</label>
-        //             <input type="text" class="color" value="#${this.clearColor.toRGBAStr()}">
-
-        //             <label class="collapsible">Layout</label>
-        //             <table class="layout"><tbody></tbody></table>
-        //             <button>+</button>
-
-        //             <label class="collapsible">Meshes</label>
-        //             <ul class="meshes"></ul>
-
-        //             <button class="action">Reset Pass To Default</button>
-        //         </div>
-        //     </li>
-        //     `
-        // );
         DataUI.bind(this, parentEl);
 
         // add clear color handler
@@ -228,18 +204,18 @@ export default class Pass extends Serializable {
         const meshesEl = this.el.querySelector("ul.meshes");
         this.meshes.forEach(mesh => mesh.createUI(meshesEl));
 
-        // add restore default handler
-        const defaultButtonEl = this.el.querySelector("button.action");
-        defaultButtonEl.addEventListener("click", e => {
-            e.preventDefault();
-            confirmDialog(
-                `Really DELETE ALL CHANGES and reset ${this.name} pass to default?`,
-                "Cancel", null,
-                defaultButtonEl.innerHTML, () => {
-                    this.reset(this.defaultTemplate);
-                    // this.resetUI();
-                }
-            );
-        });
+        // // add restore default handler
+        // const defaultButtonEl = this.el.querySelector("button.action");
+        // defaultButtonEl.addEventListener("click", e => {
+        //     e.preventDefault();
+        //     confirmDialog(
+        //         `Really DELETE ALL CHANGES and reset ${this.name} pass to default?`,
+        //         "Cancel", null,
+        //         defaultButtonEl.innerHTML, () => {
+        //             this.reset(this.defaultTemplate);
+        //             // this.resetUI();
+        //         }
+        //     );
+        // });
     }
 }

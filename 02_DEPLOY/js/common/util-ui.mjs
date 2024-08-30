@@ -77,140 +77,142 @@ export function confirmDialog(msg, ...buttonArgs) {
     dialog.showModal();
 }
 
+// MOVED TO Accessor ??? waaahhhaat???
+
 // Make parentEl's children reorderable using HTML5's drag/drop API.
 // see defaultOptions. override anything with options.
-export function makeReorderable(parentEl, options) {
-    const defaultOptions = {
-        // called on drop. override to handle data
-        onReorder: (oldIndex,newIndex)=>{},
-        // given this xy in the drop target size, should apply beforeClass?
-        isBefore: (x,y,w,h)=>(y / h < .5),
-        // these classes get applied. set css accordingly.
-        hoverClass: "hover",
-        draggingClass: "dragging",
-        draggingHoverClass: "draggingHover",
-        beforeClass: "before",
-        afterClass: "after",
-        noDragClass: "noDrag",
-    }
-    const opt = {...defaultOptions, ...options};
+// export function makeReorderable(parentEl, options) {
+//     const defaultOptions = {
+//         // called on drop. override to handle data
+//         onReorder: (oldIndex,newIndex)=>{},
+//         // given this xy in the drop target size, should apply beforeClass?
+//         isBefore: (x,y,w,h)=>(y / h < .5),
+//         // these classes get applied. set css accordingly.
+//         hoverClass: "hover",
+//         draggingClass: "dragging",
+//         draggingHoverClass: "draggingHover",
+//         beforeClass: "before",
+//         afterClass: "after",
+//         noDragClass: "noDrag",
+//     }
+//     const opt = {...defaultOptions, ...options};
 
-    // dragging element is found with a document query
-    // const getDraggingEl = ()=>parentEl.querySelector("."+opt.draggingClass);
+//     // dragging element is found with a document query
+//     // const getDraggingEl = ()=>parentEl.querySelector("."+opt.draggingClass);
 
-    // dragging element can be found quicker by just looking at known draggable children
-    opt.getDraggingEl = ()=>{
-        let i = parentEl.children.length;
-        while (i--) {
-            if (parentEl.children[i].classList.contains(opt.draggingClass)) {
-                return parentEl.children[i];
-            }
-        }
-        return null;
-    };
+//     // dragging element can be found quicker by just looking at known draggable children
+//     opt.getDraggingEl = ()=>{
+//         let i = parentEl.children.length;
+//         while (i--) {
+//             if (parentEl.children[i].classList.contains(opt.draggingClass)) {
+//                 return parentEl.children[i];
+//             }
+//         }
+//         return null;
+//     };
 
-    // for each child of parentEl
-    parentEl.children.forEach(childEl => {
-        makeReorderableItem(childEl, opt);
-    });
+//     // for each child of parentEl
+//     parentEl.children.forEach(childEl => {
+//         makeReorderableItem(childEl, opt);
+//     });
 
-    return opt;
-}
+//     return opt;
+// }
 
-export function makeReorderableItem(childEl, opt) {
-    // set the draggable attribute on html element
-    childEl.setAttribute("draggable", true);
+// export function makeReorderableItem(childEl, opt) {
+//     // set the draggable attribute on html element
+//     childEl.setAttribute("draggable", true);
 
-    // add listeners to add and remove classes on the relevant children
-    const hoverClasses = [
-        opt.draggingHoverClass,
-        opt.beforeClass,
-        opt.afterClass,
-        opt.hoverClass,
-    ];
-    childEl.addEventListener("mouseenter",
-        e => childEl.classList.add(opt.hoverClass)
-    );
-    childEl.addEventListener("dragenter",
-        e => childEl.classList.add(opt.draggingHoverClass)
-    );
-    childEl.addEventListener("mouseleave",
-        e => childEl.classList.remove(...hoverClasses)
-    );
-    childEl.addEventListener("dragleave",
-        e => childEl.classList.remove(...hoverClasses)
-    );
-    childEl.addEventListener("dragend",
-        e => childEl.classList.remove(opt.draggingClass)
-    );
+//     // add listeners to add and remove classes on the relevant children
+//     const hoverClasses = [
+//         opt.draggingHoverClass,
+//         opt.beforeClass,
+//         opt.afterClass,
+//         opt.hoverClass,
+//     ];
+//     childEl.addEventListener("mouseenter",
+//         e => childEl.classList.add(opt.hoverClass)
+//     );
+//     childEl.addEventListener("dragenter",
+//         e => childEl.classList.add(opt.draggingHoverClass)
+//     );
+//     childEl.addEventListener("mouseleave",
+//         e => childEl.classList.remove(...hoverClasses)
+//     );
+//     childEl.addEventListener("dragleave",
+//         e => childEl.classList.remove(...hoverClasses)
+//     );
+//     childEl.addEventListener("dragend",
+//         e => childEl.classList.remove(opt.draggingClass)
+//     );
 
-    // start drag, but only if not over a noDrag child
-    childEl.addEventListener("dragstart",  e => {
-        // check all "noDrag" children for dead zones and cancel if found
-        const noDragEls = e.target.querySelectorAll("."+opt.noDragClass);
-        if (noDragEls) {
-            const mez = e.target.getBoundingClientRect();
-            const x = mez.x + e.offsetX;
-            const y = mez.y + e.offsetY;
-            const end = noDragEls.length;
-            let i = 0;
-            while (i < end) {
-                const dz = noDragEls[i].getBoundingClientRect();
-                // if withing deadzone bounds, cancel the drag
-                if (dz.x < x && x < dz.x + dz.width &&
-                    dz.y < y && y < dz.y + dz.height) {
-                    e.preventDefault();
-                    return;
-                }
-                ++i;
-            }
-        }
-        // normal operation, just adding a class
-        childEl.classList.add(opt.draggingClass);
-    });
+//     // start drag, but only if not over a noDrag child
+//     childEl.addEventListener("dragstart",  e => {
+//         // check all "noDrag" children for dead zones and cancel if found
+//         const noDragEls = e.target.querySelectorAll("."+opt.noDragClass);
+//         if (noDragEls) {
+//             const mez = e.target.getBoundingClientRect();
+//             const x = mez.x + e.offsetX;
+//             const y = mez.y + e.offsetY;
+//             const end = noDragEls.length;
+//             let i = 0;
+//             while (i < end) {
+//                 const dz = noDragEls[i].getBoundingClientRect();
+//                 // if withing deadzone bounds, cancel the drag
+//                 if (dz.x < x && x < dz.x + dz.width &&
+//                     dz.y < y && y < dz.y + dz.height) {
+//                     e.preventDefault();
+//                     return;
+//                 }
+//                 ++i;
+//             }
+//         }
+//         // normal operation, just adding a class
+//         childEl.classList.add(opt.draggingClass);
+//     });
 
-    // called while dragging element over target... decides the before/after classes
-    childEl.addEventListener("dragover", e => {
-        e.preventDefault();
+//     // called while dragging element over target... decides the before/after classes
+//     childEl.addEventListener("dragover", e => {
+//         e.preventDefault();
 
-        const dragBounds = childEl.getBoundingClientRect();
-        const targBounds = e.target.getBoundingClientRect();
-        const x = targBounds.x - dragBounds.x + e.offsetX;
-        const y = targBounds.y - dragBounds.y + e.offsetY;
-        const before = opt.isBefore(x, y, dragBounds.width, dragBounds.height);
+//         const dragBounds = childEl.getBoundingClientRect();
+//         const targBounds = e.target.getBoundingClientRect();
+//         const x = targBounds.x - dragBounds.x + e.offsetX;
+//         const y = targBounds.y - dragBounds.y + e.offsetY;
+//         const before = opt.isBefore(x, y, dragBounds.width, dragBounds.height);
 
-        childEl.classList.add(opt.draggingHoverClass);
-        childEl.classList.toggle(opt.beforeClass, before);
-        childEl.classList.toggle(opt.afterClass, !before);
-    });
+//         childEl.classList.add(opt.draggingHoverClass);
+//         childEl.classList.toggle(opt.beforeClass, before);
+//         childEl.classList.toggle(opt.afterClass, !before);
+//     });
 
-    // moves the html element and calls onReorder callback
-    // doesn't get called if user cancels drop
-    childEl.addEventListener("drop", e => {
-        // prevent drop default and remove all draggingHover classes
-        e.preventDefault();
-        const isBefore = childEl.classList.contains(opt.beforeClass);
-        childEl.classList.remove(opt.draggingHover, opt.beforeClass, opt.afterClass);
-        // dropping the dragged on itself, do nothing
-        const draggingEl = opt.getDraggingEl();
-        if (childEl === draggingEl) {
-            return;
-        }
-        // move the draggingEl to its new location
-        const oldIndex = draggingEl.elementIndex();
-        if (isBefore) {
-            childEl.before(draggingEl);
-        }
-        else {
-            childEl.after(draggingEl);
-        }
-        const newIndex = draggingEl.elementIndex();
-        // only dispatch if different
-        if (oldIndex !== newIndex) {
-            opt.onReorder(oldIndex, newIndex);
-        }
-    });
-}
+//     // moves the html element and calls onReorder callback
+//     // doesn't get called if user cancels drop
+//     childEl.addEventListener("drop", e => {
+//         // prevent drop default and remove all draggingHover classes
+//         e.preventDefault();
+//         const isBefore = childEl.classList.contains(opt.beforeClass);
+//         childEl.classList.remove(opt.draggingHover, opt.beforeClass, opt.afterClass);
+//         // dropping the dragged on itself, do nothing
+//         const draggingEl = opt.getDraggingEl();
+//         if (childEl === draggingEl) {
+//             return;
+//         }
+//         // move the draggingEl to its new location
+//         const oldIndex = draggingEl.elementIndex();
+//         if (isBefore) {
+//             childEl.before(draggingEl);
+//         }
+//         else {
+//             childEl.after(draggingEl);
+//         }
+//         const newIndex = draggingEl.elementIndex();
+//         // only dispatch if different
+//         if (oldIndex !== newIndex) {
+//             opt.onReorder(oldIndex, newIndex);
+//         }
+//     });
+// }
 
 // returns a configuration object with:
 // all defaultOptions+options

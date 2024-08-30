@@ -1,6 +1,6 @@
 import { defProp } from "./common-extension.mjs"
 import Accessor from "./Accessor.mjs"
-import { isStr, isArr, isFn, ifElFn } from "./util.mjs"
+import { is, isStr, isArr, isFn, ifElFn } from "./util.mjs"
 
 /*
 
@@ -96,11 +96,31 @@ export default class DataUI {
             bindKey.el = ifElFn(bindKey.el, this.#el);
             bindKey.parent = this;
 
-            if (isArr(bindKey.type) && bindKey.type[0]?.dataUI) {
-                this.#t[key].forEach(sub=>DataUI.bind(sub, bindKey.el, {parentData:this, parentKey:key}));
+            // type is set to array of types with dataUI static descriptors
+            if (isArr(bindKey.type)) {
+                if (bindKey.type[0]?.dataUI == null) {
+                    throw SyntaxError("Arrays non-dataUI types not supported.");
+                }
+                const type = bindKey.type[0];
+                const arr = this.#t[key];
+                if (!isArr(arr)) {
+                    throw SyntaxError(`Error in binding, ${this} key ${key} of array not found.`);
+                }
+                if (arr.length > 0 && !is(arr[0], type)) {
+                    console.error(`WARNING! binding to array but ${key}[0] is not of type ${type}!`);
+                }
+                // so we bind the instances in the bound[key] array, each to the
+                // parent element: bindKey.el
+                this.#t[key].forEach(sub=>
+                    DataUI.bind(sub, bindKey.el, {parentData:this, parentKey:key})
+                );
+                // then we create an accessor for this key,
+                // which will be array aware
                 this.#keys.set(key, new Accessor(this.#t, key, bindKey));
             }
+            // type is normal
             else {
+                // create accessor for this key
                 this.#keys.set(key, new Accessor(this.#t, key, bindKey));
             }
         }
@@ -117,8 +137,6 @@ export default class DataUI {
                 this.#showControl("submitEdit", true);
                 this.#showControl("remove", false);
                 this.#keys.forEach(acc=>acc.startEdit?.());
-                // this.#el.addKeyListener("Enter", e=>this.submitEdit());
-                // this.#el.addKeyListener("Escape", e=>this.cancelEdit());
             }});
         }
 
