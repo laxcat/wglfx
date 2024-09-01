@@ -67,6 +67,8 @@ import { isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
         pattern,    //  String, set to input attribute, used in validation msg
     }
 
+    Note: array-like, (upcoming obj-like), scalar-like can be described as
+
     see #defProp for complete list of possibly added properties.
 */
 export default class Accessor {
@@ -95,34 +97,34 @@ export default class Accessor {
         // build all the functions onto this Accessor
         // array-like property
         if (isArr(config.type)) {
-            this.#setupArray(config);
+            this.#setupAsArray(config);
         }
         // normal string/number property
         else {
-            this.#setupMain(config);
-            this.#setupUI(config);
-            this.#setupEditable(config);
+            this.#setupAsScalar(config);
         }
         Object.preventExtensions(this);
     }
 
-    // setup basic getters/setters
-    #setupMain(config) {
+    // Accessor only controls a single value like a string or number
+    #setupAsScalar(config) {
+        // basic getters/setters -------------------------------------------- //
         this.#defProp("get");
         this.#defProp("set");
         this.#defProp("getStr");
-    }
 
-    // setup ui enabled functions if el is set
-    #setupUI(config) {
+        // bail if simple accessor
         if (!isEl(this.#el)) return;
+
+        // UI --------------------------------------------------------------- //
 
         // update the ui with the this.getStr()
         this.#defProp("updateUI");
-    }
 
-    #setupEditable(config) {
+        // bail if edible not set
         if (!config.editable) return;
+
+        // Editable --------------------------------------------------------- //
 
         // we will try not to capture the whole config object, but only a the
         // specific values we need
@@ -195,7 +197,7 @@ export default class Accessor {
             `min="${limit[0]}" max="${limit[1]}" step="${limit[2]}"`;
     }
 
-    #setupArray(config) {
+    #setupAsArray(config) {
         // set some defaults
         // if addControl present, automatically turn on editable
         if (config.addControl) {
@@ -266,6 +268,8 @@ export default class Accessor {
 
         switch(propName) {
 
+        // SCALAR GENERAL --------------------------------------------------- //
+
         // get
         case "get": defValue(function() {
             // console.log("did get", this.#obj[this.#key], this.#obj, this.#key);
@@ -287,11 +291,15 @@ export default class Accessor {
         );
         break;
 
+        // SCALAR UI -------------------------------------------------------- //
+
         // updateUI
         case "updateUI": defValue(function() {
             this.#el.innerHTML = this.getStr();
         });
         break;
+
+        // SCALAR EDITABLE -------------------------------------------------- //
 
         // setFromStr
         case "setFromStr": defValue(
@@ -365,12 +373,16 @@ export default class Accessor {
         });
         break;
 
+        // ARRAY GENERAL ---------------------------------------------------- //
+
         // arr
         // read-only
         case "arr": defGet(function() {
             return this.#obj[this.#key];
         });
         break;
+
+        // ARRAY EDITABLE --------------------------------------------------- //
 
         // addChildStart
         case "addChildStart": defValue(function() {
@@ -461,6 +473,8 @@ export default class Accessor {
             }
         });
         break;
+
+        // ARRAY REORDERABLE ------------------------------------------------ //
 
         // onReorder
         case "onReorder": defValue(function(oldIndex, newIndex) {
