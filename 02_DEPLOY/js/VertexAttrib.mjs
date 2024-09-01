@@ -43,10 +43,10 @@ export default class VertexAttrib extends Serializable {
             size:  {el:trEl=>trEl.children[2], limit:[1,4], editable:true, getStrKey:"sizeRowStr"},
         },
         control: {
-            startEdit:  trEl=>trEl.children[3].children[0],
+            editStart:  trEl=>trEl.children[3].children[0],
             removeSelf: trEl=>trEl.children[3].children[1],
-            cancelEdit: trEl=>trEl.children[3].children[2],
-            submitEdit: trEl=>trEl.children[3].children[3],
+            editCancel: trEl=>trEl.children[3].children[2],
+            editSubmit: trEl=>trEl.children[3].children[3],
         },
         callback: {
             onChange: "onChangeData",
@@ -73,7 +73,7 @@ export default class VertexAttrib extends Serializable {
     get el() { return this.dataUI?.el; }
 
     onChangeData(key) {
-        this.el.dispatchEvent(Project.makeChangeEvent(`pass.layout[${this.index}].${key}`));
+        this.el?.dispatchEvent(Project.makeChangeEvent(`pass.layout[${this.index}].${key}`));
     }
 
     // createUI(parentEl) {

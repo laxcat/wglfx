@@ -24,10 +24,10 @@ config object:
         }
     },
     control: {
-        startEdit:  ,
+        editStart:  ,
         removeSelf:     ,
-        cancelEdit: ,
-        submitEdit: ,
+        editCancel: ,
+        editSubmit: ,
         reset:      ,
 
     },
@@ -39,7 +39,7 @@ config object:
         onChange:"..."  //  Called anytime a change is made. Primary callback.
 
         on(control)     //  Each key in "control" gets matching callback
-                                onStartEdit, onRemoveSelf, etc
+                                onEditStart, onRemoveSelf, etc
 
         onReorder       //  Array-like accessors have a few extra callbacks that
         onAdd           //      don't have matching controls.
@@ -60,21 +60,21 @@ All possible added functions
                     //  these are setup but mostly called by click actions
                     //  they might be convenient to the user once the dataUI
                     //  object has been attached.
-    startEdit
-    cancelEdit
-    submitEdit
+    editStart
+    editCancel
+    editSubmit
     removeSelf          //  only works if parent is array-like?
 
 
                     //  These are only called by this dataUI
                     //  TODO: should prob be something other than public methods
-    onStartEdit
+    onEditStart
     onRemoveSelf
     onReset
 
                     //  Same as above but only used in tempCallback (so far)
-    onCancelEdit
-    onSubmitEdit
+    onEditCancel
+    onEditSubmit
 
                     //  These are only called by the child Accessors...
                     //  TODO: change these to not be public functions but
@@ -163,12 +163,12 @@ export default class DataUI {
         this.#addTempCallbacks(config);
 
         // init
-        if (config.startEditOnInit) {
+        if (config.editOnInit) {
             this.updateUI();
-            this.startEdit(true);
+            this.editStart(true);
         }
-        else if (this.cancelEdit) {
-            this.cancelEdit();
+        else if (this.editCancel) {
+            this.editCancel();
         }
         else {
             this.updateUI();
@@ -231,49 +231,49 @@ export default class DataUI {
     #bindControls(config) {
         this.#control = new Map();
 
-        if (config.control.startEdit) {
-            this.#setControl(config.control, "startEdit");
-            defProp(this, "startEdit", { value: function(allDirty=false) {
+        if (config.control.editStart) {
+            this.#setControl(config.control, "editStart");
+            defProp(this, "editStart", { value: function(allDirty=false) {
                 this.parentAccessor?.enableAllExcept(this.#t, false);
-                this.#showControl("startEdit", false);
-                this.#showControl("cancelEdit", true);
-                this.#showControl("submitEdit", true);
+                this.#showControl("editStart", false);
+                this.#showControl("editCancel", true);
+                this.#showControl("editSubmit", true);
                 this.#showControl("removeSelf", false);
-                this.#keys.forEach(acc=>acc.startEdit?.(allDirty));
-                this.#callback("startEdit");
+                this.#keys.forEach(acc=>acc.editStart?.(allDirty));
+                this.#callback("editStart");
             }});
         }
 
-        if (config.control.cancelEdit) {
-            this.#setControl(config.control, "cancelEdit");
-            defProp(this, "cancelEdit", { value: function() {
-                this.#showControl("startEdit", true);
-                this.#showControl("cancelEdit", false);
-                this.#showControl("submitEdit", false);
+        if (config.control.editCancel) {
+            this.#setControl(config.control, "editCancel");
+            defProp(this, "editCancel", { value: function() {
+                this.#showControl("editStart", true);
+                this.#showControl("editCancel", false);
+                this.#showControl("editSubmit", false);
                 this.#showControl("removeSelf", true);
                 this.#keys.forEach(acc=>
-                    (acc.cancelEdit) ? acc.cancelEdit() : acc.updateUI()
+                    (acc.editCancel) ? acc.editCancel() : acc.updateUI()
                 );
                 this.parentAccessor?.enableAllExcept(this.#t, true);
-                this.#callback("cancelEdit");
+                this.#callback("editCancel");
             }});
         }
 
-        if (config.control.submitEdit) {
-            this.#setControl(config.control, "submitEdit");
-            defProp(this, "submitEdit", { value: function() {
+        if (config.control.editSubmit) {
+            this.#setControl(config.control, "editSubmit");
+            defProp(this, "editSubmit", { value: function() {
                 if (this.#allValid()) {
-                    this.#showControl("startEdit", true);
-                    this.#showControl("cancelEdit", false);
-                    this.#showControl("submitEdit", false);
+                    this.#showControl("editStart", true);
+                    this.#showControl("editCancel", false);
+                    this.#showControl("editSubmit", false);
                     this.#showControl("removeSelf", true);
 
                     const dirtyKeys = this.#getDirtyKeys();
 
-                    this.#keys.forEach(acc=>acc.submitEdit?.());
+                    this.#keys.forEach(acc=>acc.editSubmit?.());
 
                     this.parentAccessor?.enableAllExcept(this.#t, true);
-                    this.#callback("submitEdit");
+                    this.#callback("editSubmit");
                     dirtyKeys.forEach(key=>this.#callback("change", key));
                 }
             }});
