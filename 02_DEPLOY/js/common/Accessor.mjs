@@ -83,8 +83,8 @@ import { isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
     addCancel(dataUI)
     addSubmit(dataUI)
     removeChild(index)
-    setChildEnabled(index,enabled)
-    setAllExceptEnabled(index,enabled)
+    enableAllExcept(item,enabled)
+    enableAll(enabled)
     onReorder(oldIndex,newIndex)
     reorderableConfig
     reIndex(startIndex)
@@ -290,7 +290,7 @@ export default class Accessor {
             const isReorderable = !!config.reorderable;
             // create startAdd function, which presnts a new item form
             defProp(this, "addStart", { value: function() {
-                this.setAllExceptEnabled(this.arr.length, false);
+                this.enableAll(false);
                 const item = new Type();
                 const bindConfig = {
                     startEditOnInit: true,
@@ -317,7 +317,7 @@ export default class Accessor {
                 this.reorderableConfig?.enable(true);
                 dataUI.el.remove();
                 // addButton.classList.remove("hidden");
-                this.setAllExceptEnabled(this.arr.length, true);
+                this.enableAll(true);
             }});
 
             // create add function
@@ -329,22 +329,22 @@ export default class Accessor {
                     makeReorderableItem(dataUI.el, this.reorderableConfig);
                 }
                 // addButton.classList.remove("hidden");
-                this.setAllExceptEnabled(this.arr.length, true);
+                this.enableAll(true);
                 this.#parent?.onAdd?.(this.#key);
                 this.#parent?.onChange?.(this.#key);
             }});
 
             // create remove function
-            defProp(this, "removeChild", { value: function(index) {
-                confirmDialog(
-                    `Remove index ${index}?`,
-
-                    "Cancel",
-                    null,
-
-                    "Remove",
-                    () => {
-                        const el = this.arr[index].dataUI.el;
+            defProp(this, "removeChild", { value: function(item, msg) {
+                const index = this.arr.indexOf(item);
+                if (index === -1) {
+                    console.error("Child not found.");
+                    return;
+                }
+                confirmDialog(msg ?? `Remove index ${index}?`,
+                    "Cancel", null,
+                    "Remove", () => {
+                        const el = item.dataUI.el;
                         this.arr.splice(index, 1);
                         el.remove();
                         this.reIndex(index);
@@ -355,17 +355,17 @@ export default class Accessor {
             }});
 
             // create enable/disable functions
-            defProp(this, "setChildEnabled", { value: function(index, enabled) {
-                console.log("setChildEnabled", index, enabled);
-                this.arr[index]?.dataUI?.setEnabled(enabled);
+            defProp(this, "enableAllExcept", { value: function(item, enabled) {
+                let i = this.arr.length;
+                while (i--) {
+                    if (this.arr[i] === item) continue;
+                    this.arr[i]?.dataUI?.setEnabled(enabled);
+                }
             }});
-            defProp(this, "setAllExceptEnabled", { value: function(index, enabled) {
-                const e = this.arr.length;
-                let i = 0;
-                while (i < e) {
-                    if (i === index) continue;
-                    this.setChildEnabled(i, enabled);
-                    ++i;
+            defProp(this, "enableAll", { value: function(enabled) {
+                let i = this.arr.length;
+                while (i--) {
+                    this.arr[i]?.dataUI?.setEnabled(enabled);
                 }
             }});
 

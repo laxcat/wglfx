@@ -108,6 +108,13 @@ export default class DataUI {
 
     get el() { return this.#el; }
     get instance() { return this.#t; }
+    get parentAccessor() {
+        return this.#parentData?.#keys?.get(this.#parentKey) ?? null;
+    }
+    get indexInParentArray() {
+        const i = this.parentAccessor?.arr?.indexOf(this.#t);
+        return (i !== -1) ? i : null;
+    }
 
     updateUI() {
         this.#keys.forEach(acc=>acc.updateUI?.());
@@ -227,6 +234,7 @@ export default class DataUI {
         if (config.control.startEdit) {
             this.#setControl(config.control, "startEdit");
             defProp(this, "startEdit", { value: function(allDirty=false) {
+                this.parentAccessor?.enableAllExcept(this.#t, false);
                 this.#showControl("startEdit", false);
                 this.#showControl("cancelEdit", true);
                 this.#showControl("submitEdit", true);
@@ -246,6 +254,7 @@ export default class DataUI {
                 this.#keys.forEach(acc=>
                     (acc.cancelEdit) ? acc.cancelEdit() : acc.updateUI()
                 );
+                this.parentAccessor?.enableAllExcept(this.#t, true);
                 this.#callback("cancelEdit");
             }});
         }
@@ -262,8 +271,9 @@ export default class DataUI {
                     const dirtyKeys = this.#getDirtyKeys();
 
                     this.#keys.forEach(acc=>acc.submitEdit?.());
-                    this.#callback("submitEdit");
 
+                    this.parentAccessor?.enableAllExcept(this.#t, true);
+                    this.#callback("submitEdit");
                     dirtyKeys.forEach(key=>this.#callback("change", key));
                 }
             }});
@@ -272,10 +282,7 @@ export default class DataUI {
         if (config.control.removeSelf) {
             this.#setControl(config.control, "removeSelf");
             defProp(this, "removeSelf", { value: function() {
-                const index = this.#t.index;
-                this.#parentData?.#keys.get(this.#parentKey)?.removeChild?.(index);
-                // this.#callback("removeSelf");
-                // console.log("removeSelf", );
+                this.parentAccessor?.removeChild?.(this.#t);
             }});
         }
     }
