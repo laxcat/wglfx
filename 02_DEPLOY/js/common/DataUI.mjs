@@ -235,6 +235,7 @@ export default class DataUI {
             this.#setControl(config.control, "editStart");
             defProp(this, "editStart", { value: function(allDirty=false) {
                 this.parentAccessor?.enableAllExcept(this.#t, false);
+                this.parentAccessor?.reorderableConfig?.enable(false);
                 this.#showControl("editStart", false);
                 this.#showControl("editCancel", true);
                 this.#showControl("editSubmit", true);
@@ -255,6 +256,7 @@ export default class DataUI {
                     (acc.editCancel) ? acc.editCancel() : acc.updateUI()
                 );
                 this.parentAccessor?.enableAllExcept(this.#t, true);
+                this.parentAccessor?.reorderableConfig?.enable(true);
                 this.#callback("editCancel");
             }});
         }
@@ -273,6 +275,7 @@ export default class DataUI {
                     this.#keys.forEach(acc=>acc.editSubmit?.());
 
                     this.parentAccessor?.enableAllExcept(this.#t, true);
+                    this.parentAccessor?.reorderableConfig?.enable(true);
                     this.#callback("editSubmit");
                     dirtyKeys.forEach(key=>this.#callback("change", key));
                 }
@@ -348,6 +351,6 @@ export default class DataUI {
     }
 
     #showControl(key, showing) {
-        this.#control.get(key).classList.toggle("hidden", !showing);
+        this.#control.get(key)?.classList.toggle("hidden", !showing);
     }
 }
