@@ -67,27 +67,7 @@ import { isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
         pattern,    //  String, set to input attribute, used in validation msg
     }
 
-    Complete list of possibly added properties:
-    get()
-    set(value)
-    getStr()
-    updateUI()
-    setFromStr(str)
-    isDirty()
-    editStart(allDirty=false)
-    editCancel()
-    validateEdit()
-    editSubmit()
-    arr
-    addChildStart()
-    addChildCancel(dataUI)
-    addChildSubmit(dataUI)
-    removeChild(index)
-    enableAllExcept(item,enabled)
-    enableAll(enabled)
-    onReorder(oldIndex,newIndex)
-    reorderableConfig
-    reIndex(startIndex)
+    see #defProp for complete list of possibly added properties.
 */
 export default class Accessor {
     // required
@@ -277,41 +257,44 @@ export default class Accessor {
         }
     }
 
-    // ----------------------------------------------------------------------- //
-    // ALL the optionally defined property of the Accessor, all in one place
-    // ----------------------------------------------------------------------- //
+    // ---------------------------------------------------------------------- //
+    // ALL the optionally defined properties of the Accessor, all in one place
+    // ---------------------------------------------------------------------- //
     #defProp(propName, capture) {
+        const defValue = value=>extd(this, propName, {value});
+        const defGet   = get=>  extd(this, propName, {get});
+
         switch(propName) {
 
         // get
-        case "get": extd(this, propName, { value: function() {
+        case "get": defValue(function() {
             // console.log("did get", this.#obj[this.#key], this.#obj, this.#key);
             return this.#obj[this.#key];
-        }});
-        break;
-
-        // set
-        case "set": extd(this, propName, { value: function(value) {
-            this.#obj[this.#key] = value;
-        }});
-        break;
-
-        // getStr
-        case "getStr": extd(this, propName, { value:
-            (this.#getStrKey === null) ?
-                function() { return this.get().toString(); } :
-                function() { return this.#obj[this.#getStrKey]; }
         });
         break;
 
+        // set
+        case "set": defValue(function(value) {
+            this.#obj[this.#key] = value;
+        });
+        break;
+
+        // getStr
+        case "getStr": defValue(
+            (this.#getStrKey === null) ?
+                function() { return this.get().toString(); } :
+                function() { return this.#obj[this.#getStrKey]; }
+        );
+        break;
+
         // updateUI
-        case "updateUI": extd(this, propName, { value: function() {
+        case "updateUI": defValue(function() {
             this.#el.innerHTML = this.getStr();
-        }});
+        });
         break;
 
         // setFromStr
-        case "setFromStr": extd(this, propName, { value:
+        case "setFromStr": defValue(
             (isFn(capture.fromStr)) ?
             // use fromStr wrapper
             function(str) {
@@ -319,20 +302,20 @@ export default class Accessor {
             } :
             // use set fn directly
             this.set
-        });
+        );
         break;
 
         // isDirty
-        case "isDirty": extd(this, propName, { get: function() {
+        case "isDirty": defGet(function() {
             const inp = this.#inputEl;
             if (!inp) return false;
             if (inp.dataset.prevValue === "") return true;
             return (inp.value !== inp.dataset.prevValue);
-        }});
+        });
         break;
 
         // editStart
-        case "editStart": extd(this, propName, { value: function(allDirty=false) {
+        case "editStart": defValue(function(allDirty=false) {
             this.#el.innerHTML = "";
             this.#inputEl = this.#el.appendHTML(
                 `<input
@@ -346,18 +329,18 @@ export default class Accessor {
             );
             this.#inputEl.addKeyListener("Enter", e=>this.#parent?.editSubmit());
             this.#inputEl.addKeyListener("Escape", e=>this.#parent?.editCancel());
-        }});
+        });
         break;
 
         // editCancel
-        case "editCancel": extd(this, propName, { value: function() {
+        case "editCancel": defValue(function() {
             this.#inputEl = null;
             this.updateUI();
-        }});
+        });
         break;
 
         // validateEdit
-        case "validateEdit": extd(this, propName, {value: function() {
+        case "validateEdit": defValue(function() {
             this.#inputEl.setCustomValidity("");
             if (!this.isDirty) {
                 return true;
@@ -369,28 +352,28 @@ export default class Accessor {
             //     this.#inputEl.setCustomValidity("Must be unique");
             // }
             return this.#inputEl.reportValidity();
-        }});
+        });
         break;
 
         // editSubmit
-        case "editSubmit": extd(this, propName, { value: function() {
+        case "editSubmit": defValue(function() {
             if (this.isDirty) {
                 // this.set(new (this.#type)(this.#inputEl.value));
                 this.setFromStr(this.#inputEl.value);
             }
             this.updateUI();
-        }});
+        });
         break;
 
         // arr
         // read-only
-        case "arr": extd(this, propName, { get: function() {
+        case "arr": defGet(function() {
             return this.#obj[this.#key];
-        }});
+        });
         break;
 
         // addChildStart
-        case "addChildStart": extd(this, propName, { value: function() {
+        case "addChildStart": defValue(function() {
             this.enableAll(false);
             const item = new capture.Type();
             const bindConfig = {
@@ -412,20 +395,20 @@ export default class Accessor {
             }
             // create dataUI
             DataUI.create(item, this.#el, bindConfig);
-        }});
+        });
         break;
 
         // addChildCancel
-        case "addChildCancel": extd(this, propName, { value: function(dataUI) {
+        case "addChildCancel": defValue(function(dataUI) {
             this.reorderableConfig?.enable(true);
             dataUI.el.remove();
             // addButton.classList.remove("hidden");
             this.enableAll(true);
-        }});
+        });
         break;
 
         // addChildSubmit
-        case "addChildSubmit": extd(this, propName, { value: function(dataUI) {
+        case "addChildSubmit": defValue(function(dataUI) {
             this.arr.push(dataUI.instance);
             dataUI.attach();
             if (this.reorderableConfig) {
@@ -436,11 +419,11 @@ export default class Accessor {
             this.enableAll(true);
             this.#parent?.onAdd?.(this.#key);
             this.#parent?.onChange?.(this.#key);
-        }});
+        });
         break;
 
         // removeChild
-        case "removeChild": extd(this, propName, { value: function(item, msg) {
+        case "removeChild": defValue(function(item, msg) {
             const index = this.arr.indexOf(item);
             if (index === -1) {
                 console.error("Child not found.");
@@ -457,45 +440,45 @@ export default class Accessor {
                     this.#parent?.onChange?.(this.#key);
                 }
             );
-        }});
+        });
         break;
 
         // enableAllExcept
-        case "enableAllExcept": extd(this, propName, { value: function(item, enabled) {
+        case "enableAllExcept": defValue(function(item, enabled) {
             let i = this.arr.length;
             while (i--) {
                 if (this.arr[i] === item) continue;
                 this.arr[i]?.dataUI?.setEnabled(enabled);
             }
-        }});
+        });
         break;
 
         // enableAll
-        case "enableAll": extd(this, propName, { value: function(enabled) {
+        case "enableAll": defValue(function(enabled) {
             let i = this.arr.length;
             while (i--) {
                 this.arr[i]?.dataUI?.setEnabled(enabled);
             }
-        }});
+        });
         break;
 
         // onReorder
-        case "onReorder": extd(this, propName, { value: function(oldIndex, newIndex) {
+        case "onReorder": defValue(function(oldIndex, newIndex) {
             const arr = this.#obj[this.#key];
             const oldItem = arr.splice(oldIndex, 1)[0];
             arr.splice(newIndex, 0, oldItem);
             this.reIndex();
             this.#parent?.onReorder?.(this.#key, oldIndex, newIndex);
             this.#parent?.onChange?.(this.#key);
-        }});
+        });
         break;
 
         // reorderableConfig
-        case "reorderableConfig": extd(this, propName, {get:()=>capture.reorderableConfig});
+        case "reorderableConfig": defGet(()=>capture.reorderableConfig);
         break;
 
         // reIndex
-        case "reIndex": extd(this, propName, { value: function(startIndex=0) {
+        case "reIndex": defValue(function(startIndex=0) {
             const indexKey = this.reorderableConfig.indexKey;
             const e = this.arr.length;
             let i = startIndex;
@@ -504,7 +487,7 @@ export default class Accessor {
                 ++i;
             }
             this.#parent?.onReIndex?.(this.#key);
-        }});
+        });
         break;
 
         }
