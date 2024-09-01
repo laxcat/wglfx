@@ -8,6 +8,7 @@ export const defProp = Object.defineProperty;
 // Shortcut for Object.defineProperty, but with check
 export function extd(builtIn, propName, options) {
     // do nothing if set already
+    // TODO: should this check Object.getOwnPropertyDescriptor(Type.prototype, propName)
     if (builtIn.hasOwnProperty(propName)) {
         console.error("WARNING COULD NOT SET!", builtIn, propName);
         return;

@@ -1,4 +1,4 @@
-import { defProp } from "./common-extension.mjs"
+import { extd } from "./common-extension.mjs"
 import DataUI from "./DataUI.mjs"
 import { confirmDialog } from "./util-ui.mjs"
 import { isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
@@ -128,20 +128,9 @@ export default class Accessor {
 
     // setup basic getters/setters
     #setupMain(config) {
-        defProp(this, "get", { value: function() {
-            // console.log("did get", this.#obj[this.#key], this.#obj, this.#key);
-            return this.#obj[this.#key];
-        }});
-
-        defProp(this, "set", { value: function(value) {
-            this.#obj[this.#key] = value;
-        }});
-
-        defProp(this, "getStr", { value:
-            (this.#getStrKey === null) ?
-                function() { return this.get().toString(); } :
-                function() { return this.#obj[this.#getStrKey];
-        }});
+        this.#defProp("get");
+        this.#defProp("set");
+        this.#defProp("getStr");
     }
 
     // setup ui enabled functions if el is set
@@ -149,100 +138,53 @@ export default class Accessor {
         if (!isEl(this.#el)) return;
 
         // update the ui with the this.getStr()
-        defProp(this, "updateUI", { value: function() {
-            this.#el.innerHTML = this.getStr();
-        }});
+        this.#defProp("updateUI");
     }
 
     #setupEditable(config) {
         if (!config.editable) return;
 
+        // we will try not to capture the whole config object, but only a the
+        // specific values we need
+        const capture = {};
+
         // setup minMaxStepStr, used in startEdit
         // setup patternStr, used in startEdit
         // setup fromStr, used to determine how setFromStr is configured
-        const minMaxStepStr = this.#getMinMaxStepStr(config.limit);
-        let fromStr = config.fromStr;
-        let inputType = "text";
+        capture.minMaxStepStr = this.#getMinMaxStepStr(config.limit);
+        capture.fromStr = config.fromStr;
+        capture.inputType = "text";
         // if limit was set and valid, treat as a number
-        if (minMaxStepStr) {
-            inputType = "number";
-            if (!fromStr) {
-                fromStr = parseFloat;
+        if (capture.minMaxStepStr) {
+            capture.inputType = "number";
+            if (!capture.fromStr) {
+                capture.fromStr = parseFloat;
             }
         }
         // if pattern was set
-        let patternStr = "";
+        capture.patternStr = "";
         const pattern = config.pattern;
         if (isStr(pattern)) {
-            patternStr = `placeholder="${pattern}" pattern="${pattern}"`;
+            capture.patternStr = `placeholder="${pattern}" pattern="${pattern}"`;
         }
 
         // setting back from input.value means we need to convert from string
-        defProp(this, "setFromStr", { value:
-            (isFn(fromStr)) ?
-            // use fromStr wrapper
-            function(str) {
-                this.set(fromStr(str));
-            } :
-            // use set fn directly
-            this.set
-        });
+        this.#defProp("setFromStr", capture);
 
         // if input is present (editing state), true if value has changed
-        defProp(this, "isDirty", { get: function() {
-            const inp = this.#inputEl;
-            if (!inp) return false;
-            if (inp.dataset.prevValue === "") return true;
-            return (inp.value !== inp.dataset.prevValue);
-        }});
+        this.#defProp("isDirty");
 
         // creates the input in el
-        defProp(this, "startEdit", { value: function(allDirty=false) {
-            this.#el.innerHTML = "";
-            this.#inputEl = this.#el.appendHTML(
-                `<input
-                    type="${inputType}"
-                    value="${this.get()}"
-                    data-prev-value="${allDirty?"":this.get()}"
-                    required
-                    ${patternStr}
-                    ${minMaxStepStr}
-                >`
-            );
-            this.#inputEl.addKeyListener("Enter", e=>this.#parent?.submitEdit());
-            this.#inputEl.addKeyListener("Escape", e=>this.#parent?.cancelEdit());
-
-        }});
+        this.#defProp("startEdit", capture);
 
         // clears the input, populates el with getStr
-        defProp(this, "cancelEdit", { value: function() {
-            this.#inputEl = null;
-            this.updateUI();
-        }});
+        this.#defProp("cancelEdit");
 
         // validate the current value in input, especially pattern
-        defProp(this, "validateEdit", {value: function() {
-            this.#inputEl.setCustomValidity("");
-            if (!this.isDirty) {
-                return true;
-            }
-            if (this.#inputEl.validity.patternMismatch) {
-                this.#inputEl.setCustomValidity(`Match the pattern ${pattern}`);
-            }
-            // if (isNotUnique()) {
-            //     this.#inputEl.setCustomValidity("Must be unique");
-            // }
-            return this.#inputEl.reportValidity();
-        }});
+        this.#defProp("validateEdit", capture);
 
         //
-        defProp(this, "submitEdit", { value: function() {
-            if (this.isDirty) {
-                // this.set(new (this.#type)(this.#inputEl.value));
-                this.setFromStr(this.#inputEl.value);
-            }
-            this.updateUI();
-        }});
+        this.#defProp("submitEdit");
     }
 
     // limit array/number -> min/max/step string
@@ -250,7 +192,7 @@ export default class Accessor {
     // 0 or [0] ,              ->  min="0"
     // n or [n] , where n > 0  ->  min="0" max="n"
     // [n, x]   , where n < x  ->  min="n" max="x"
-    // [n, x, s],              ->  min="n" max="x" step="s"
+    // [n, x, s], where n < x  ->  min="n" max="x" step="s"
     #getMinMaxStepStr(limit) {
         // single number is allowed
         if (isNum(limit)) limit = [limit];
@@ -280,94 +222,28 @@ export default class Accessor {
             config.editable = true;
         }
 
+        const capture = {};
+
         // make a read-only getter to the array
-        defProp(this, "arr", { get: function() {
-            return this.#obj[this.#key];
-        }});
+        this.#defProp("arr");
 
         if (config.editable) {
-            const Type = config.type[0];
-            const isReorderable = !!config.reorderable;
+            capture.Type = config.type[0];
+            capture.isReorderable = !!config.reorderable;
             // create startAdd function, which presnts a new item form
-            defProp(this, "addStart", { value: function() {
-                this.enableAll(false);
-                const item = new Type();
-                const bindConfig = {
-                    startEditOnInit: true,
-                    parentData: this.#parent,
-                    parentKey: this.#key
-                };
-                if (isReorderable) {
-                    this.reorderableConfig.enable(false);
-                    const indexKey = this.reorderableConfig.indexKey;
-                    if (Object.getOwnPropertyDescriptor(Type.prototype, indexKey)) {
-                        item[indexKey] = this.#obj[this.#key].length;
-                    }
+            this.#defProp("addStart", capture);
 
-                    bindConfig.tempCallback = {
-                        onCancelEdit: this.addCancel.bind(this),
-                        onSubmitEdit: this.addSubmit.bind(this),
-                    };
-                }
-                // create dataUI
-                DataUI.create(item, this.#el, bindConfig);
-            }});
-
-            defProp(this, "addCancel", { value: function(dataUI) {
-                this.reorderableConfig?.enable(true);
-                dataUI.el.remove();
-                // addButton.classList.remove("hidden");
-                this.enableAll(true);
-            }});
+            this.#defProp("addCancel");
 
             // create add function
-            defProp(this, "addSubmit", { value: function(dataUI) {
-                this.arr.push(dataUI.instance);
-                dataUI.attach();
-                if (isReorderable) {
-                    this.reorderableConfig.enable(true);
-                    makeReorderableItem(dataUI.el, this.reorderableConfig);
-                }
-                // addButton.classList.remove("hidden");
-                this.enableAll(true);
-                this.#parent?.onAdd?.(this.#key);
-                this.#parent?.onChange?.(this.#key);
-            }});
+            this.#defProp("addSubmit");
 
             // create remove function
-            defProp(this, "removeChild", { value: function(item, msg) {
-                const index = this.arr.indexOf(item);
-                if (index === -1) {
-                    console.error("Child not found.");
-                    return;
-                }
-                confirmDialog(msg ?? `Remove index ${index}?`,
-                    "Cancel", null,
-                    "Remove", () => {
-                        const el = item.dataUI.el;
-                        this.arr.splice(index, 1);
-                        el.remove();
-                        this.reIndex(index);
-                        this.#parent?.onRemoveChild?.(this.#key, index);
-                        this.#parent?.onChange?.(this.#key);
-                    }
-                );
-            }});
+            this.#defProp("removeChild");
 
             // create enable/disable functions
-            defProp(this, "enableAllExcept", { value: function(item, enabled) {
-                let i = this.arr.length;
-                while (i--) {
-                    if (this.arr[i] === item) continue;
-                    this.arr[i]?.dataUI?.setEnabled(enabled);
-                }
-            }});
-            defProp(this, "enableAll", { value: function(enabled) {
-                let i = this.arr.length;
-                while (i--) {
-                    this.arr[i]?.dataUI?.setEnabled(enabled);
-                }
-            }});
+            this.#defProp("enableAllExcept");
+            this.#defProp("enableAll");
 
             // add click handler to add control
             if (config.addControl) {
@@ -388,34 +264,230 @@ export default class Accessor {
             }
 
             // create onReorder function
-            defProp(this, "onReorder", { value: function(oldIndex, newIndex) {
-                const arr = this.#obj[this.#key];
-                const oldItem = arr.splice(oldIndex, 1)[0];
-                arr.splice(newIndex, 0, oldItem);
-                this.reIndex();
-                this.#parent?.onReorder?.(this.#key, oldIndex, newIndex);
-                this.#parent?.onChange?.(this.#key);
-            }});
+            this.#defProp("onReorder");
 
             // set onReorder callback
             config.reorderable.onReorder = this.onReorder.bind(this);
             // create reorderableConfig getter, and make reorderable
-            const reorderableConfig = makeReorderable(this.#el, config.reorderable);
-            defProp(this, "reorderableConfig", {get:()=>reorderableConfig});
+            capture.reorderableConfig = makeReorderable(this.#el, config.reorderable);
+            this.#defProp("reorderableConfig", capture);
 
             // create reIndex function
-            defProp(this, "reIndex", { value: function(startIndex=0) {
-                const arr = this.#obj[this.#key];
-                const indexKey = this.reorderableConfig.indexKey;
-                const e = arr.length;
-                let i = startIndex;
-                while (i < e) {
-                    arr[i][indexKey] = i;
-                    ++i;
-                }
-                this.#parent?.onReIndex?.(this.#key);
-            }});
+            this.#defProp("reIndex");
         }
+    }
+
+    // ----------------------------------------------------------------------- //
+    // ALL the optionally defined property of the Accessor, all in one place
+    // ----------------------------------------------------------------------- //
+    #defProp(propName, capture) {
+        extd(this, propName, (()=>{ switch(propName) {
+
+        // get
+        case "get": return { value: function() {
+            // console.log("did get", this.#obj[this.#key], this.#obj, this.#key);
+            return this.#obj[this.#key];
+        }};
+
+        // set
+        case "set": return { value: function(value) {
+            this.#obj[this.#key] = value;
+        }};
+
+        // getStr
+        case "getStr": return { value:
+            (this.#getStrKey === null) ?
+                function() { return this.get().toString(); } :
+                function() { return this.#obj[this.#getStrKey]; }
+        };
+
+        // updateUI
+        case "updateUI": return { value: function() {
+            this.#el.innerHTML = this.getStr();
+        }};
+
+        // setFromStr
+        case "setFromStr": return { value:
+            (isFn(capture.fromStr)) ?
+            // use fromStr wrapper
+            function(str) {
+                this.set(capture.fromStr(str));
+            } :
+            // use set fn directly
+            this.set
+        };
+
+        // isDirty
+        case "isDirty": return { get: function() {
+            const inp = this.#inputEl;
+            if (!inp) return false;
+            if (inp.dataset.prevValue === "") return true;
+            return (inp.value !== inp.dataset.prevValue);
+        }};
+
+        // startEdit
+        case "startEdit": return { value: function(allDirty=false) {
+            this.#el.innerHTML = "";
+            this.#inputEl = this.#el.appendHTML(
+                `<input
+                    type="${capture.inputType}"
+                    value="${this.get()}"
+                    data-prev-value="${allDirty?"":this.get()}"
+                    required
+                    ${capture.patternStr}
+                    ${capture.minMaxStepStr}
+                >`
+            );
+            this.#inputEl.addKeyListener("Enter", e=>this.#parent?.submitEdit());
+            this.#inputEl.addKeyListener("Escape", e=>this.#parent?.cancelEdit());
+        }};
+
+        // cancelEdit
+        case "cancelEdit": return { value: function() {
+            this.#inputEl = null;
+            this.updateUI();
+        }};
+
+        // validateEdit
+        case "validateEdit": return {value: function() {
+            this.#inputEl.setCustomValidity("");
+            if (!this.isDirty) {
+                return true;
+            }
+            if (this.#inputEl.validity.patternMismatch) {
+                this.#inputEl.setCustomValidity(`Match the pattern ${capture.pattern}`);
+            }
+            // if (isNotUnique()) {
+            //     this.#inputEl.setCustomValidity("Must be unique");
+            // }
+            return this.#inputEl.reportValidity();
+        }};
+
+        // submitEdit
+        case "submitEdit": return { value: function() {
+            if (this.isDirty) {
+                // this.set(new (this.#type)(this.#inputEl.value));
+                this.setFromStr(this.#inputEl.value);
+            }
+            this.updateUI();
+        }};
+
+        // arr
+        // read-only
+        case "arr": return { get: function() {
+            return this.#obj[this.#key];
+        }};
+
+        // addStart
+        case "addStart": return { value: function() {
+            this.enableAll(false);
+            const item = new capture.Type();
+            const bindConfig = {
+                startEditOnInit: true,
+                parentData: this.#parent,
+                parentKey: this.#key
+            };
+            if (capture.isReorderable) {
+                this.reorderableConfig.enable(false);
+                const indexKey = this.reorderableConfig.indexKey;
+                if (Object.getOwnPropertyDescriptor(capture.Type.prototype, indexKey)) {
+                    item[indexKey] = this.#obj[this.#key].length;
+                }
+
+                bindConfig.tempCallback = {
+                    onCancelEdit: this.addCancel.bind(this),
+                    onSubmitEdit: this.addSubmit.bind(this),
+                };
+            }
+            // create dataUI
+            DataUI.create(item, this.#el, bindConfig);
+        }};
+
+        // addCancel
+        case "addCancel": return { value: function(dataUI) {
+            this.reorderableConfig?.enable(true);
+            dataUI.el.remove();
+            // addButton.classList.remove("hidden");
+            this.enableAll(true);
+        }};
+
+        // addSubmit
+        case "addSubmit": return { value: function(dataUI) {
+            this.arr.push(dataUI.instance);
+            dataUI.attach();
+            if (isReorderable) {
+                this.reorderableConfig.enable(true);
+                makeReorderableItem(dataUI.el, this.reorderableConfig);
+            }
+            // addButton.classList.remove("hidden");
+            this.enableAll(true);
+            this.#parent?.onAdd?.(this.#key);
+            this.#parent?.onChange?.(this.#key);
+        }};
+
+        // removeChild
+        case "removeChild": return { value: function(item, msg) {
+            const index = this.arr.indexOf(item);
+            if (index === -1) {
+                console.error("Child not found.");
+                return;
+            }
+            confirmDialog(msg ?? `Remove index ${index}?`,
+                "Cancel", null,
+                "Remove", () => {
+                    const el = item.dataUI.el;
+                    this.arr.splice(index, 1);
+                    el.remove();
+                    this.reIndex(index);
+                    this.#parent?.onRemoveChild?.(this.#key, index);
+                    this.#parent?.onChange?.(this.#key);
+                }
+            );
+        }};
+
+        // enableAllExcept
+        case "enableAllExcept": return { value: function(item, enabled) {
+            let i = this.arr.length;
+            while (i--) {
+                if (this.arr[i] === item) continue;
+                this.arr[i]?.dataUI?.setEnabled(enabled);
+            }
+        }};
+
+        // enableAll
+        case "enableAll": return { value: function(enabled) {
+            let i = this.arr.length;
+            while (i--) {
+                this.arr[i]?.dataUI?.setEnabled(enabled);
+            }
+        }};
+
+        // onReorder
+        case "onReorder": return { value: function(oldIndex, newIndex) {
+            const arr = this.#obj[this.#key];
+            const oldItem = arr.splice(oldIndex, 1)[0];
+            arr.splice(newIndex, 0, oldItem);
+            this.reIndex();
+            this.#parent?.onReorder?.(this.#key, oldIndex, newIndex);
+            this.#parent?.onChange?.(this.#key);
+        }};
+
+        // reorderableConfig
+        case "reorderableConfig": return {get:()=>capture.reorderableConfig};
+
+        // reIndex
+        case "reIndex": return { value: function(startIndex=0) {
+            const indexKey = this.reorderableConfig.indexKey;
+            const e = this.arr.length;
+            let i = startIndex;
+            while (i < e) {
+                this.arr[i][indexKey] = i;
+                ++i;
+            }
+            this.#parent?.onReIndex?.(this.#key);
+        }};
+
+        }})());
     }
 }
 
