@@ -49,6 +49,7 @@ export function isEls(arg) {
 
 // returns HTMLElement or null
 export function ifElFn(arg, ...args) {
+    if (isEl(arg)) return arg;
     let el;
     if (!isFn(arg) || !isEl(el = arg(...args))) return null;
     return el;

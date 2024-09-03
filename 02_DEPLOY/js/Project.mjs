@@ -1,4 +1,5 @@
 import Serializable from "./common/Serializable.mjs"
+import Accessor from "./common/Accessor.mjs"
 
 import App from "./App.mjs"
 import ShaderProgram from "./ShaderProgram.mjs"
@@ -140,7 +141,9 @@ export default class Project extends Serializable {
         // add pass ui
         const passEl = projEl.querySelector("#passes ul");
         // pass will be an array eventually, making this a loop
-        this.pass.createUI(passEl);
+        // this.pass.createUI(passEl);
+        const accessor = new Accessor(this, "pass", {config:Pass, el:passEl});
+        console.log("me me accessor", accessor);
 
         // add uniform buffer ui
         this.unib.createUI(projEl);

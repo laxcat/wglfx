@@ -38,15 +38,15 @@ export default class VertexAttrib extends Serializable {
                 </td>
             </tr>`,
         bind: {
-            index: {el:trEl=>trEl.children[0]},
-            key:   {el:trEl=>trEl.children[1], pattern:"[a-z]{3,12}", editable:true},
-            size:  {el:trEl=>trEl.children[2], limit:[1,4], editable:true, getStrKey:"sizeRowStr"},
+            index: {el:els=>els[0].children[0]},
+            key:   {el:els=>els[0].children[1], pattern:"[a-z]{3,12}", editable:true},
+            size:  {el:els=>els[0].children[2], limit:[1,4], editable:true, getStrKey:"sizeRowStr"},
         },
         control: {
-            editStart:  trEl=>trEl.children[3].children[0],
-            removeSelf: trEl=>trEl.children[3].children[1],
-            editCancel: trEl=>trEl.children[3].children[2],
-            editSubmit: trEl=>trEl.children[3].children[3],
+            editStart:  els=>els[0].children[3].children[0],
+            removeSelf: els=>els[0].children[3].children[1],
+            editCancel: els=>els[0].children[3].children[2],
+            editSubmit: els=>els[0].children[3].children[3],
         },
         callback: {
             onChange: "onChangeData",

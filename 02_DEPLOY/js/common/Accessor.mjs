@@ -1,7 +1,7 @@
 import { extd } from "./common-extension.mjs"
 import DataUI from "./DataUI.mjs"
 import { confirmDialog } from "./util-ui.mjs"
-import { isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
+import { is, isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
 
 /*
     TODO: NOT UP TO DATE
@@ -77,16 +77,33 @@ export default class Accessor {
     #key;           //  String, property key
 
     // optional, set by config
-    #parent;        //  DataUI
-    #el;            //  HTMLElement
+    #parent;        //  Accessor
+    #el;            //  HTMLElement. this is the CONTAINING el (parent).
+                    //      this.createUI creates this.createdEls.
+                    //      el might have other children than createdEls
     #getStrKey;     //  string, key used for getStr getter
 
     // calculated
     #inputEl;       //  an input (or other) html form element
 
+
+    // child accessors
+    #children;      //  Map
+
+
+
     constructor(obj, key, config={}) {
         this.#obj = obj;
         this.#key = key;
+
+        // config is a type with a static config obj, so
+        // pull the static config and use it as our config, remembering type
+        const type = config.config;
+        if (type && type === type?.prototype?.constructor && type.dataUI) {
+            config = {...type.dataUI, ...config, type};
+        }
+
+        // console.log(obj, key, config);
 
         this.#parent    = config.parent     ?? null;
         this.#el        = config.el         ?? null;
@@ -99,11 +116,17 @@ export default class Accessor {
         if (isArr(config.type)) {
             this.#setupAsArray(config);
         }
+        // obj-like property
+        else if (config.type) {
+            this.#setupAsObj(config);
+        }
         // normal string/number property
         else {
             this.#setupAsScalar(config);
         }
         Object.preventExtensions(this);
+
+        console.log("accessor", this);
     }
 
     // Accessor only controls a single value like a string or number
@@ -206,11 +229,16 @@ export default class Accessor {
 
         const capture = {};
 
+        capture.Type = config.type[0];
+
         // make a read-only getter to the array
         this.#defProp("arr");
 
+        if (isEl(this.#el)) {
+            this.#defProp("createUI_arr");
+        }
+
         if (config.editable) {
-            capture.Type = config.type[0];
 
             // create startAdd function, which presnts a new item form
             this.#defProp("addChildStart", capture);
@@ -229,11 +257,11 @@ export default class Accessor {
 
             // add click handler to add control
             if (config.addControl) {
-                const el = ifElFn(config.addControl, this.#parent.el);
-                if (el === null) {
-                    throw new SyntaxError(`Could not get el for control add in ${key}.`);
-                }
-                el.addEventListener("click", e=>this.addChildStart());
+                // const el = ifElFn(config.addControl, this.#el);
+                // if (el === null) {
+                //     throw new SyntaxError(`Could not get el for control add in ${key}.`);
+                // }
+                // el.addEventListener("click", e=>this.addChildStart());
             }
         }
 
@@ -251,22 +279,96 @@ export default class Accessor {
             // set onReorder callback
             config.reorderable.onReorder = this.onReorder.bind(this);
             // create reorderableConfig getter, and make reorderable
-            capture.reorderableConfig = makeReorderable(this.#el, config.reorderable);
-            this.#defProp("reorderableConfig", capture);
+
+            // TODO REENABLE
+            // capture.reorderableConfig = makeReorderable(this.#el, config.reorderable);
+            // this.#defProp("reorderableConfig", capture);
 
             // create reIndex function
             this.#defProp("reIndex");
+        }
+
+
+        this.#children = [];
+
+        const type = config.type
+        this.arr.forEach((item,index)=>{
+            const subConf = {config:capture.Type, el:this.#el, parent:this};
+            this.#children.push(new Accessor(this.arr, index, subConf));
+        });
+    }
+
+    #setupAsObj(config) {
+        const capture = {};
+
+        // make a read-only getter to the array
+        this.#defProp("obj");
+
+        if (config.el) {
+            // set the html as a read-only getter
+            capture.html = config.html;
+            this.#defProp("html", capture);
+
+            this.#defProp("createdEls");
+
+            this.#defProp("createUI_obj");
+
+            this.#defProp("resetUI");
+        }
+
+        this.#children = new Map();
+        // for each bind key
+        for (const key in config.bind) {
+            const bindKey = {...config.bind[key]};
+            // bindKey.el = ifElFn(bindKey.el, this.createdEls);
+            bindKey.parent = this;
+
+            // create an accessor for this key
+            this.#children.set(key, new Accessor(this.obj, key, bindKey));
+        }
+
+
+        if (config.editable) {
+
+            // create enable/disable functions
+            // this.#defProp("enableAllExcept");
+            // this.#defProp("enableAll");
+
+        }
+
+        // createUI will spider down, so, only start if el is already resolved,
+        // implying a top level object
+        if (isEl(this.#el)) {
+            this.createUI?.();
         }
     }
 
     // ---------------------------------------------------------------------- //
     // ALL the optionally defined properties of the Accessor, all in one place
     // ---------------------------------------------------------------------- //
-    #defProp(propName, capture) {
+    #defProp(definitionKey, capture) {
+        // definitionKey might be propName_extra
+        const propName = definitionKey.split("_", 1)[0];
+
         const defValue = value=>extd(this, propName, {value});
         const defGet   = get=>  extd(this, propName, {get});
 
-        switch(propName) {
+        switch(definitionKey) {
+
+        // GENERAL UI -------------------------------------------------------- //
+
+        // createdEls
+        case "createdEls":
+            let _createdEls = [];
+            extd(this, propName, {
+                get:()=>_createdEls,
+                set:(a)=>{
+                    if      (isEl(a))   _createdEls = [a];
+                    else if (isArr(a))  _createdEls = a;
+                    else                _createdEls = [];
+                }
+            });
+        break;
 
         // SCALAR GENERAL --------------------------------------------------- //
 
@@ -302,15 +404,18 @@ export default class Accessor {
         // SCALAR EDITABLE -------------------------------------------------- //
 
         // setFromStr
-        case "setFromStr": defValue(
-            (isFn(capture.fromStr)) ?
+        case "setFromStr":
             // use fromStr wrapper
-            function(str) {
-                this.set(capture.fromStr(str));
-            } :
+            if (isFn(capture.fromStr)) {
+                const { fromStr } = capture;
+                defValue(function(str) {
+                    this.set(fromStr(str));
+                });
+            }
             // use set fn directly
-            this.set
-        );
+            else {
+                defValue(this.set);
+            }
         break;
 
         // isDirty
@@ -323,21 +428,23 @@ export default class Accessor {
         break;
 
         // editStart
-        case "editStart": defValue(function(allDirty=false) {
-            this.#el.innerHTML = "";
-            this.#inputEl = this.#el.appendHTML(
-                `<input
-                    type="${capture.inputType}"
-                    value="${this.get()}"
-                    data-prev-value="${allDirty?"":this.get()}"
-                    required
-                    ${capture.patternStr}
-                    ${capture.minMaxStepStr}
-                >`
-            );
-            this.#inputEl.addKeyListener("Enter", e=>this.#parent?.editSubmit());
-            this.#inputEl.addKeyListener("Escape", e=>this.#parent?.editCancel());
-        });
+        case "editStart":
+            const { inputType, patternStr, minMaxStepStr } = capture;
+            defValue(function(allDirty=false) {
+                this.#el.innerHTML = "";
+                this.#inputEl = this.#el.appendHTML(
+                    `<input
+                        type="${inputType}"
+                        value="${this.get()}"
+                        data-prev-value="${allDirty?"":this.get()}"
+                        required
+                        ${patternStr}
+                        ${minMaxStepStr}
+                    >`
+                );
+                this.#inputEl.addKeyListener("Enter", e=>this.#parent?.editSubmit());
+                this.#inputEl.addKeyListener("Escape", e=>this.#parent?.editCancel());
+            });
         break;
 
         // editCancel
@@ -348,19 +455,21 @@ export default class Accessor {
         break;
 
         // validateEdit
-        case "validateEdit": defValue(function() {
-            this.#inputEl.setCustomValidity("");
-            if (!this.isDirty) {
-                return true;
-            }
-            if (this.#inputEl.validity.patternMismatch) {
-                this.#inputEl.setCustomValidity(`Match the pattern ${capture.pattern}`);
-            }
-            // if (isNotUnique()) {
-            //     this.#inputEl.setCustomValidity("Must be unique");
-            // }
-            return this.#inputEl.reportValidity();
-        });
+        case "validateEdit":
+            const { pattern } = capture;
+            defValue(function() {
+                this.#inputEl.setCustomValidity("");
+                if (!this.isDirty) {
+                    return true;
+                }
+                if (this.#inputEl.validity.patternMismatch) {
+                    this.#inputEl.setCustomValidity(`Match the pattern ${pattern}`);
+                }
+                // if (isNotUnique()) {
+                //     this.#inputEl.setCustomValidity("Must be unique");
+                // }
+                return this.#inputEl.reportValidity();
+            });
         break;
 
         // editSubmit
@@ -382,32 +491,41 @@ export default class Accessor {
         });
         break;
 
+        // ARRAY UI --------------------------------------------------------- //
+
+        case "createUI_arr": defValue(function() {
+            this.#children.forEach(accessor=>accessor.createUI?.());
+        });
+        break;
+
         // ARRAY EDITABLE --------------------------------------------------- //
 
         // addChildStart
-        case "addChildStart": defValue(function() {
-            this.enableAll(false);
-            const item = new capture.Type();
-            const bindConfig = {
-                editOnInit: true,
-                parentData: this.#parent,
-                parentKey: this.#key
-            };
-            if (this.reorderableConfig) {
-                this.reorderableConfig.enable(false);
-                const indexKey = this.reorderableConfig.indexKey;
-                if (Object.getOwnPropertyDescriptor(capture.Type.prototype, indexKey)) {
-                    item[indexKey] = this.#obj[this.#key].length;
-                }
-
-                bindConfig.tempCallback = {
-                    onEditCancel: this.addChildCancel.bind(this),
-                    onEditSubmit: this.addChildSubmit.bind(this),
+        case "addChildStart":
+            const { Type } = capture;
+            defValue(function() {
+                this.enableAll(false);
+                const item = new Type();
+                const bindConfig = {
+                    editOnInit: true,
+                    parentData: this.#parent,
+                    parentKey: this.#key
                 };
-            }
-            // create dataUI
-            DataUI.create(item, this.#el, bindConfig);
-        });
+                if (this.reorderableConfig) {
+                    this.reorderableConfig.enable(false);
+                    const indexKey = this.reorderableConfig.indexKey;
+                    if (Object.getOwnPropertyDescriptor(Type.prototype, indexKey)) {
+                        item[indexKey] = this.#obj[this.#key].length;
+                    }
+
+                    bindConfig.tempCallback = {
+                        onEditCancel: this.addChildCancel.bind(this),
+                        onEditSubmit: this.addChildSubmit.bind(this),
+                    };
+                }
+                // create dataUI
+                DataUI.create(item, this.#el, bindConfig);
+            });
         break;
 
         // addChildCancel
@@ -488,7 +606,9 @@ export default class Accessor {
         break;
 
         // reorderableConfig
-        case "reorderableConfig": defGet(()=>capture.reorderableConfig);
+        case "reorderableConfig":
+            const { reorderableConfig } = capture;
+            defGet(()=>reorderableConfig);
         break;
 
         // reIndex
@@ -501,6 +621,53 @@ export default class Accessor {
                 ++i;
             }
             this.#parent?.onReIndex?.(this.#key);
+        });
+        break;
+
+        // OBJ GENERAL ------------------------------------------------------ //
+
+        case "obj": defGet(function(){ return this.#obj[this.#key]; });
+        break;
+
+        // OBJ UI ----------------------------------------------------------- //
+
+        // html
+        case "html":
+            const { html } = capture;
+            defGet(()=>html);
+        break;
+
+        // createUI
+        case "createUI_obj": defValue(function() {
+            this.#el = ifElFn(this.#el, this.parent?.createdEls);
+            this.createdEls = this.#el.appendHTML(this.html);
+            this.#children.forEach(accessor=>accessor.createUI?.());
+        });
+        break;
+
+        // resetUI
+        case "resetUI": defValue(function() {
+            // nothing to do
+            if (this.createdEls.length === 0) {
+                return;
+            }
+            // if createdEls matches containing el children,
+            // we can shortcut by replacing the whole contents of containing el
+            if (this.createdEls.length === this.#el.children.length) {
+                this.#el.innnerHTML = "";
+                return this.createUI();
+            }
+            const prevSib = this.createdEls[0].previousElementSibling;
+            this.createdEls.forEach(el=>el.remove());
+            // append after previous sibling
+            if (prevSib) {
+                this.createdEls = prevSib.insertHTMLAfter(this.html);
+            }
+            // there was no previous sibling, insert as parent's first chilren
+            else {
+                this.createdEls = this.#el.prependHTML(this.html);
+            }
+            return this.createdEls;
         });
         break;
 

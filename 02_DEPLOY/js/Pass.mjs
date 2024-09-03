@@ -90,11 +90,12 @@ export default class Pass extends Serializable {
             </li>
             `,
         bind: {
+            name: { el: els=>els[0].children[0] },
             layout: {
-                el: liEl=>liEl.querySelector("table.layout tbody"),
+                el: els=>els[0].querySelector("table.layout tbody"),
                 type: [VertexAttrib],
                 reorderable: true,
-                addControl: liEl=>liEl.querySelector("table.layout+button"),
+                addControl: els=>els[0].querySelector("table.layout+button"),
             },
         },
         control: {
