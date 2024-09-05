@@ -27,26 +27,22 @@ export default class VertexAttrib extends Serializable {
     static dataUI = {
         html: `
             <tr>
-                <td><!-- index --></td>
-                <td><!-- key   --></td>
-                <td><!-- size  --></td>
+                <td data-bind="index"></td>
+                <td data-bind="key"></td>
+                <td data-bind="size"></td>
                 <td class="noDrag">
-                    <button>${SVG.get("edit")}</button>
-                    <button>🚫</button>
-                    <button>×</button>
-                    <button>✓</button>
+                    <button data-control="editStart">${SVG.get("edit")}</button>
+                    <button data-control="removeSelf">🚫</button>
+                    <button data-control="editCancel">×</button>
+                    <button data-control="editSubmit">✓</button>
                 </td>
             </tr>`,
         bind: {
-            index: {el:els=>els[0].children[0]},
-            key:   {el:els=>els[0].children[1], pattern:"[a-z]{3,12}", editable:true},
-            size:  {el:els=>els[0].children[2], limit:[1,4], editable:true, getStrKey:"sizeRowStr"},
+            index: {},
+            key:   {pattern:"[a-z]{3,12}", editable:true},
+            size:  {limit:[1,4], editable:true, getStrKey:"sizeRowStr"},
         },
         control: {
-            editStart:  els=>els[0].children[3].children[0],
-            removeSelf: els=>els[0].children[3].children[1],
-            editCancel: els=>els[0].children[3].children[2],
-            editSubmit: els=>els[0].children[3].children[3],
         },
         callback: {
             onChange: "onChangeData",

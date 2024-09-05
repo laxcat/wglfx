@@ -73,14 +73,14 @@ export default class Pass extends Serializable {
         html:
             `
             <li>
-                <h3 class="collapsible"></h3>
+                <h3 data-bind="name" class="collapsible"></h3>
                 <div>
                     <label>Clear Color</label>
                     <input type="text" class="color" value="">
 
                     <label class="collapsible">Layout</label>
-                    <table class="layout"><tbody></tbody></table>
-                    <button>+</button>
+                    <table class="layout"><tbody data-bind="layout"></tbody></table>
+                    <button data-bind="layout" data-key="addControl">+</button>
 
                     <label class="collapsible">Meshes</label>
                     <ul class="meshes"></ul>
@@ -90,12 +90,12 @@ export default class Pass extends Serializable {
             </li>
             `,
         bind: {
-            name: { el: els=>els[0].children[0] },
+            name: {},
             layout: {
-                el: els=>els[0].querySelector("table.layout tbody"),
+                // el: els=>els[0].querySelector("table.layout tbody"),
                 type: [VertexAttrib],
                 reorderable: true,
-                addControl: els=>els[0].querySelector("table.layout+button"),
+                // addControl: els=>els[0].querySelector("table.layout+button"),
             },
         },
         control: {

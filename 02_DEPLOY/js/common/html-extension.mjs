@@ -57,7 +57,7 @@ extdProto(HTMLElement, "insertHTML", function(html, config={}) {
 
     if (config.require !== undefined &&
         config.require !== ret.length) {
-        throw CustomError(
+        throw new Error(
             `insertHTML set to require exactly ${config.require} inserted elements; `+
             `${ret.length} inserted`
         );

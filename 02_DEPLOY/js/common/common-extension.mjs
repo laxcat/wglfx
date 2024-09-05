@@ -10,7 +10,7 @@ export function extd(builtIn, propName, options) {
     // do nothing if set already
     // TODO: should this check Object.getOwnPropertyDescriptor(Type.prototype, propName)
     if (builtIn.hasOwnProperty(propName)) {
-        console.error("WARNING COULD NOT SET!", builtIn, propName);
+        console.error(`WARNING COULD NOT SET ${builtIn?.constructor?.name}[${propName}]!`, builtIn, propName);
         return;
     }
     Object.defineProperty(builtIn, propName, options);
@@ -140,6 +140,13 @@ extdProto(Array, "findByKeyOrDefault", function(key, keyProp="key", defaultProp=
     }
     // key not found. return default according to rules
     return defaultByProp || defaultByKey || this[0];
+});
+
+extdProto(Map, "every", function(fn){
+    for (const [key, val] of this) {
+        if (!fn(val, key, this)) return false;
+    }
+    return true;
 });
 
 // Base64 Encoding/Decoding ------------------------------------------------- //

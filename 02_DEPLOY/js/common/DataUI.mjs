@@ -137,7 +137,7 @@ export default class DataUI {
 
     attach() {
         if (this.isAttached()) {
-            throw CustomError(`DataUI instance is already attached.`);
+            throw new Error(`DataUI instance is already attached.`);
         }
         this.#tempCallback?.clear();
         this.#tempCallback = null;
