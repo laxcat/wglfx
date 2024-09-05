@@ -147,7 +147,7 @@ export default class Shader extends Serializable {
     }
 
     createUI(parentEl) {
-        this.el = parentEl.appendHTML(
+        this.el = parentEl.insertHTML(
             `<li>
             <label class="collapsible">${this.key.toStartCase()} Shader</label>
             <pre></pre>

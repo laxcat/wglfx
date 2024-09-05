@@ -109,7 +109,7 @@ export default class Mesh extends Serializable {
     }
 
     createUI(parentEl) {
-        this.el = parentEl.appendHTML(
+        this.el = parentEl.insertHTML(
             `
             <li>
                 <label class="collapsible">Mesh</label>

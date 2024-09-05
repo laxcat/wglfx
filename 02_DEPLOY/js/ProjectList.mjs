@@ -261,7 +261,7 @@ export default class ProjectList extends Serializable {
         const proj = App.project;
         // add pass ui
         let v = 1;
-        this.el = parentEl.appendHTML(
+        this.el = parentEl.insertHTML(
             `
             <header id="projList">
                 <select></select>
@@ -299,7 +299,7 @@ export default class ProjectList extends Serializable {
 
     #fillProjListUI() {
         const projLI = this.selected;
-        this.selectEl.appendHTML(
+        this.selectEl.insertHTML(
             `
             <optgroup label="Projects">
                 ${this.projLIs.map(

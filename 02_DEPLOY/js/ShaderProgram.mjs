@@ -102,7 +102,7 @@ export default class ShaderProgram extends Serializable {
     }
 
     createUI(parentEl) {
-        this.el = parentEl.appendHTML(
+        this.el = parentEl.insertHTML(
             `
             <section id="program">
                 <h2 class="collapsible">Program</h2>

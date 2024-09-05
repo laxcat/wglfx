@@ -12,7 +12,7 @@ export default class UBOSlot extends Serializable {
     updateFromUI = {};
 
     createUI(parentEl, ubo) {
-        parentEl.appendHTML(
+        parentEl.insertHTML(
             `
             <td><input type="text" class="name" value="${this.name}"></td>
             <td>
@@ -41,7 +41,7 @@ export default class UBOSlot extends Serializable {
         this.values.forEach(value => {
             valueInputs += `<input type="text" value="${value}" class="value">`;
         });
-        parentEl.appendHTML(`<td>${valueInputs}</td>`);
+        parentEl.insertHTML(`<td>${valueInputs}</td>`);
 
         const nameEl   = parentEl.querySelector("input.name");
         const offsetEl = parentEl.querySelector("input.offset");

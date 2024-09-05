@@ -78,11 +78,11 @@ export default class VertexAttrib extends Serializable {
 
     // createUI(parentEl) {
     //     return DataUI.bind(this, parentEl);
-    //     // this.el = parentEl.appendHTML(dataUI.html);
+    //     // this.el = parentEl.insertHTML(dataUI.html);
     // }
 
     // createUI_old(parentEl) {
-    //     this.el = parentEl.appendHTML(
+    //     this.el = parentEl.insertHTML(
     //         `
     //         <tr>
     //             <td></td>

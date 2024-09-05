@@ -187,7 +187,7 @@ export default class DataUI {
     #tempCallback;  // Map of temp callbacks. Removed when dataUI is attached.
 
     #createUI() {
-        this.#el = this.#parentEl.appendHTML(this.#html);
+        this.#el = this.#parentEl.insertHTML(this.#html);
     }
 
     #bind(config) {

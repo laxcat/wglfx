@@ -34,8 +34,9 @@ export default class SVG {
     #svgEl;
     get svgEl() {
         if (!this.#svgEl) {
-            this.#svgEl = document.body.prependHTML(
-                `<svg class="hidden" version="2.0"><defs></defs></svg>`
+            this.#svgEl = document.body.insertHTML(
+                `<svg class="hidden" version="2.0"><defs></defs></svg>`,
+                {position:"afterbegin"}
             );
         }
         return this.#svgEl;
@@ -110,7 +111,7 @@ export default class SVG {
     }
 
     #add(key, w, h, symbolStr) {
-        const symbolEl = this.defsEl.appendHTML(symbolStr);
+        const symbolEl = this.defsEl.insertHTML(symbolStr);
         symbolEl.setAttribute("id", "svg-"+key);
         return this.#getCached(key, w, h);
     }

@@ -52,7 +52,7 @@ export function confirmDialog(msg, ...buttonArgs) {
         ++i;
     }
     // add dialog to end of body
-    const dialog = document.body.appendHTML(`
+    const dialog = document.body.insertHTML(`
         <dialog>
             <p>${msg}</p>
             ${buttonEls}
@@ -306,7 +306,7 @@ export function confirmDialog(msg, ...buttonArgs) {
 //             }
 //             // input
 //             else {
-//                 item.inputEl = item.slot(row).appendHTML(`
+//                 item.inputEl = item.slot(row).insertHTML(`
 //                     <input
 //                         type="${item.number?"number":"text"}"
 //                         value="${item.prop.get()}"

@@ -5,50 +5,67 @@
 */
 import { extdProto } from "./common-extension.mjs"
 
-extdProto(Element, "appendHTML", function(html) {
-    const oldLen = this.children.length;
-    this.insertAdjacentHTML("beforeend", html);
-    const newLen = this.children.length;
+// wraps insertAdjacentHTML
+// returns HTMLElement or Array of HTMLElement for inserted elements
+// ignores all text-nodes both in the target and inserted elements (for example
+// inserted text elements will be inserted, but not returned)
+extdProto(HTMLElement, "insertHTML", function(html, config={}) {
+    config = {
+        position: "beforeend",      // insertAdjacentHTML position
+        alwaysReturnArray: false,   // if true never returns single element
+        require: undefined,         // if set, throws if return count doesn't match
+        ...config,
+    };
+    const oldPrev = this.previousElementSibling;
+    const oldNext = this.nextElementSibling;
+    const oldFrst = this.firstElementChild;
+    const oldLast = this.lastElementChild;
+    this.insertAdjacentHTML(config.position, html);
+    const newPrev = this.previousElementSibling;
+    const newNext = this.nextElementSibling;
+    const newFrst = this.firstElementChild;
+    const newLast = this.lastElementChild;
 
-    // exactly one node added, return one node
-    if (newLen === oldLen + 1) {
-        return this.children.last();
+    let walkS, walkE;
+    // "beforebegin", probably
+    if (oldPrev !== newPrev) {
+        walkS = oldPrev?.nextElementSibling ?? this.parentElement.firstElementChild;
+        walkE = this;
+    }
+    // "afterbegin", probably
+    else if (oldFrst !== newFrst) {
+        walkS = newFrst;
+        walkE = oldFrst;
+    }
+    // "beforeend", probably
+    else if (oldLast !== newLast) {
+        walkS = oldLast.nextElementSibling;
+        walkE = null;
+    }
+    // "afterend", probably
+    else if (oldNext !== newNext) {
+        walkS = newNext;
+        walkE = oldNext;
     }
 
-    // otherwise, return an array, maybe an empty array if nothing added
-    return this.children.slice(oldLen, newLen);
-});
-
-extdProto(Element, "prependHTML", function(html) {
-    const oldLen = this.children.length;
-    this.insertAdjacentHTML("afterbegin", html);
-    const newLen = this.children.length;
-
-    // exactly one node added, return one node
-    if (newLen === oldLen + 1) {
-        return this.children[0];
+    let el = walkS;
+    let ret = [];
+    while (el !== walkE) {
+        ret.push(el);
+        el = el.nextElementSibling;
     }
 
-    // otherwise, return an array, maybe an empty array if nothing added
-    return this.children.slice(0, newLen - oldLen);
-});
-
-extdProto(Element, "insertHTMLAfter", function(html) {
-    const parent = this.parentElement;
-    const thisIndex = parent.children.indexOf(this);
-    const oldLen = parent.children.length;
-    this.insertAdjacentHTML("afterend", html);
-    const newLen = parent.children.length;
-    const addedCount = newLen - oldLen;
-
-    // something went wrong or nothing added, return empty array
-    if (addedCount <= 0) return [];
-
-    // added exactly one element, return added element
-    if (addedCount === 1) return parent.children[thisIndex+1];
-
-    // multiple added, return added elements
-    return this.children.slice(thisIndex+1, thisIndex+1+addedCount);
+    if (config.require !== undefined &&
+        config.require !== ret.length) {
+        throw CustomError(
+            `insertHTML set to require exactly ${config.require} inserted elements; `+
+            `${ret.length} inserted`
+        );
+    }
+    if (!config.alwaysReturnArray && ret.length === 1) {
+        return ret[0];
+    }
+    return ret;
 });
 
 extdProto(Element, "elementIndex", function() {

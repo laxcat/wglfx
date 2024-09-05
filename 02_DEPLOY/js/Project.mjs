@@ -127,7 +127,7 @@ export default class Project extends Serializable {
     }
 
     createUI(parentEl) {
-        const projEl = parentEl.appendHTML(
+        const projEl = parentEl.insertHTML(
             `
             <main id="project">
                 <section id="passes">

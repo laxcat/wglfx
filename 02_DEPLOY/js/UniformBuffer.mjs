@@ -115,7 +115,7 @@ export default class UniformBuffer extends Serializable {
     }
 
     createUI(parentEl) {
-        this.el = parentEl.appendHTML(
+        this.el = parentEl.insertHTML(
             `
             <section id="uniform-buffer">
                 <h2 class="collapsible">Uniform Buffer</h2>
@@ -140,7 +140,7 @@ export default class UniformBuffer extends Serializable {
         const tbodyEl = this.el.querySelector("table > tbody");
         const slotCount = this.slots.length;
         for (let si = 0; si < slotCount; ++si) {
-            const slotEl = tbodyEl.appendHTML(`<tr></tr>`);
+            const slotEl = tbodyEl.insertHTML(`<tr></tr>`);
             this.slots[si].createUI(slotEl, this);
         }
     }
