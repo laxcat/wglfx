@@ -95,14 +95,7 @@ export default class Accessor {
         this.#obj = obj;
         this.#key = key;
 
-        // config is a type with a static config obj, so
-        // pull the static config and use it as our config, remembering type
-        const type = config.config;
-        if (type && type === type?.prototype?.constructor && type[Accessor.configKey]) {
-            config = {...type[Accessor.configKey], ...config, type};
-        }
-
-        // console.log(obj, key, config);
+        config = this.#setupPre(config);
 
         this.#parent    = config.parent     ?? null;
         this.#getStrKey = config.getStrKey  ?? null;
@@ -111,11 +104,11 @@ export default class Accessor {
 
         // build all the functions onto this Accessor
         // array-like
-        if (isArr(config.type)) {
+        if (this.Type === Array) {
             this.#setupAsArray(config);
         }
         // obj-like
-        else if (config.type) {
+        else if (this.Type) {
             this.#setupAsObj(config);
         }
         // scalar
@@ -126,8 +119,8 @@ export default class Accessor {
 
         // init
         if (config.editOnInit) {
-            this.updateUI();
-            this.editStart(true);
+            this.updateUI?.();
+            this.editStart?.(true);
         }
         else if (this.editCancel) {
             this.editCancel();
@@ -137,6 +130,43 @@ export default class Accessor {
         }
 
         console.log("accessor", this);
+    }
+
+    #setupPre(config) {
+        // TYPE
+        // config prop is set, expects Type[Accessor.configKey]
+        // pull the static config and use it as our config, remembering type
+        if (config.config) {
+            const type = config.config;
+            if (!type ||
+                type !== type?.prototype?.constructor ||
+                !isPOJO(type[Accessor.configKey]))
+            {
+                throw SyntaxError(
+                    "config property expects Type where "+
+                    "Type[Accessor.configKey] static is an Accessor config "+
+                    "object."
+                );
+            }
+            extd(this, "Type", {get:()=>type});
+            config = {...type[Accessor.configKey], ...config, type};
+        }
+        // type set
+        // if type is Array, also set ChildType
+        else if (config.type) {
+            const { type } = config;
+            if (isArr(type)) {
+                extd(this, "Type",      {get:()=>Array});
+                extd(this, "ChildType", {get:()=>type[0]});
+            }
+            else {
+                extd(this, "Type",      {get:()=>type});
+            }
+        }
+
+        // PARENT
+
+        return config;
     }
 
     // Accessor only controls a single value like a string or number
@@ -215,7 +245,7 @@ export default class Accessor {
 
         // setup patternStr
         // setup fromStr, used to determine how setFromStr is configured
-        let fromStr = config.fromStr;
+        let { fromStr } = config;
         let inputType = "text";
         // if limit was set and valid, treat as a number
         if (minMaxStepStr) {
@@ -301,9 +331,9 @@ export default class Accessor {
         }});
     }
 
+    // Accessor controls an array of accessors
+    // child accessors are created with this.ChildType
     #setupAsArray(config) {
-        const Type = config.type[0];
-
         // ARRAY : GENERAL -------------------------------------------------- //
 
         // arr
@@ -319,16 +349,16 @@ export default class Accessor {
             extd(this, "addChildStart", {value:function() {
                 this.setEnabledAll(false);
                 const config = {
-                    temp: new Type(),
+                    temp: new this.ChildType(),
                     editOnInit: true,
                     parent: this,
                     container: this.container,
-                    config: Type,
+                    config: this.ChildType,
                 };
                 if (this.reorderableConfig) {
                     this.reorderableConfig.enable(false);
                     const indexKey = this.reorderableConfig.indexKey;
-                    if (Object.getOwnPropertyDescriptor(Type.prototype, indexKey)) {
+                    if (Object.getOwnPropertyDescriptor(this.Type.prototype, indexKey)) {
                         item[indexKey] = this.#obj[this.#key].length;
                     }
 
@@ -468,7 +498,7 @@ export default class Accessor {
 
         this.arr.forEach((item,index)=>{
             const subConf = {
-                config: Type,
+                config: this.ChildType,
                 container: config.container,
                 parent: this,
                 editable: config.editable,
@@ -571,23 +601,12 @@ export default class Accessor {
                 }
                 this.showControls("editStart", "removeSelf");
                 const dirtyKids = this.getDirtyChildren();
+                this.children.forEach(a=>a.editSubmit?.());
 
-
-                // if (this.#allValid()) {
-                //     this.#showControl("editStart", true);
-                //     this.#showControl("editCancel", false);
-                //     this.#showControl("editSubmit", false);
-                //     this.#showControl("removeSelf", true);
-
-                //     const dirtyKeys = this.#getDirtyKeys();
-
-                //     this.#keys.forEach(acc=>acc.editSubmit?.());
-
-                //     this.parentAccessor?.setEnabledAllExcept(this.#t, true);
+                this.#parent?.setEnabledAllExcept?.(this.obj, true);
+                // dirtyKeys.forEach(key=>this.#callback("change", key));
                 //     this.parentAccessor?.reorderableConfig?.enable(true);
                 //     this.#callback("editSubmit");
-                //     dirtyKeys.forEach(key=>this.#callback("change", key));
-                // }
             }});
 
             // editSubmit
