@@ -9,7 +9,7 @@ import { extdProto } from "./common-extension.mjs"
 // returns HTMLElement or Array of HTMLElement for inserted elements
 // ignores all text-nodes both in the target and inserted elements (for example
 // inserted text elements will be inserted, but not returned)
-extdProto(HTMLElement, "insertHTML", function(html, config={}) {
+extdProto(Element, "insertHTML", function(html, config={}) {
     config = {
         position: "beforeend",      // insertAdjacentHTML position
         alwaysReturnArray: false,   // if true never returns single element

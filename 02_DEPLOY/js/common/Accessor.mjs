@@ -70,7 +70,6 @@ import { is, isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
 
     Note: array-like, (upcoming obj-like), scalar-like can be described as
 
-    see #defProp for complete list of possibly added properties.
 */
 export default class Accessor {
 
@@ -86,9 +85,6 @@ export default class Accessor {
     // optional, set by config
     #parent;        //  Accessor
 
-    #container;     //  HTMLElement. this is the CONTAINING el (parent).
-                    //      this.createUI creates this.createdEls.
-                    //      el might have other children than createdEls
     #getStrKey;     //  string, key used for getStr getter
 
     // calculated
@@ -109,7 +105,6 @@ export default class Accessor {
         // console.log(obj, key, config);
 
         this.#parent    = config.parent     ?? null;
-        this.#container = config.container  ?? null;
         this.#getStrKey = config.getStrKey  ?? null;
 
         this.#inputEl = null;
@@ -146,121 +141,266 @@ export default class Accessor {
 
     // Accessor only controls a single value like a string or number
     #setupAsScalar(config) {
-        // basic getters/setters -------------------------------------------- //
-        this.#defProp("get");
-        this.#defProp("set");
-        this.#defProp("getStr");
+        // SCALAR : GENERAL ------------------------------------------------- //
 
-        // bail if simple accessor
-        if (!isEl(this.#container)) return;
+        // get
+        extd(this, "get", {value:function() {
+            return this.#obj[this.#key];
+        }});
 
-        // UI --------------------------------------------------------------- //
+        // set
+        extd(this, "set", {value:function(value) {
+            this.#obj[this.#key] = value;
+        }});
 
-        // update the ui with the this.getStr()
-        this.#defProp("updateUI");
+        // getStr
+        extd(this, "getStr", {value:
+            (this.#getStrKey === null) ?
+                function() { return this.get()?.toString(); } :
+                function() { return this.#obj[this.#getStrKey]; }
+        });
 
-        // bail if edible not set
-        if (!config.editable) return;
+        // stop here if no ui (simple accessor)
+        if (!isEl(config.container)) {
+            return;
+        }
 
-        // Editable --------------------------------------------------------- //
+        // SCALAR : UI ------------------------------------------------------ //
 
-        // we will try not to capture the whole config object, but only a the
-        // specific values we need
-        const capture = {};
+        // container
+        const { container } = config;
+        extd(this, "container", {get:()=>container});
 
-        // setup minMaxStepStr, used in editStart
-        // setup patternStr, used in editStart
+        // updateUI
+        // set the value in ui, also clears from editing mode
+        extd(this, "updateUI", {value:function() {
+            this.container.innerHTML = this.getStr();
+        }});
+
+        // stop here if not editable
+        if (!config.editable) {
+            return;
+        }
+
+        // SCALAR : EDITABLE ------------------------------------------------ //
+
+        // setup minMaxStepStr
+        // convert config.limit (array/number) to min/max/step string
+        // limit can be:
+        // 0 or [0] ,              ->  min="0"
+        // n or [n] , where n > 0  ->  min="0" max="n"
+        // [n, x]   , where n < x  ->  min="n" max="x"
+        // [n, x, s], where n < x  ->  min="n" max="x" step="s"
+        const minMaxStepStr = (limit=>{
+            // single number is allowed
+            if (isNum(limit)) limit = [limit];
+            // bail if invalid
+            else if (!isArr(limit) || limit.length < 1) return "";
+
+            // 1 item, either n-Inf or 0-n
+            if (limit.length === 1) {
+                return (limit[0] === 0) ?
+                    `min="0"` :
+                    `min="0" max="${limit[0]}"`;
+            }
+            // min >= max, invalid
+            if (limit[0] >= limit[1]) {
+                return "";
+            }
+            // 2-3 items
+            return (limit.length === 2) ?
+                `min="${limit[0]}" max="${limit[1]}"` :
+                `min="${limit[0]}" max="${limit[1]}" step="${limit[2]}"`;
+        })(config.limit);
+
+        // setup patternStr
         // setup fromStr, used to determine how setFromStr is configured
-        capture.minMaxStepStr = this.#getMinMaxStepStr(config.limit);
-        capture.fromStr = config.fromStr;
-        capture.inputType = "text";
+        let fromStr = config.fromStr;
+        let inputType = "text";
         // if limit was set and valid, treat as a number
-        if (capture.minMaxStepStr) {
-            capture.inputType = "number";
-            if (!capture.fromStr) {
-                capture.fromStr = parseFloat;
+        if (minMaxStepStr) {
+            inputType = "number";
+            if (!fromStr) {
+                fromStr = parseFloat;
             }
         }
-        // if pattern was set
-        capture.patternStr = "";
-        const pattern = config.pattern;
-        if (isStr(pattern)) {
-            capture.patternStr = `placeholder="${pattern}" pattern="${pattern}"`;
-        }
+        // make pattern attribute string
+        const patternStr = (isStr(config.pattern)) ?
+            `placeholder="${config.pattern}" pattern="${config.pattern}"`:
+            "";
 
+        // setFromStr
         // setting back from input.value means we need to convert from string
-        this.#defProp("setFromStr", capture);
+        extd(this, "setFromStr", {value:
+            // use fromStr wrapper
+            isFn(fromStr) ? function(str) {
+                this.set(fromStr(str));
+            } :
+            // use set fn directly
+            this.set
+        });
 
+        // isDirty
         // if input is present (editing state), true if value has changed
-        this.#defProp("isDirty");
+        extd(this, "isDirty", {get:function() {
+            const inp = this.#inputEl;
+            if (!inp) return false;
+            if (inp.dataset.prevValue === "") return true;
+            return (inp.value !== inp.dataset.prevValue);
+        }});
 
+        // editStart
         // creates the input in el
-        this.#defProp("editStart_scalar", capture);
+        extd(this, "editStart", {value:function(allDirty=false) {
+            this.container.innerHTML = "";
+            this.#inputEl = this.container.insertHTML(
+                `<input
+                    type="${inputType}"
+                    value="${this.get()}"
+                    data-prev-value="${allDirty?"":this.get()}"
+                    required
+                    ${patternStr}
+                    ${minMaxStepStr}
+                >`
+            );
+            this.#inputEl.addKeyListener("Enter", e=>this.#parent?.editSubmit());
+            this.#inputEl.addKeyListener("Escape", e=>this.#parent?.editCancel());
+        }});
 
+        // editCancel
         // clears the input, populates el with getStr
-        this.#defProp("editCancel_scalar");
+        extd(this, "editCancel", {value:function() {
+            this.#inputEl = null;
+            this.updateUI();
+        }});
 
+        // editValidate
         // validate the current value in input, especially pattern
-        this.#defProp("editValidate_scalar", capture);
+        extd(this, "editValidate", {value:function() {
+            this.#inputEl.setCustomValidity("");
+            if (!this.isDirty) {
+                return true;
+            }
+            if (this.#inputEl.validity.patternMismatch) {
+                this.#inputEl.setCustomValidity(`Match the pattern ${pattern}`);
+            }
+            // if (isNotUnique()) {
+            //     this.#inputEl.setCustomValidity("Must be unique");
+            // }
+            return this.#inputEl.reportValidity();
+        }});
 
+        // editSubmit
         //
-        this.#defProp("editSubmit_scalar");
-    }
-
-    // limit array/number -> min/max/step string
-    // limit can be:
-    // 0 or [0] ,              ->  min="0"
-    // n or [n] , where n > 0  ->  min="0" max="n"
-    // [n, x]   , where n < x  ->  min="n" max="x"
-    // [n, x, s], where n < x  ->  min="n" max="x" step="s"
-    #getMinMaxStepStr(limit) {
-        // single number is allowed
-        if (isNum(limit)) limit = [limit];
-        // bail if invalid
-        else if (!isArr(limit) || limit.length < 1) return "";
-
-        // 1 item, either n-Inf or 0-n
-        if (limit.length === 1) {
-            return (limit[0] === 0) ?
-                `min="0"` :
-                `min="0" max="${limit[0]}"`;
-        }
-        // min >= max, invalid
-        if (limit[0] >= limit[1]) {
-            return "";
-        }
-        // 2-3 items
-        return (limit.length === 2) ?
-            `min="${limit[0]}" max="${limit[1]}"` :
-            `min="${limit[0]}" max="${limit[1]}" step="${limit[2]}"`;
+        extd(this, "editSubmit", {value:function() {
+            if (this.isDirty) {
+                // this.set(new (this.#type)(this.#inputEl.value));
+                this.setFromStr(this.#inputEl.value);
+            }
+            this.updateUI();
+        }});
     }
 
     #setupAsArray(config) {
-        // set some defaults
-        // if addControl present, automatically turn on editable
-        const capture = {};
+        const Type = config.type[0];
 
-        capture.Type = config.type[0];
+        // ARRAY : GENERAL -------------------------------------------------- //
 
-        // make a read-only getter to the array
-        this.#defProp("arr");
+        // arr
+        // similar to "get" in scalar accessors, but read-only
+        extd(this, "arr", {get:function() {
+            return this.#obj[this.#key];
+        }});
 
+        // ARRAY EDITABLE --------------------------------------------------- //
         if (config.editable) {
 
-            // create startAdd function, which presnts a new item form
-            this.#defProp("addChildStart", capture);
+            // addChildStart
+            extd(this, "addChildStart", {value:function() {
+                this.setEnabledAll(false);
+                const config = {
+                    temp: new Type(),
+                    editOnInit: true,
+                    parent: this,
+                    container: this.container,
+                    config: Type,
+                };
+                if (this.reorderableConfig) {
+                    this.reorderableConfig.enable(false);
+                    const indexKey = this.reorderableConfig.indexKey;
+                    if (Object.getOwnPropertyDescriptor(Type.prototype, indexKey)) {
+                        item[indexKey] = this.#obj[this.#key].length;
+                    }
 
-            this.#defProp("addChildCancel");
+                    // config.tempCallback = {
+                    //     onEditCancel: this.addChildCancel.bind(this),
+                    //     onEditSubmit: this.addChildSubmit.bind(this),
+                    // };
+                }
+                // create accessor
+                const accessor = new Accessor(config, "temp", config);
+                this.children.push(accessor);
+            }});
 
-            // create add function
-            this.#defProp("addChildSubmit");
+            // addChildCancel
+            extd(this, "addChildCancel", {value:function(/*dataUI*/) {
+                this.reorderableConfig?.enable(true);
+                // dataUI.el.remove();
+                // addButton.classList.remove("hidden");
+                this.setEnabledAll(true);
+            }});
 
-            // create remove function
-            this.#defProp("removeChild");
+            // addChildSubmit
+            extd(this, "addChildSubmit", {value:function(/*dataUI*/) {
+                // this.arr.push(dataUI.instance);
+                // dataUI.attach();
+                if (this.reorderableConfig) {
+                    this.reorderableConfig.enable(true);
+                    // makeReorderableItem(dataUI.el, this.reorderableConfig);
+                }
+                // addButton.classList.remove("hidden");
+                this.setEnabledAll(true);
+                this.#parent?.onAdd?.(this.#key);
+                this.#parent?.onChange?.(this.#key);
+            }});
 
-            // create enable/disable functions
-            this.#defProp("setEnabledAllExcept");
-            this.#defProp("setEnabledAll");
+            // removeChild
+            extd(this, "removeChild", {value:function(item, msg) {
+                const index = this.arr.indexOf(item);
+                if (index === -1) {
+                    console.error("Child not found.");
+                    return;
+                }
+                msg = msg ?? `Remove index ${index}?`;
+                confirmDialog(msg,
+                    "Cancel", null,
+                    "Remove", () => {
+                        // const el = item.dataUI.el;
+                        // this.arr.splice(index, 1);
+                        // el.remove();
+                        // this.reIndex(index);
+                        // this.#parent?.onRemoveChild?.(this.#key, index);
+                        // this.#parent?.onChange?.(this.#key);
+                    }
+                );
+            }});
+
+            // setEnabledAllExcept
+            extd(this, "setEnabledAllExcept", {value:function(item, enabled) {
+                let i = this.children.length;
+                while (i--) {
+                    if (this.arr[i] === item) continue;
+                    this.children[i]?.setEnabled(enabled);
+                }
+            }});
+
+            // setEnabledAll
+            extd(this, "setEnabledAll", {value:function(enabled) {
+                let i = this.children.length;
+                while (i--) {
+                    this.children[i]?.setEnabled(enabled);
+                }
+            }});
 
             // add click handler to addChild and other array-level controls
             if (config.control) {
@@ -270,7 +410,7 @@ export default class Accessor {
                         continue;
                     }
                     if (!this.controls) {
-                        this.#defProp("controls");
+                        this.#defControls(config);
                     }
                     this.controls.set(key, el);
                     el.addEventListener("click", e=>this[key]());
@@ -278,7 +418,9 @@ export default class Accessor {
             }
         }
 
-        // configure reorderable
+
+        // ARRAY REORDERABLE ------------------------------------------------ //
+
         if (config.reorderable) {
             // config.reorderable cant be anything truthy, but we support a
             // options object passed into makeReorderable
@@ -286,28 +428,48 @@ export default class Accessor {
                 config.reorderable = {};
             }
 
-            // create onReorder function
-            this.#defProp("onReorder");
+            // onReorder
+            extd(this, "onReorder", {value:function(oldIndex, newIndex) {
+                const arr = this.#obj[this.#key];
+                const oldItem = arr.splice(oldIndex, 1)[0];
+                arr.splice(newIndex, 0, oldItem);
+                this.reIndex();
+                this.#parent?.onReorder?.(this.#key, oldIndex, newIndex);
+                this.#parent?.onChange?.(this.#key);
+            }});
 
-            // set onReorder callback
-            config.reorderable.onReorder = this.onReorder.bind(this);
-            // create reorderableConfig getter, and make reorderable
+            // reorderableConfig
+            const { reorderableConfig } = config;
+            extd(this, "reorderableConfig", {get:()=>reorderableConfig});
 
-            // TODO REENABLE
-            // capture.reorderableConfig = makeReorderable(this.#el, config.reorderable);
-            // this.#defProp("reorderableConfig", capture);
-
-            // create reIndex function
-            this.#defProp("reIndex");
+            // reIndex
+            extd(this, "reIndex", {value:function(startIndex=0) {
+                const indexKey = this.reorderableConfig.indexKey;
+                const e = this.arr.length;
+                let i = startIndex;
+                while (i < e) {
+                    this.arr[i][indexKey] = i;
+                    ++i;
+                }
+                this.#parent?.onReIndex?.(this.#key);
+            }});
         }
 
+        // ARRAY : CHILDREN ACCESSORS --------------------------------------- //
 
-        this.#defProp("children_arr");
+        // children
+        const _children = [];
+        extd(this, "children", {get:()=>_children});
+
+        if (config.container) {
+            const { container } = config;
+            extd(this, "container", {get:()=>container});
+        }
 
         this.arr.forEach((item,index)=>{
             const subConf = {
-                config: capture.Type,
-                container: this.#container,
+                config: Type,
+                container: config.container,
                 parent: this,
                 editable: config.editable,
             };
@@ -316,40 +478,145 @@ export default class Accessor {
     }
 
     #setupAsObj(config) {
-        const capture = {};
+        // OBJ : GENERAL ---------------------------------------------------- //
 
-        // make a read-only getter to the array
-        this.#defProp("obj");
+        extd(this, "obj", {get:function(){ return this.#obj[this.#key]; }});
+
+        // OBJ : UI --------------------------------------------------------- //
 
         if (config.html) {
-            // set the html as a read-only getter
-            capture.html = config.html;
-            this.#defProp("html", capture);
+            // objects should always have containers if they have html
+            if (!config.container) {
+                const tempDoc = new DocumentFragment();
+                config.container = document.createElement("template");
+                tempDoc.append(config.container);
+                console.log("no container?", config);
+            }
+            extd(this, "container", {value:config.container, writable:true});
 
-            this.#defProp("el");
+            // html
+            const { html } = config;
+            extd(this, "html", {get:()=>html});
 
-            this.#defProp("createUI_obj");
+            // created el, the base node in html
+            extd(this, "el", {value:null, writable:true});
 
-            this.#defProp("resetUI");
-        }
+            // createUI
+            extd(this, "createUI", {value:function() {
+                this.el = this.container.insertHTML(this.html, {require:1});
+            }});
 
-        if (isEl(this.#container)) {
+            // resetUI
+            extd(this, "resetUI", {value:function() {
+                // nothing to do
+                if (!this.el || !this.container) {
+                    return this.createUI();
+                }
+                // if this is the only child of container, we can shortcut
+                if (this.container.children.length === 1 &&
+                    this.container.children[0] === this.el) {
+                    this.container.innnerHTML = "";
+                    return this.createUI();
+                }
+                const config = {require:1};
+                const prevSib = this.el.previousElementSibling;
+                this.el.remove();
+                // append after previous sibling
+                if (prevSib) {
+                    config.position = "afterend";
+                    this.el = prevSib.insertHTML(this.html, config);
+                }
+                // there was no previous sibling, insert as parent's first child
+                else {
+                    config.position = "afterbegin";
+                    this.el = this.container.insertHTML(this.html, config);
+                }
+                return this.el;
+            }});
+
+            // create UI now
             this.createUI?.();
         }
 
+        // OBJ : EDITABLE --------------------------------------------------- //
+
         if (config.editable) {
+            // editStart
+            extd(this, "editStart", {value:function(allDirty=false) {
+                console.log("editStart", this.children);
+                this.#parent?.setEnabledAllExcept?.(this.obj, false);
+                // this.parentAccessor?.reorderableConfig?.enable(false);
+                this.showControls("editCancel", "editSubmit");
+                this.children.forEach(acc=>acc.editStart?.(allDirty));
+                // this.#callback("editStart");
+            }});
 
-            this.#defProp("editStart_obj");
-            this.#defProp("editCancel_obj");
-            this.#defProp("editSubmit_obj");
-            this.#defProp("editValidate_obj");
-            this.#defProp("removeSelf");
+            // editCancel
+            extd(this, "editCancel", {value:function() {
+                console.log("editCancel");
+                this.showControls("editStart", "removeSelf");
+                this.children.forEach(acc=>
+                    (acc.editCancel) ? acc.editCancel() : acc.updateUI()
+                );
+                this.#parent?.setEnabledAllExcept?.(this.obj, true);
+                // this.parentAccessor?.reorderableConfig?.enable(true);
+                // this.#callback("editCancel");
+            }});
 
+            // editSubmit
+            extd(this, "editSubmit", {value:function() {
+                console.log("editSubmit");
+                if (!this.editValidate()) {
+                    return;
+                }
+                this.showControls("editStart", "removeSelf");
+                const dirtyKids = this.getDirtyChildren();
+
+
+                // if (this.#allValid()) {
+                //     this.#showControl("editStart", true);
+                //     this.#showControl("editCancel", false);
+                //     this.#showControl("editSubmit", false);
+                //     this.#showControl("removeSelf", true);
+
+                //     const dirtyKeys = this.#getDirtyKeys();
+
+                //     this.#keys.forEach(acc=>acc.editSubmit?.());
+
+                //     this.parentAccessor?.setEnabledAllExcept(this.#t, true);
+                //     this.parentAccessor?.reorderableConfig?.enable(true);
+                //     this.#callback("editSubmit");
+                //     dirtyKeys.forEach(key=>this.#callback("change", key));
+                // }
+            }});
+
+            // editSubmit
+            extd(this, "editValidate", {value:function() {
+                return this.children.every(c=>c.editValidate?.() ?? true);
+            }});
+
+            // removeSelf
+            extd(this, "removeSelf", {value:function() {
+                console.log("removeSelf");
+                // this.parentAccessor?.removeChild?.(this.#t);
+            }});
+
+            // getDirtyChildren
+            extd(this, "getDirtyChildren", {value:function() {
+                let keys = [];
+                this.children.forEach((acc,key)=>{
+                    if (acc.isDirty) {
+                        keys.push(key);
+                    }
+                });
+                return keys;
+            }});
+
+            // controls
             const ctrlEls = this.el.querySelectorAll("*[data-control]");
-            console.log("ctrlEls", ctrlEls);
             ctrlEls.forEach(ctrlEl=>{
                 if (!this.controls) {
-                    this.#defProp("controls");
+                    this.#defControls(config);
                 }
                 const ctrl = ctrlEl.getAttribute("data-control");
                 this.controls.set(ctrl, ctrlEl);
@@ -357,7 +624,9 @@ export default class Accessor {
             });
         }
 
-        this.#defProp("children_obj");
+        // children
+        const children = new Map();
+        extd(this, "children", {get:()=>children});
 
         // for each bind key
         for (const key in config.bind) {
@@ -381,442 +650,27 @@ export default class Accessor {
 
             this.children.set(key, accessor);
         }
-
-
-        // createUI will spider down, so, only start if el is already resolved,
-        // implying a top level object
     }
 
-    // ---------------------------------------------------------------------- //
-    // ALL the optionally defined properties of the Accessor, all in one place
-    // ---------------------------------------------------------------------- //
-    #defProp(definitionKey, capture) {
-        // definitionKey might be propName_extra
-        const propName = definitionKey.split("_", 1)[0];
+    #defControls(config) {
+        // controls
+        const controls = new Map();
+        extd(this, "controls", {get:()=>controls});
 
-        const defValue = value=>extd(this, propName, {value});
-        const defGet   = get=>  extd(this, propName, {get});
+        // showControls
+        extd(this, "showControls", {value:function(...ctrls){
+            const fn = (ctrl,key)=>
+                Accessor.setVisible(ctrl, ctrls.includes(key));
+            this.controls.forEach(fn);
+        }});
 
-        switch(definitionKey) {
-
-        // EDITABLE GENERAL ------------------------------------------------- //
-
-        case "controls":
-            const _controls = new Map();
-            defGet(()=>_controls);
-
-            // gonna sneak an extra def in here...think about the pattern later
-            extd(this, "showControls", { value: function(...ctrls){
-                this.controls.forEach((ctrl,key)=>{
-                    Accessor.setVisible(ctrl, ctrls.includes(key));
-                });
-            }});
-
-            extd(this, "setEnabled", { value: function(enabled){
-                if (enabled) {
-                    this.controls?.forEach(c=>c.removeAttribute("disabled"));
-                }
-                else {
-                    this.controls?.forEach(c=>c.setAttribute("disabled", true));
-                }
-            }});
-        break;
-
-        // SCALAR GENERAL --------------------------------------------------- //
-
-        // get
-        case "get": defValue(function() {
-            return this.#obj[this.#key];
-        });
-        break;
-
-        // set
-        case "set": defValue(function(value) {
-            this.#obj[this.#key] = value;
-        });
-        break;
-
-        // getStr
-        case "getStr": defValue(
-            (this.#getStrKey === null) ?
-                function() { return this.get()?.toString(); } :
-                function() { return this.#obj[this.#getStrKey]; }
-        );
-        break;
-
-        // SCALAR UI -------------------------------------------------------- //
-
-        // updateUI
-        case "updateUI": defValue(function() {
-            this.#container.innerHTML = this.getStr();
-        });
-        break;
-
-        // SCALAR EDITABLE -------------------------------------------------- //
-
-        // setFromStr
-        case "setFromStr":
-            // use fromStr wrapper
-            if (isFn(capture.fromStr)) {
-                const { fromStr } = capture;
-                defValue(function(str) {
-                    this.set(fromStr(str));
-                });
-            }
-            // use set fn directly
-            else {
-                defValue(this.set);
-            }
-        break;
-
-        // isDirty
-        case "isDirty": defGet(function() {
-            const inp = this.#inputEl;
-            if (!inp) return false;
-            if (inp.dataset.prevValue === "") return true;
-            return (inp.value !== inp.dataset.prevValue);
-        });
-        break;
-
-        // editStart
-        case "editStart_scalar":
-            const { inputType, patternStr, minMaxStepStr } = capture;
-            defValue(function(allDirty=false) {
-                this.#container.innerHTML = "";
-                this.#inputEl = this.#container.insertHTML(
-                    `<input
-                        type="${inputType}"
-                        value="${this.get()}"
-                        data-prev-value="${allDirty?"":this.get()}"
-                        required
-                        ${patternStr}
-                        ${minMaxStepStr}
-                    >`
-                );
-                this.#inputEl.addKeyListener("Enter", e=>this.#parent?.editSubmit());
-                this.#inputEl.addKeyListener("Escape", e=>this.#parent?.editCancel());
-            });
-        break;
-
-        // editCancel
-        case "editCancel_scalar": defValue(function() {
-            this.#inputEl = null;
-            this.updateUI();
-        });
-        break;
-
-        // editValidate
-        case "editValidate_scalar":
-            const { pattern } = capture;
-            defValue(function() {
-                this.#inputEl.setCustomValidity("");
-                if (!this.isDirty) {
-                    return true;
-                }
-                if (this.#inputEl.validity.patternMismatch) {
-                    this.#inputEl.setCustomValidity(`Match the pattern ${pattern}`);
-                }
-                // if (isNotUnique()) {
-                //     this.#inputEl.setCustomValidity("Must be unique");
-                // }
-                return this.#inputEl.reportValidity();
-            });
-        break;
-
-        // editSubmit
-        case "editSubmit_scalar": defValue(function() {
-            if (this.isDirty) {
-                // this.set(new (this.#type)(this.#inputEl.value));
-                this.setFromStr(this.#inputEl.value);
-            }
-            this.updateUI();
-        });
-        break;
-
-        // ARRAY GENERAL ---------------------------------------------------- //
-
-        // arr
-        // read-only
-        case "arr": defGet(function() {
-            return this.#obj[this.#key];
-        });
-        break;
-
-        // children
-        case "children_arr":
-            const _childrenArr = [];
-            defGet(()=>_childrenArr);
-        break;
-
-        // ARRAY EDITABLE --------------------------------------------------- //
-
-        // addChildStart
-        case "addChildStart":
-            const { Type } = capture;
-            defValue(function() {
-                this.setEnabledAll(false);
-                const config = {
-                    temp: new Type(),
-                    editOnInit: true,
-                    parent: this,
-                    container: this.#container,
-                    config: Type,
-                };
-                if (this.reorderableConfig) {
-                    this.reorderableConfig.enable(false);
-                    const indexKey = this.reorderableConfig.indexKey;
-                    if (Object.getOwnPropertyDescriptor(Type.prototype, indexKey)) {
-                        item[indexKey] = this.#obj[this.#key].length;
-                    }
-
-                    // config.tempCallback = {
-                    //     onEditCancel: this.addChildCancel.bind(this),
-                    //     onEditSubmit: this.addChildSubmit.bind(this),
-                    // };
-                }
-                // create accessor
-                const accessor = new Accessor(config, "temp", config);
-                this.children.push(accessor);
-            });
-        break;
-
-        // addChildCancel
-        case "addChildCancel": defValue(function(/*dataUI*/) {
-            this.reorderableConfig?.enable(true);
-            // dataUI.el.remove();
-            // addButton.classList.remove("hidden");
-            this.setEnabledAll(true);
-        });
-        break;
-
-        // addChildSubmit
-        case "addChildSubmit": defValue(function(/*dataUI*/) {
-            // this.arr.push(dataUI.instance);
-            // dataUI.attach();
-            if (this.reorderableConfig) {
-                this.reorderableConfig.enable(true);
-                // makeReorderableItem(dataUI.el, this.reorderableConfig);
-            }
-            // addButton.classList.remove("hidden");
-            this.setEnabledAll(true);
-            this.#parent?.onAdd?.(this.#key);
-            this.#parent?.onChange?.(this.#key);
-        });
-        break;
-
-        // removeChild
-        case "removeChild": defValue(function(item, msg) {
-            const index = this.arr.indexOf(item);
-            if (index === -1) {
-                console.error("Child not found.");
-                return;
-            }
-            confirmDialog(msg ?? `Remove index ${index}?`,
-                "Cancel", null,
-                "Remove", () => {
-                    // const el = item.dataUI.el;
-                    // this.arr.splice(index, 1);
-                    // el.remove();
-                    // this.reIndex(index);
-                    // this.#parent?.onRemoveChild?.(this.#key, index);
-                    // this.#parent?.onChange?.(this.#key);
-                }
-            );
-        });
-        break;
-
-        // setEnabledAllExcept
-        case "setEnabledAllExcept": defValue(function(item, enabled) {
-            let i = this.children.length;
-            while (i--) {
-                if (this.arr[i] === item) continue;
-                this.children[i]?.setEnabled(enabled);
-            }
-        });
-        break;
-
-        // setEnabledAll
-        case "setEnabledAll": defValue(function(enabled) {
-            let i = this.children.length;
-            while (i--) {
-                this.children[i]?.setEnabled(enabled);
-            }
-        });
-        break;
-
-        // ARRAY REORDERABLE ------------------------------------------------ //
-
-        // onReorder
-        case "onReorder": defValue(function(oldIndex, newIndex) {
-            const arr = this.#obj[this.#key];
-            const oldItem = arr.splice(oldIndex, 1)[0];
-            arr.splice(newIndex, 0, oldItem);
-            this.reIndex();
-            this.#parent?.onReorder?.(this.#key, oldIndex, newIndex);
-            this.#parent?.onChange?.(this.#key);
-        });
-        break;
-
-        // reorderableConfig
-        case "reorderableConfig":
-            const { reorderableConfig } = capture;
-            defGet(()=>reorderableConfig);
-        break;
-
-        // reIndex
-        case "reIndex": defValue(function(startIndex=0) {
-            const indexKey = this.reorderableConfig.indexKey;
-            const e = this.arr.length;
-            let i = startIndex;
-            while (i < e) {
-                this.arr[i][indexKey] = i;
-                ++i;
-            }
-            this.#parent?.onReIndex?.(this.#key);
-        });
-        break;
-
-        // OBJ GENERAL ------------------------------------------------------ //
-
-        case "obj": defGet(function(){ return this.#obj[this.#key]; });
-        break;
-
-        // children
-        case "children_obj":
-            const _childrenObj = new Map();
-            defGet(()=>_childrenObj);
-        break;
-
-        // OBJ UI ----------------------------------------------------------- //
-
-        // html
-        case "html":
-            const { html } = capture;
-            defGet(()=>html);
-        break;
-
-        // createdEls
-        case "el": extd(this, propName, {value:null, writable:true});
-        break;
-
-        // createUI
-        case "createUI_obj": defValue(function() {
-            // const pEls = this.#parent?.createdEls ?? [this.#parent?.#el];
-            // this.#el = ifElFn(this.#el, pEls);
-            if (!this.#container) {
-                this.#container = DocumentFragment();
-            }
-            this.el = this.#container.insertHTML(this.html, {require:1});
-        });
-        break;
-
-        // resetUI
-        case "resetUI": defValue(function() {
-            // nothing to do
-            if (!this.el || !this.#container) {
-                return this.createUI();
-            }
-            // if this is the only child of container, we can shortcut
-            if (this.#container.children.length === 1 &&
-                this.#container.children[0] === this.el) {
-                this.#container.innnerHTML = "";
-                return this.createUI();
-            }
-            const config = {require:1};
-            const prevSib = this.el.previousElementSibling;
-            this.el.remove();
-            // append after previous sibling
-            if (prevSib) {
-                config.position = "afterend";
-                this.el = prevSib.insertHTML(this.html, config);
-            }
-            // there was no previous sibling, insert as parent's first child
-            else {
-                config.position = "afterbegin";
-                this.el = this.#container.insertHTML(this.html, config);
-            }
-            return this.el;
-        });
-        break;
-
-        // editStart
-        case "editStart_obj": defValue(function(allDirty=false) {
-            console.log("editStart_obj", this.children);
-            this.#parent?.setEnabledAllExcept?.(this.obj, false);
-            // this.parentAccessor?.reorderableConfig?.enable(false);
-            this.showControls("editCancel", "editSubmit");
-            this.children.forEach(acc=>acc.editStart?.(allDirty));
-            // this.#callback("editStart");
-        });
-        break;
-
-
-        // editCancel
-        case "editCancel_obj": defValue(function() {
-            console.log("editCancel_obj");
-            this.showControls("editStart", "removeSelf");
-            this.children.forEach(acc=>
-                (acc.editCancel) ? acc.editCancel() : acc.updateUI()
-            );
-            this.#parent?.setEnabledAllExcept?.(this.obj, true);
-            // this.parentAccessor?.reorderableConfig?.enable(true);
-            // this.#callback("editCancel");
-        });
-        break;
-
-        // editSubmit
-        case "editSubmit_obj": defValue(function() {
-            console.log("editSubmit_obj");
-            if (!this.editValidate()) {
-                return;
-            }
-            this.showControls("editStart", "removeSelf");
-            const dirtyKids = this.getDirtyChildren();
-
-
-            // if (this.#allValid()) {
-            //     this.#showControl("editStart", true);
-            //     this.#showControl("editCancel", false);
-            //     this.#showControl("editSubmit", false);
-            //     this.#showControl("removeSelf", true);
-
-            //     const dirtyKeys = this.#getDirtyKeys();
-
-            //     this.#keys.forEach(acc=>acc.editSubmit?.());
-
-            //     this.parentAccessor?.setEnabledAllExcept(this.#t, true);
-            //     this.parentAccessor?.reorderableConfig?.enable(true);
-            //     this.#callback("editSubmit");
-            //     dirtyKeys.forEach(key=>this.#callback("change", key));
-            // }
-        });
-        break;
-
-        // editSubmit
-        case "editValidate_obj": defValue(function() {
-            return this.children.every(c=>c.editValidate?.() ?? true);
-        });
-        break;
-
-        // removeSelf
-        case "removeSelf": defValue(function() {
-            console.log("removeSelf");
-            // this.parentAccessor?.removeChild?.(this.#t);
-        });
-        break;
-
-        case "getDirtyChildren": defValue(function() {
-            let keys = [];
-            this.children.forEach((acc,key)=>{
-                if (acc.isDirty) {
-                    keys.push(key);
-                }
-            });
-            return keys;
-        });
-        break;
-
-        }
+        // setEnabled
+        extd(this, "setEnabled", {value:function(enabled){
+            const fn = (enabled) ?
+                c=>c.removeAttribute("disabled") :
+                c=>c.setAttribute("disabled", true);
+            this.controls.forEach(fn);
+        }});
     }
 }
 
