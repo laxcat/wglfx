@@ -22,62 +22,53 @@ export default class App {
     static get KEY_PROJ_PREFIX()    { return `${App.NAME}_proj_`; }
 
     // All members are available for global access
+    static instance     = new App;
     static gl           = WebGL2.create();
     static time         = new Time();
     static projectList  = new ProjectList();
     static project      = null;
     static z85          = null;
     static info         = null;
-    static instance     = null;
 
     uiEl = null;
     projectEl = null;
 
-    constructor(info) {
-        if (App.instance) {
-            throw new Error(`App should be instantiated only once.`);
-        }
-        App.instance = this;
-
-        if (info) App.info = info;
-
-        this.uiEl = document.getElementById("ui");
+    static start(infoURL) {
+        // base HTMLElement for the app
+        App.instance.uiEl = document.getElementById("ui");
 
         // create keyboard shortcuts, window resize, etc
-        this.setupGlobalHandlers();
-
-        // load settings/src from user's localStorage. will set defaults if none found.
-        this.load();
-    }
-
-    load() {
-        // loads the list of projects, but no projects yet
-        App.projectList.load();
+        App.instance.setupGlobalHandlers();
 
         // setup z85 encoder/decoder
         App.z85 = new WASMZ85();
-        // test z85 encoder/decoder
-        // App.z85.addEventListener(WASMZ85.READY, App.z85.test);
 
-        // We need the decoder to parse the project load
-        // does the project list have a selected project to load?
-        if (App.projectList.selected) {
-            App.z85.addEventListener(WASMZ85.READY, () => {
-                this.#onLoad();
-            });
-        }
-        // no projects found, we don't need the z85 decoder right away
-        else {
-            this.#onLoad();
-        }
+        // load info json, then
+        // load settings/src from user's localStorage
+        // will set defaults if none found
+        fetch(infoURL)
+            .then(res=>res.json())
+            .then(json=>{
+                App.info = json;
+                // loads the list of projects, but no projects yet
+                App.projectList.load();
+                // We need the decoder to parse the project load
+                // does the project list have a selected project to load?
+                if (App.projectList.selected) {
+                    return App.z85.load();
+                }
+                // no projects found, we don't need the z85 decoder right away
+                else {
+                    App.z85.load();
+                    return;
+                }
+            })
+            .then(()=>App.instance.#start());
     }
 
-    #onLoad(loadedObj) {
+    #start() {
         // setup project, load last selected project or create default
         App.project = App.projectList.createProject();
-
-        // console.log("projectList", App.projectList);
-        // console.log("project", App.project);
 
         // create the HTML UI
         this.createUI();
@@ -200,5 +191,11 @@ export default class App {
     createProjectUI() {
         this.projectEl = App.project.createUI(this.uiEl);
         uiParse(this.projectEl);
+    }
+
+    constructor() {
+        if (App.instance) {
+            throw new Error(`Don't insantiate App. Use App.start().`);
+        }
     }
 }

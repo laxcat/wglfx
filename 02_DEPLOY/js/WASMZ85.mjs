@@ -39,13 +39,20 @@ export default class WASMZ85 extends WASM {
         const totalDataSize = Math.ceil(unencodedDataSizeLimit / 4) * 9 + 4;
         const nPages = WASM.pagesForMinHeapSize(totalDataSize);
         super("./wasm/z85.wasm", nPages);
-        this.addEventListener(WASM.READY, () => { this.#onReady(); })
+        // this.addEventListener(WASM.READY, () => { this.#onReady(); })
     }
 
-    #onReady() {
-        const infoPtr = this.fns.Z85_init();
-        this.info = new InitInfo(this.memory.buffer, infoPtr);
+    load() {
+        return super.load().then(()=>{
+            const infoPtr = this.fns.Z85_init();
+            this.info = new InitInfo(this.memory.buffer, infoPtr);
+        });
     }
+
+    // #onReady() {
+    //     const infoPtr = this.fns.Z85_init();
+    //     this.info = new InitInfo(this.memory.buffer, infoPtr);
+    // }
 
     // fill un-encoded bytes at decodedDataPtr
     fillDecodedBytes(buffer) {

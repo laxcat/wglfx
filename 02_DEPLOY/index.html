@@ -1,3 +1,4 @@
+<!doctype html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -16,8 +17,7 @@
     <script src="./lib/coloris/coloris.js"></script>
     <script type="module">
         import App from "./js/App.mjs";
-        import { loadJSONSync } from "./js/common/util.mjs";
-        new App(loadJSONSync("index.json"));
+        App.start("index.json");
     </script>
 
 </body>

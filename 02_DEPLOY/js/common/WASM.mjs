@@ -1,4 +1,4 @@
-import * as util from "./util.mjs"
+import { mergeDeep } from "./util.mjs"
 
 /*
     WebAssembly handler designed for small wasm modules.
@@ -45,7 +45,6 @@ export default class WASM extends EventTarget {
     // messages
     static MSG_NOT_READY        = "wasm not ready!";
     // events
-    static READY                = "ready"
     static MEMORY_OUT_OF_RANGE  = "memory_out_of_range"
 
     // SPECIAL MEMORY BLOCK CONFIG
@@ -80,9 +79,11 @@ export default class WASM extends EventTarget {
     heap = null;        // Uint8Array view of entire memory ArrayBuffer
     view = null;        // DataView of entire memory ArrayBuffer
 
-    // READY, after loaded and instantiated
-    ready = false;      // wasm has been loaded and instantiated, wasm functions available
-    fns = null;         // populated on module instantiation, object of wasm functions
+    // READY, after instantiated then
+    // wasm has been loaded and instantiated, wasm functions available
+    get ready() { return this.#ready; }
+    // populated on module instantiation, object of wasm functions
+    fns = null;
 
     // GETTERS/ SETTERS ----------------------------------------------------- //
 
@@ -128,22 +129,34 @@ export default class WASM extends EventTarget {
         this.view = new DataView(this.memory.buffer);
 
         // deep merge imports with defaultImports (passed imports take precedence)
-        imports = util.mergeDeep(WASM.defaultImports(this), imports);
+        this.#imports = mergeDeep(WASM.defaultImports(this), imports);
+        this.#path = path;
+    }
+
+    // load and instantiate the module
+    // returns promise
+    load() {
         // stream-load and auto initiate WASM module
-        WebAssembly.instantiateStreaming(fetch(path), imports).then(obj => {
-            this.fns = obj.instance.exports;
-            this.ready = true;
+        return WebAssembly
+            .instantiateStreaming(fetch(this.#path), this.#imports)
+            .then(obj => {
+                this.fns = obj.instance.exports;
+                this.#ready = true;
 
-            // do some special memory configuration
-            // special memory locations configured by wasm.h.
-            this.view.setUint32(WASM.MEM_SPECIAL_STR_S , this.memStrBufS, true);
-            this.view.setUint32(WASM.MEM_SPECIAL_STR_E , this.memStrBufE, true);
-            this.view.setUint32(WASM.MEM_SPECIAL_HEAP_S, this.memHeapS  , true);
-            this.view.setUint32(WASM.MEM_SPECIAL_HEAP_E, this.memHeapE  , true);
-
-            this.dispatchEvent(new Event(WASM.READY));
+                // do some special memory configuration
+                // special memory locations configured by wasm.h.
+                this.view.setUint32(WASM.MEM_SPECIAL_STR_S , this.memStrBufS, true);
+                this.view.setUint32(WASM.MEM_SPECIAL_STR_E , this.memStrBufE, true);
+                this.view.setUint32(WASM.MEM_SPECIAL_HEAP_S, this.memHeapS  , true);
+                this.view.setUint32(WASM.MEM_SPECIAL_HEAP_E, this.memHeapE  , true);
         });
     }
+
+    // PRIVATES ------------------------------------------------------------- //
+
+    #ready = false;
+    #imports;
+    #path;
 
     // ERROR CHECKING ------------------------------------------------------- //
 

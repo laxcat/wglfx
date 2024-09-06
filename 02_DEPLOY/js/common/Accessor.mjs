@@ -118,7 +118,9 @@ export default class Accessor {
     Config object
     all keys are optional
     {
-        bind,           Object of keys to bind for obj-like accessors
+        bind,           Object of keys to bind for obj-like accessors. The value
+                            of each key is the config object for that child's
+                            accessor.
 
         config,         Type, automatically create config from
                             Type[Accessor.configKey].
@@ -139,7 +141,17 @@ export default class Accessor {
 
         getStrKey,      String, if set, getStr() uses obj[getStrKey]
 
-        html,           String, enables createUI
+        html,           String, enables createUI. Add special attributes to
+                            mark obj-like key children:
+                            // div becomes container for keyName accessor
+                            <div data-key="keyName"></div>
+                            // control called accessorFunction gets added to
+                            // keyName accessor. when clicked, calls
+                            // accessorFunction fn on that same accessor
+                            <button data-control-keyName="accessorFunction"></button>
+                            // control called editStart gets added to
+                            // accessor controlling this html
+                            <button data-control="editStart"></button>
 
         limit,          Number/Array that defines min/max/step input attributes
 

@@ -80,6 +80,10 @@ export function loadJSONSync(url) {
     return obj;
 }
 
+export async function loadJSON(url) {
+    return await (await fetch("index.json")).json();
+}
+
 // https://stackoverflow.com/a/14810722
 export function objectMap(obj, fn) {
     return Object.fromEntries(

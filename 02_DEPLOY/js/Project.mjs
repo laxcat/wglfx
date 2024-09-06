@@ -142,7 +142,7 @@ export default class Project extends Serializable {
         const passEl = projEl.querySelector("#passes ul");
         // pass will be an array eventually, making this a loop
         // this.pass.createUI(passEl);
-        const accessor = new Accessor(this, "pass", {config:Pass});
+        // const accessor = new Accessor(this, "pass", {config:Pass});
 
         // add uniform buffer ui
         this.unib.createUI(projEl);

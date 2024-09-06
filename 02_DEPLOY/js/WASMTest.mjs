@@ -11,7 +11,10 @@ export default class WASMTest extends WASM {
 
     constructor() {
         super("./wasm/test.wasm");
-        this.addEventListener(WASM.READY, () => { this.#onReady(); })
+    }
+
+    load() {
+        super.load().then(()=>this.#onReady());
     }
 
     #onReady() {
