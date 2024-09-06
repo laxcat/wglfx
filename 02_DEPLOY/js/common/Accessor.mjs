@@ -1,8 +1,7 @@
 import { extd } from "./common-extension.mjs"
 import "./html-extension.mjs"
-import DataUI from "./DataUI.mjs"
 import { confirmDialog } from "./util-ui.mjs"
-import { is, isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
+import { is, isEl, isArr, isNum, isStr, isFn, isPOJO } from "./util.mjs"
 
 /*
     THIS TEXT REFELCTS MOST OF THE RECENT CHANGES, BUT STILL NEEDS WORK
@@ -89,7 +88,7 @@ import { is, isEl, isArr, isNum, isStr, isFn, ifElFn, isPOJO } from "./util.mjs"
     reIndex
     removeChild
     removeSelf
-    reorderableConfig
+    reorderable
     resetUI
     set
     setEnabled
@@ -139,6 +138,8 @@ export default class Accessor {
         fromStr,        Fn that wraps input.value in editSubmit,
                             defaults to parseFloat if limit set
 
+        focusOnEdit,    TODO
+
         getStrKey,      String, if set, getStr() uses obj[getStrKey]
 
         html,           String, enables createUI. Add special attributes to
@@ -174,6 +175,10 @@ export default class Accessor {
                         • [Type],       array-like,
                         • Type,         obj-like
                         • undefined,    scalar string/number value
+
+        unique,         Boolean, if set on key of obj-like that is child of
+                            array-like, will check same key on other items
+                            in array-like to ensure uniqueness for validation.
 
     }
     */
@@ -346,8 +351,9 @@ export default class Accessor {
             }
         }
         // make pattern attribute string
-        const patternStr = (isStr(config.pattern)) ?
-            `placeholder="${config.pattern}" pattern="${config.pattern}"`:
+        const { pattern } = config;
+        const patternStr = (isStr(pattern)) ?
+            `placeholder="${pattern}" pattern="${pattern}"`:
             "";
 
         // setFromStr
@@ -374,6 +380,7 @@ export default class Accessor {
 
         // editStart
         // creates the input in el
+        const { focusOnEdit } = config;
         extd(this, "editStart", {value:function(allDirty=false) {
             this.container.innerHTML = "";
             this.inputEl = this.container.insertHTML(
@@ -389,6 +396,10 @@ export default class Accessor {
             );
             this.inputEl.addKeyListener("Enter", e=>this.parent?.editSubmit());
             this.inputEl.addKeyListener("Escape", e=>this.parent?.editCancel());
+            if (focusOnEdit) {
+                this.inputEl.focus();
+                this.inputEl.select();
+            }
         }});
 
         // editCancel
@@ -400,6 +411,7 @@ export default class Accessor {
 
         // editValidate
         // validate the current value in input, especially pattern
+        const { unique } = config;
         extd(this, "editValidate", {value:function() {
             this.inputEl.setCustomValidity("");
             if (!this.isDirty) {
@@ -408,9 +420,9 @@ export default class Accessor {
             if (this.inputEl.validity.patternMismatch) {
                 this.inputEl.setCustomValidity(`Match the pattern ${pattern}`);
             }
-            // if (isNotUnique()) {
-            //     this.inputEl.setCustomValidity("Must be unique");
-            // }
+            if (unique && !this.isUnique()) {
+                this.inputEl.setCustomValidity("Must be unique");
+            }
             return this.inputEl.reportValidity();
         }});
 
@@ -423,6 +435,28 @@ export default class Accessor {
             }
             this.updateUI();
         }});
+
+        if (config.unique) {
+            extd(this, "isUnique", {value:function() {
+                const itemAccr = this.parent;
+                const itemAccrs = itemAccr?.parent?.children;
+                if (!isArr(itemAccrs)) return true;
+                const val = (isFn(fromStr)) ?
+                    fromStr(this.inputEl.value) :
+                    this.inputEl.value;
+                const e = itemAccrs.length;
+                let i = 0;
+                while (i < e) {
+                    if (i === itemAccr.#key) {
+                        ++i; continue;
+                    }
+                    const keyAccr = itemAccrs[i].children.get(this.#key);
+                    if (keyAccr.get() === val) return false;
+                    ++i;
+                }
+                return true;
+            }});
+        }
     }
 
     // Accessor controls an array of accessors
@@ -436,19 +470,17 @@ export default class Accessor {
             return this.#obj[this.#key];
         }});
 
+        if (config.container) {
+            const { container } = config;
+            extd(this, "container", {get:()=>container});
+        }
+
         // ARRAY EDITABLE --------------------------------------------------- //
         if (config.editable) {
 
             // addChildStart
             extd(this, "addChildStart", {value:function() {
-                this.setEnabledAll(false);
-                if (this.reorderableConfig) {
-                    this.reorderableConfig.enable(false);
-                    const indexKey = this.reorderableConfig.indexKey;
-                    if (Object.getOwnPropertyDescriptor(this.Type.prototype, indexKey)) {
-                        item[indexKey] = this.#obj[this.#key].length;
-                    }
-                }
+
                 // create accessor
                 // use config object as temp object. instance added permenantly
                 // in addChildSubmit.
@@ -459,13 +491,20 @@ export default class Accessor {
                     editOnInit: true,
                     temp: new this.ChildType(),
                 };
-                new Accessor(config, "temp", config);
+                const tempAccr = new Accessor(config, "temp", config);
+
+                this.setEnabledAll(false);
+                if (this.reorderable) {
+                    this.reorderable.enable(false);
+                    const indexKey = this.reorderable.indexKey;
+                    tempAccr.children?.get(indexKey)?.set(this.arr.length);
+                }
             }});
 
             // addChildCancel
             extd(this, "addChildCancel", {value:function(childAccessor) {
                 console.log("addChildCancel", childAccessor);
-                this.reorderableConfig?.enable(true);
+                this.reorderable?.enable(true);
                 childAccessor.el.remove();
                 this.setEnabledAll(true);
             }});
@@ -494,9 +533,9 @@ export default class Accessor {
                 this.children.push(accessor);
 
                 // reset everything
-                if (this.reorderableConfig) {
-                    this.reorderableConfig.enable(true);
-                    // makeReorderableItem(dataUI.el, this.reorderableConfig);
+                if (this.reorderable) {
+                    this.reorderable.enable(true);
+                    makeReorderableItem(accessor.el, this.reorderable);
                 }
                 this.setEnabledAll(true);
 
@@ -562,6 +601,22 @@ export default class Accessor {
             }
         }
 
+        // ARRAY : CHILDREN ACCESSORS --------------------------------------- //
+
+        // children accessors
+        const children = [];
+        extd(this, "children", {get:()=>children});
+
+        // create children accessors
+        this.arr.forEach((item,index)=>{
+            const subConf = {
+                config: this.ChildType,
+                container: config.container,
+                parent: this,
+                editable: config.editable,
+            };
+            this.children.push(new Accessor(this.arr, index, subConf));
+        });
 
         // ARRAY REORDERABLE ------------------------------------------------ //
 
@@ -574,51 +629,36 @@ export default class Accessor {
 
             // onReorder
             extd(this, "onReorder", {value:function(oldIndex, newIndex) {
-                const arr = this.#obj[this.#key];
-                const oldItem = arr.splice(oldIndex, 1)[0];
-                arr.splice(newIndex, 0, oldItem);
+                const oldItem = this.arr.splice(oldIndex, 1)[0];
+                const oldAccr = this.children.splice(oldIndex, 1)[0];
+                this.arr.splice(newIndex, 0, oldItem);
+                this.children.splice(newIndex, 0, oldAccr);
                 this.reIndex();
-                this.parent?.onReorder?.(this.#key, oldIndex, newIndex);
-                this.parent?.onChange?.(this.#key);
+                // this.parent?.onReorder?.(this.#key, oldIndex, newIndex);
+                // this.parent?.onChange?.(this.#key);
             }});
 
-            // reorderableConfig
-            const { reorderableConfig } = config;
-            extd(this, "reorderableConfig", {get:()=>reorderableConfig});
+            // reorderable
+            config.reorderable.onReorder = this.onReorder.bind(this);
+            const reorderable = makeReorderable(this.container, config.reorderable);
+            extd(this, "reorderable", {get:()=>reorderable});
 
             // reIndex
             extd(this, "reIndex", {value:function(startIndex=0) {
-                const indexKey = this.reorderableConfig.indexKey;
-                const e = this.arr.length;
+                const indexKey = this.reorderable.indexKey;
+                const e = this.children.length;
                 let i = startIndex;
                 while (i < e) {
-                    this.arr[i][indexKey] = i;
+                    const itemAccr = this.children[i];
+                    itemAccr.#key = i;
+                    const indxAccr = itemAccr.children.get(indexKey);
+                    indxAccr?.set(i);
+                    indxAccr?.updateUI();
                     ++i;
                 }
                 this.parent?.onReIndex?.(this.#key);
             }});
         }
-
-        // ARRAY : CHILDREN ACCESSORS --------------------------------------- //
-
-        // children
-        const children = [];
-        extd(this, "children", {get:()=>children});
-
-        if (config.container) {
-            const { container } = config;
-            extd(this, "container", {get:()=>container});
-        }
-
-        this.arr.forEach((item,index)=>{
-            const subConf = {
-                config: this.ChildType,
-                container: config.container,
-                parent: this,
-                editable: config.editable,
-            };
-            this.children.push(new Accessor(this.arr, index, subConf));
-        });
     }
 
     // Accessor controls an object
@@ -690,9 +730,9 @@ export default class Accessor {
         if (config.editable) {
             // editStart
             extd(this, "editStart", {value:function(allDirty=false) {
-                console.log("editStart", this.children);
+                console.log("editStart", this);
                 this.parent?.setEnabledAllExcept?.(this.obj, false);
-                // this.parentAccessor?.reorderableConfig?.enable(false);
+                this.parent?.reorderable?.enable(false);
                 this.showControls("editCancel", "editSubmit");
                 this.children.forEach(acc=>acc.editStart?.(allDirty));
                 // this.#callback("editStart");
@@ -701,8 +741,6 @@ export default class Accessor {
             // editCancel
             const temp = !!config.temp;
             extd(this, "editCancel", {value:function() {
-                console.log("editCancel");
-
                 if (temp) {
                     return this.parent?.addChildCancel?.(this);
                 }
@@ -712,16 +750,13 @@ export default class Accessor {
                     (acc.editCancel) ? acc.editCancel() : acc.updateUI()
                 );
                 this.parent?.setEnabledAllExcept?.(this.obj, true);
-                // this.parentAccessor?.reorderableConfig?.enable(true);
+                this.parent?.reorderable?.enable(true);
                 // this.#callback("editCancel");
             }});
 
             // editSubmit
             extd(this, "editSubmit", {value:function() {
-                console.log("editSubmit");
-
                 if (!this.editValidate()) {
-                    console.log("not validated!");
                     return;
                 }
 
@@ -734,8 +769,8 @@ export default class Accessor {
                 this.children.forEach(a=>a.editSubmit?.());
 
                 this.parent?.setEnabledAllExcept?.(this.obj, true);
+                this.parent?.reorderable?.enable(true);
                 // dirtyKeys.forEach(key=>this.#callback("change", key));
-                //     this.parentAccessor?.reorderableConfig?.enable(true);
                 //     this.#callback("editSubmit");
             }});
 
@@ -863,16 +898,10 @@ export function makeReorderable(parentEl, options) {
     };
 
     opt.enable = enabled=> {
-        if (enabled) {
-            parentEl.children.forEach(childEl=>{
-                childEl.setAttribute("draggable", true);
-            });
-        }
-        else {
-            parentEl.children.forEach(childEl=>{
-                childEl.removeAttribute("draggable");
-            });
-        }
+        const fn = (enabled) ?
+            childEl=>childEl.setAttribute("draggable", true) :
+            childEl=>childEl.removeAttribute("draggable");
+        parentEl.children.forEach(fn);
     }
 
     // for each child of parentEl
