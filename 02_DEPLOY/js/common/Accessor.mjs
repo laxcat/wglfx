@@ -181,10 +181,9 @@ export default class Accessor {
         this.#obj = obj;
         this.#key = key;
 
+        // DEFINE PROPS
         // handle global pre-setup
         config = this.#setupPre(config);
-
-        // build all the functions onto this Accessor
         // array-like
         if (this.Type === Array) {
             this.#setupAsArray(config);
@@ -199,7 +198,7 @@ export default class Accessor {
         }
         Object.preventExtensions(this);
 
-        // init
+        // INIT
         if (config.editOnInit) {
             this.updateUI?.();
             this.editStart?.(true);
@@ -210,8 +209,6 @@ export default class Accessor {
         else {
             this.updateUI?.();
         }
-
-        console.log("accessor", this);
     }
 
     // Setup some universal properties
