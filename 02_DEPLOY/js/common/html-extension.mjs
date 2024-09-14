@@ -68,6 +68,34 @@ extdProto(Element, "insertHTML", function(html, config={}) {
     return ret;
 });
 
+extdProto(DocumentFragment, "insertHTML", function(html, config={}) {
+    const tempEl = document.createElement("temp-el");
+    const tempConfig = {...config, alwaysReturnArray:true, position:"beforeend"};
+    const tempEls = tempEl.insertHTML(html, tempConfig);
+    const nOldKids = this.children.length;
+    let newEls;
+    if (nOldKids === 0) {
+        this.replaceChildren(...tempEls);
+        newEls = [...this.children];
+    }
+    else if (config.position === "beforeend") {
+        tempEls.forEach(child=>this.lastElementChild.after(child));
+        newEls = this.children.slice(nOldKids, this.children.length);
+    }
+    else if (config.position === "afterbegin") {
+        const firstEl = this.children[0];
+        tempEls.forEach(child=>firstEl.before(child));
+        newEls = this.children.slice(0, tempEls.length);
+    }
+    else {
+        throw new SyntaxError("Invalid position for DocumentFragment");
+    }
+    if (!config.alwaysReturnArray && newEls.length === 1) {
+        return newEls[0];
+    }
+    return newEls;
+});
+
 extdProto(Element, "elementIndex", function() {
     return this.parentElement.children.indexOf(this);
 });
