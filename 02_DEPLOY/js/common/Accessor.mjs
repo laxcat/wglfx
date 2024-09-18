@@ -24,13 +24,13 @@ import { is, isEl, isArr, isNum, isStr, isFn, isPOJO } from "./util.mjs"
     child accessors be obj-like. array-like Accessor with scalar children didn't
     make much sense to me yet.)
 
-    Accessors can be object-like, managing a set of keys on the obj[key]
+    Accessors can be object-like, managing multiple keys on the obj[key]
     instance. Accessors can access Type[Accessor.configKey] static config
     object on the Type itself, making for convenient automatic config of
     objects designed for use with Accessor. When obj-like, Accessors can
     generate html, and assign their child accessors to be contained within.
-    While the children of array-like accessors, can only be obj-like accessors,
-    the children of obj-like accessors can be anything.
+    While the children of array-like accessors can only be obj-like accessors,
+    the children (keys) of obj-like accessors can be anything.
 
     Example use:
 
@@ -62,59 +62,75 @@ import { is, isEl, isArr, isNum, isStr, isFn, isPOJO } from "./util.mjs"
     Full list of potentially added methods, properties, and getters below.
     See #setup* methods for logic of what is enabled.
 
-    addChildCancel
-    addChildStart
-    addChildSubmit
-    arr
-    children
-    ChildType
-    container
-    controls
-    createUI
-    editCancel
-    editStart
-    editSubmit
-    editValidate
-    el
-    get
-    getDirtyChildren
-    getStr
-    html
-    inputEl
-    isDirty
-    obj
-    onReorder
-    parent
-    reIndex
-    removeChild
-    removeSelf
-    reorderable
-    resetUI
-    set
-    setEnabled
-    setEnabledAll
-    setEnabledAllExcept
-    setFromStr
-    showControls
-    Type
-    updateUI
+    addChildCancel          //  Fn
+    addChildStart           //  Fn
+    addChildSubmit          //  Fn
+    arr                     //  Array, getter
+    children                //  Array or Map, getter
+    ChildType               //  Type of array children, getter
+    container               //  HTMLElement, getter
+    controls                //  Map, getter
+    create                  //  Fn
+    createChildAccessors    //  Fn
+    createUI                //  Fn
+    debugLogUI              //  Fn
+    displayVal              //  String, getter
+    editCancel              //  Fn
+    editStart               //  Fn
+    editSubmit              //  Fn
+    editValidate            //  Fn
+    el                      //  HTMLElement, writable value
+    getDirtyChildren        //  Fn
+    html                    //  String, getter
+    inputEl                 //  HTMLElement, writable value
+    inputVal                //  String, getter
+    isDirty                 //  Boolean, getter
+    siblingKeyMatches       //  Fn
+    obj                     //  Object, getter
+    onReorder               //  Fn
+    parent                  //  Accessor, getter
+    pointTo                 //  Fn
+    reIndex                 //  Fn
+    removeChild             //  Fn
+    removeSelf              //  Fn
+    reorderable             //  Fn
+    set                     //  Fn
+    setEnabled              //  Fn
+    setEnabledAll           //  Fn
+    setEnabledAllExcept     //  Fn
+    setFromStr              //  Fn
+    showControls            //  Fn
+    template                //  HTMLTemplateElement
+    Type                    //  Type
+    updateUI                //  Fn
+    val                     //  any type
 
 */
 export default class Accessor {
     /*
-    Accessor global settings
+    ----------------------------------------------------------------------------
+    Accessor static settings, used for all accessor instances
     */
     static configKey  = "accessorConfig";
+    static destroyKey  = "destroy";
     static setVisible = (el,visible)=>el.classList.toggle("hidden", !visible);
 
     /*
-    Main pointer data
+    ----------------------------------------------------------------------------
+    Object, private internals.
+        Gets additionally configured during init.
+        Stores anything that needs to be configured at init perenently, but
+        shouldn't be public facing.
     */
-    #obj;   //  any Type where Type[String] permitted, parent object
-    #key;   //  String, property key
+    #_={
+                    //  Main pointer info
+        obj:null,   //  any Type where Type[String] permitted, parent object
+        key:null,   //  String, property key
+    };
 
     /*
-    Config object
+    ----------------------------------------------------------------------------
+    Config object passed to constructor
     all keys are optional
     {
         bind,           Object of keys to bind for obj-like accessors. The value
@@ -128,9 +144,12 @@ export default class Accessor {
 
         container,      HTMLElement, element which contains our data in the ui
 
-        control,        Object
+        control,        Object, controls for this object
 
-        editable,       Boolean,
+        displayVal,     Fn, takes val and returns a string for display.
+                            Defaults to: val=>val?.toString() ?? ""
+
+        editable,       Boolean, makes this user-editable
 
         editOnInit,     Boolean, automatically calls editStart on init
                             Automatically sets editable to true
@@ -140,7 +159,7 @@ export default class Accessor {
 
         focusOnEdit,    TODO
 
-        getStrKey,      String, if set, getStr() uses obj[getStrKey]
+        getStrKey,      String, if set, displayVal uses obj[getStrKey]
 
         html,           String, enables createUI. Add special attributes to
                             mark obj-like key children:
@@ -164,6 +183,13 @@ export default class Accessor {
                             below). Can also be simple truthy if no options
                             needed.
 
+        saveable        Boolean, add save/load functions to save serialized
+                            content to localStorage. Sets serializable to true.
+
+        serializable    Boolean, add serialize/deserialize. Will chain down
+                            to all descendant unless serializable specifically
+                            set to false for that descendant.
+
         temp,           Anything, if set, assumes the accessor is temporary.
                             Used in adding children to array so far. Might need
                             better system.
@@ -172,9 +198,9 @@ export default class Accessor {
                             editSubmit  ->  addChildSubmit
 
         type,           suported:
-                        • [Type],       array-like,
-                        • Type,         obj-like
-                        • undefined,    scalar string/number value
+                            [Type],       array-like (children must be obj-like)
+                            Type,         obj-like
+                            undefined,    scalar string/number value
 
         unique,         Boolean, if set on key of obj-like that is child of
                             array-like, will check same key on other items
@@ -183,8 +209,8 @@ export default class Accessor {
     }
     */
     constructor(obj, key, config={}) {
-        this.#obj = obj;
-        this.#key = key;
+        this.#_.obj = obj;
+        this.#_.key = key;
 
         // DEFINE PROPS
         // handle global pre-setup
@@ -214,6 +240,8 @@ export default class Accessor {
         else {
             this.updateUI?.();
         }
+
+        console.log(this);
     }
 
     // Setup some universal properties
@@ -238,17 +266,31 @@ export default class Accessor {
         // type set in config
         // if type is Array, also set ChildType
         else if (config.type) {
-            const { type } = config;
-            if (isArr(type)) {
-                extd(this, "Type",      {get:()=>Array});
-                extd(this, "ChildType", {get:()=>type[0]});
+            if (isArr(config.type)) {
+                const type = config.type[0];
+                extd(this, "Type", {get:()=>Array});
+                extd(this, "ChildType", {get:()=>type});
             }
             else {
-                extd(this, "Type",      {get:()=>type});
+                const { type } = config;
+                extd(this, "Type", {get:()=>type});
             }
         }
 
-        // PARENT
+        // All accessors can re-point
+        extd(this, "pointTo", {value:function(obj, key) {
+            this.#_.obj = obj;
+            this.#_.key = key;
+            // console.log("is this not running?", this.#_.obj, this.#_.key);
+        }});
+
+        // PARENT ELEMENT (container)
+        if (isEl(config.container)) {
+            const { container } = config;
+            extd(this, "container", {get:()=>container});
+        }
+
+        // PARENT ACCESSOR (parent)
         if (is(config.parent, Accessor)) {
             const { parent } = config;
             extd(this, "parent", {get:()=>parent});
@@ -266,41 +308,38 @@ export default class Accessor {
         // SCALAR : GENERAL ------------------------------------------------- //
 
         // get
-        extd(this, "get", {value:function() {
-            return this.#obj[this.#key];
+        extd(this, "val", {get:function() {
+            return this.#_.obj?.[this.#_.key];
         }});
 
         // set
         extd(this, "set", {value:function(value) {
-            this.#obj[this.#key] = value;
+            if (!this.#_.obj) { console.error("did not set", value); return; }
+            this.#_.obj[this.#_.key] = value;
         }});
 
         // getStr
-        let getStrKeyFn;
-        if (isStr(config.getStrKey)) {
-            const { getStrKey } = config;
-            getStrKeyFn = function() { return this.#obj[getStrKey]; };
+        let displayValFn;
+        if (isFn(config.displayVal)) {
+            const { displayVal } = config;
+            displayValFn = function() { return displayVal(this.val) ?? ""; };
         }
         else {
-            getStrKeyFn = function() { return this.get()?.toString(); };
+            displayValFn = function() { return this.val?.toString() ?? ""; };
         }
-        extd(this, "getStr", {value:getStrKeyFn});
+        extd(this, "displayVal", {get:displayValFn});
 
-        // stop here if no ui (simple accessor)
-        if (!isEl(config.container)) {
+        // stop here if no containing element (data-only accessor, no ui)
+        if (this.container) {
             return;
         }
 
         // SCALAR : UI ------------------------------------------------------ //
 
-        // container
-        const { container } = config;
-        extd(this, "container", {get:()=>container});
-
         // updateUI
-        // set the value in ui, also clears from editing mode
         extd(this, "updateUI", {value:function() {
-            this.container.innerHTML = this.getStr();
+            this.container.innerHTML = this.displayVal;
+            console.log(this.container.outerHTML);
         }});
 
         // stop here if not editable
@@ -385,10 +424,10 @@ export default class Accessor {
             this.container.innerHTML = "";
             this.inputEl = this.container.insertHTML(
                 `<input
-                    name="${this.#key}"
+                    name="${this.#_.key}"
                     type="${inputType}"
-                    value="${this.get()}"
-                    data-prev-value="${allDirty?"":this.get()}"
+                    value="${this.val}"
+                    data-prev-value="${allDirty?"":this.val}"
                     required
                     ${patternStr}
                     ${minMaxStepStr}
@@ -400,6 +439,13 @@ export default class Accessor {
                 this.inputEl.focus();
                 this.inputEl.select();
             }
+        }});
+
+        extd(this, "inputVal", {get:function() {
+            if (!this.inputEl) return undefined;
+            return (isFn(fromStr)) ?
+                fromStr(this.inputEl.value) :
+                this.inputEl.value;
         }});
 
         // editCancel
@@ -420,7 +466,7 @@ export default class Accessor {
             if (this.inputEl.validity.patternMismatch) {
                 this.inputEl.setCustomValidity(`Match the pattern ${pattern}`);
             }
-            if (unique && !this.isUnique()) {
+            if (unique && this.siblingKeyMatches(this.inputVal)) {
                 this.inputEl.setCustomValidity("Must be unique");
             }
             return this.inputEl.reportValidity();
@@ -437,24 +483,22 @@ export default class Accessor {
         }});
 
         if (config.unique) {
-            extd(this, "isUnique", {value:function() {
+            extd(this, "siblingKeyMatches", {value:function(val) {
+                if (val === undefined) return false;
                 const itemAccr = this.parent;
                 const itemAccrs = itemAccr?.parent?.children;
-                if (!isArr(itemAccrs)) return true;
-                const val = (isFn(fromStr)) ?
-                    fromStr(this.inputEl.value) :
-                    this.inputEl.value;
+                if (!isArr(itemAccrs)) return false;
                 const e = itemAccrs.length;
                 let i = 0;
                 while (i < e) {
-                    if (i === itemAccr.#key) {
+                    if (i === itemAccr.#_.key) {
                         ++i; continue;
                     }
-                    const keyAccr = itemAccrs[i].children.get(this.#key);
-                    if (keyAccr.get() === val) return false;
+                    const keyAccr = itemAccrs[i].children.get(this.#_.key);
+                    if (keyAccr.val === val) return true;
                     ++i;
                 }
-                return true;
+                return false;
             }});
         }
     }
@@ -467,13 +511,39 @@ export default class Accessor {
         // arr
         // similar to "get" in scalar accessors, but read-only
         extd(this, "arr", {get:function() {
-            return this.#obj[this.#key];
+            return this.#_.obj?.[this.#_.key];
         }});
 
-        if (config.container) {
-            const { container } = config;
-            extd(this, "container", {get:()=>container});
-        }
+        // ARRAY : CHILDREN ACCESSORS --------------------------------------- //
+
+        // children accessors
+        const children = [];
+        extd(this, "children", {get:()=>children});
+
+        // create children accessors
+        extd(this, "createChildAccessors", {value:function(){
+            this.arr?.forEach((item,index)=>{
+                const subConf = {
+                    config: this.ChildType,
+                    container: this.container,
+                    parent: this,
+                    editable: config.editable,
+                };
+                const accr = new Accessor(this.arr, index, subConf);
+                this.children.push(accr);
+                accr.createChildAccessors();
+            });
+        }});
+        this.createChildAccessors();
+
+        // ARRAY UI --------------------------------------------------------- //
+        // everything below this point needs a container
+        if (!this.container) return;
+
+        // updateUI
+        extd(this, "updateUI", {value:function() {
+            this.children.forEach(child=>child.updateUI?.());
+        }});
 
         // ARRAY EDITABLE --------------------------------------------------- //
         if (config.editable) {
@@ -540,8 +610,8 @@ export default class Accessor {
                 this.setEnabledAll(true);
 
                 // notify
-                // this.parent?.onAdd?.(this.#key);
-                // this.parent?.onChange?.(this.#key);
+                // this.parent?.onAdd?.(this.#_.key);
+                // this.parent?.onChange?.(this.#_.key);
             }});
 
             // removeChild
@@ -560,8 +630,8 @@ export default class Accessor {
                         this.children.splice(index, 1);
                         accessor.el.remove();
                         this.reIndex(index);
-                        // this.parent?.onRemoveChild?.(this.#key, index);
-                        // this.parent?.onChange?.(this.#key);
+                        // this.parent?.onRemoveChild?.(this.#_.key, index);
+                        // this.parent?.onChange?.(this.#_.key);
                     }
                 );
             }});
@@ -593,30 +663,13 @@ export default class Accessor {
                         continue;
                     }
                     if (!this.controls) {
-                        this.#defControls(config);
+                        this.#setupControls(config);
                     }
                     this.controls.set(key, el);
                     el.addEventListener("click", e=>this[key]());
                 }
             }
         }
-
-        // ARRAY : CHILDREN ACCESSORS --------------------------------------- //
-
-        // children accessors
-        const children = [];
-        extd(this, "children", {get:()=>children});
-
-        // create children accessors
-        this.arr.forEach((item,index)=>{
-            const subConf = {
-                config: this.ChildType,
-                container: config.container,
-                parent: this,
-                editable: config.editable,
-            };
-            this.children.push(new Accessor(this.arr, index, subConf));
-        });
 
         // ARRAY REORDERABLE ------------------------------------------------ //
 
@@ -634,8 +687,8 @@ export default class Accessor {
                 this.arr.splice(newIndex, 0, oldItem);
                 this.children.splice(newIndex, 0, oldAccr);
                 this.reIndex();
-                // this.parent?.onReorder?.(this.#key, oldIndex, newIndex);
-                // this.parent?.onChange?.(this.#key);
+                // this.parent?.onReorder?.(this.#_.key, oldIndex, newIndex);
+                // this.parent?.onChange?.(this.#_.key);
             }});
 
             // reorderable
@@ -650,13 +703,13 @@ export default class Accessor {
                 let i = startIndex;
                 while (i < e) {
                     const itemAccr = this.children[i];
-                    itemAccr.#key = i;
+                    itemAccr.#_.key = i;
                     const indxAccr = itemAccr.children.get(indexKey);
                     indxAccr?.set(i);
                     indxAccr?.updateUI();
                     ++i;
                 }
-                this.parent?.onReIndex?.(this.#key);
+                this.parent?.onReIndex?.(this.#_.key);
             }});
         }
     }
@@ -667,20 +720,45 @@ export default class Accessor {
     #setupAsObj(config) {
         // OBJ : GENERAL ---------------------------------------------------- //
 
-        extd(this, "obj", {get:function(){ return this.#obj[this.#key]; }});
+        if (!this.Type) {
+            throw SyntaxError(
+                "Object-like accessors must have a type. "+
+                "See config.type or config.config."
+            );
+        }
+
+        extd(this, "obj", {get:function() {
+            return this.#_.obj?.[this.#_.key];
+        }});
+
+        extd(this, "create", {value:function(...args) {
+            if (!this.#_.obj || !this.#_.key) {
+                throw new Error(
+                    `Can't call create, missing pointer information: `+
+                    `#obj:${this.#_.obj}, #key:${this.#_.key}`
+                );
+            }
+            this.obj?.[Accessor.destroyKey]?.();
+            this.#_.obj[this.#_.key] = new this.Type(...args);
+            this.children?.forEach((child,key)=>{
+                child.pointTo(this.obj, key);
+                if (child.arr && child.arr.length !== child.children) {
+                    console.log("i am an array and i need more attention", child);
+                }
+            });
+            this.updateUI?.();
+        }});
+
+        // children
+        const children = new Map();
+        extd(this, "children", {get:()=>children});
+        for (const key in config.bind) {
+            this.children.set(key, null);
+        }
 
         // OBJ : UI --------------------------------------------------------- //
 
         if (config.html) {
-            // objects should always have containers if they have html
-            if (!config.container) {
-                const tempDoc = new DocumentFragment();
-                config.container = document.createElement("template");
-                tempDoc.append(config.container);
-                console.log("no container?", config);
-            }
-            extd(this, "container", {value:config.container, writable:true});
-
             // html
             const { html } = config;
             extd(this, "html", {get:()=>html});
@@ -690,39 +768,58 @@ export default class Accessor {
 
             // createUI
             extd(this, "createUI", {value:function() {
-                this.el = this.container.insertHTML(this.html, {require:1});
+                if (!this.template) {
+                    throw new Error("UI already created.");
+                }
+                this.container.appendChild(this.el);
+                delete this.template;
             }});
 
-            // resetUI
-            extd(this, "resetUI", {value:function() {
-                // nothing to do
-                if (!this.el || !this.container) {
-                    return this.createUI();
-                }
-                // if this is the only child of container, we can shortcut
-                if (this.container.children.length === 1 &&
-                    this.container.children[0] === this.el) {
-                    this.container.innnerHTML = "";
-                    return this.createUI();
-                }
-                const config = {require:1};
-                const prevSib = this.el.previousElementSibling;
-                this.el.remove();
-                // append after previous sibling
-                if (prevSib) {
-                    config.position = "afterend";
-                    this.el = prevSib.insertHTML(this.html, config);
-                }
-                // there was no previous sibling, insert as parent's first child
-                else {
-                    config.position = "afterbegin";
-                    this.el = this.container.insertHTML(this.html, config);
-                }
-                return this.el;
+            // updateUI
+            extd(this, "updateUI", {value:function() {
+                this.children.forEach(child=>child.updateUI?.());
             }});
 
-            // create UI now
-            this.createUI?.();
+            extd(this, "debugLogUI", {value:function() {
+                console.log(this.el.outerHTML);
+            }});
+
+            // we need to parse html to get all our data, but we're not ready
+            // to put it into the main document yet. create a template to keep
+            // everything for now
+            extd(this, "template", {value:null,writable:true,configurable:true});
+            this.template = document.createElement("template");
+            // create UI in a document fragment
+            this.el = this.template.insertHTML(this.html, {require:1});
+        }
+
+        // OBJ : CHILDREN ACCESSORS ----------------------------------------- //
+
+        // for each bind key
+
+        for (const key in config.bind) {
+            const bindKey = {...config.bind[key]};
+            bindKey.container = this.el.querySelector(`*[data-bind='${key}']`);
+            bindKey.container.removeAttribute("data-bind");
+            bindKey.parent = this;
+            // find any controls for our keys, like addChild buttons for arrays
+            const ctrlAttrib = `data-control-${key}`;
+            const ctrlEls = this.el.querySelectorAll(`*[${ctrlAttrib}]`);
+            ctrlEls.forEach(ctrlEl=>{
+                if (!bindKey.control) {
+                    bindKey.control = {};
+                }
+                const ctrl = ctrlEl.getAttribute(ctrlAttrib);
+                bindKey.control[ctrl] = ctrlEl;
+                ctrlEl.removeAttribute(ctrlAttrib);
+            });
+
+            // console.log("key/bindKey", key, bindKey);
+
+            const accessor = new Accessor(this.obj, key, bindKey);
+            accessor.updateUI?.();
+
+            this.children.set(key, accessor);
         }
 
         // OBJ : EDITABLE --------------------------------------------------- //
@@ -799,7 +896,7 @@ export default class Accessor {
             const ctrlEls = this.el.querySelectorAll("*[data-control]");
             ctrlEls.forEach(ctrlEl=>{
                 if (!this.controls) {
-                    this.#defControls(config);
+                    this.#setupControls(config);
                 }
                 const ctrl = ctrlEl.getAttribute("data-control");
                 this.controls.set(ctrl, ctrlEl);
@@ -807,54 +904,22 @@ export default class Accessor {
                 ctrlEl.removeAttribute("data-control");
             });
         }
-
-        // OBJ : CHILDREN ACCESSORS ----------------------------------------- //
-
-        // children
-        const children = new Map();
-        extd(this, "children", {get:()=>children});
-
-        // for each bind key
-        for (const key in config.bind) {
-            const bindKey = {...config.bind[key]};
-            bindKey.container = this.el.querySelector(`*[data-bind='${key}']`);
-            bindKey.container.removeAttribute("data-bind");
-            bindKey.parent = this;
-            // find any controls for our keys, like addChild buttons for arrays
-            const ctrlAttrib = `data-control-${key}`;
-            const ctrlEls = this.el.querySelectorAll(`*[${ctrlAttrib}]`);
-            ctrlEls.forEach(ctrlEl=>{
-                if (!bindKey.control) {
-                    bindKey.control = {};
-                }
-                const ctrl = ctrlEl.getAttribute(ctrlAttrib);
-                bindKey.control[ctrl] = ctrlEl;
-                ctrlEl.removeAttribute(ctrlAttrib);
-            });
-
-            // console.log("key/bindKey", key, bindKey);
-
-            const accessor = new Accessor(this.obj, key, bindKey);
-            accessor.updateUI?.();
-
-            this.children.set(key, accessor);
-        }
     }
 
-    #defControls(config) {
+    #setupControls(config) {
         // controls
         const controls = new Map();
         extd(this, "controls", {get:()=>controls});
 
         // showControls
-        extd(this, "showControls", {value:function(...ctrls){
+        extd(this, "showControls", {value:function(...ctrls) {
             const fn = (ctrl,key)=>
                 Accessor.setVisible(ctrl, ctrls.includes(key));
             this.controls.forEach(fn);
         }});
 
         // setEnabled
-        extd(this, "setEnabled", {value:function(enabled){
+        extd(this, "setEnabled", {value:function(enabled) {
             const fn = (enabled) ?
                 c=>c.removeAttribute("disabled") :
                 c=>c.setAttribute("disabled", true);
