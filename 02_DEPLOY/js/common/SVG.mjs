@@ -13,11 +13,11 @@ import { is } from "./util.mjs"
     const buttonEl = `<button>${SVG.get("reload")}</button>`
 
     // buttonEl is now:
-    <button><svg class="icon reload" version="2.0"><use href="#svg-reload"></use></svg></button>
+    <button><svg class="icon reload"><use href="#svg-reload"></use></svg></button>
 
     // and also, when called for the first time...
     <body>
-    <svg class="hidden"><defs>
+    <svg style="display:none"><defs>
         <!-- ...symbol cached once here for whole document -->
         <symbol id="svg-reload" ...></symbol>
     </defs></svg>
@@ -35,7 +35,7 @@ export default class SVG {
     get svgEl() {
         if (!this.#svgEl) {
             this.#svgEl = document.body.prependHTML(
-                `<svg class="hidden" version="2.0"><defs></defs></svg>`
+                `<svg style="display:none"><defs></defs></svg>`
             );
         }
         return this.#svgEl;
