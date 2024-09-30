@@ -1,3 +1,5 @@
+import { isPOJO, isArr } from "./util.mjs"
+
 /*
 
 ANIMATION MODULE NOTES:
@@ -147,8 +149,8 @@ export class Timeline {
     // signal to cancel running
     #keepRunning = false;
 
-    #tick() {
-        this.#t = now();
+    #tick(dt) {
+        this.#t = dt/1000;
         if (!this.#keepRunning) {
             console.log("timeline manually stopped", this.#begin, this.#duration, this.#t);
             this.#begin = null;
@@ -181,15 +183,13 @@ export class Timeline {
             ++i;
         }
 
-        // console.log("timeline running", this.#begin, this.#duration, this.#t);
-
         // just keep ticking
         if (this.#t < this.#begin + this.#duration) {
             requestAnimationFrame(this.#tick.bind(this));
         }
         // stop ticking
         else {
-            console.log("timeline stopped", this.#begin, this.#duration, this.#t);
+            // console.log("timeline stopped", this.#begin, this.#duration, this.#t);
             this.#begin = null;
         }
         // tick is now previous tick
@@ -214,7 +214,7 @@ export function invLerp(x, lower, upper) { return clamp(invLerpUnclamped(x, lowe
 export function lerpObj(a, b, t) {
     let ret = {};
     for (const key in a) {
-        ret[key] = lerp(a[key], b[key], t);
+        ret[key] = lerpAny(a[key], b[key], t);
     }
     return ret;
 }
@@ -223,9 +223,16 @@ export function lerpArr(a, b, t) {
     let i = a.length;
     out = new Array(i);
     while (i--) {
-        out[i] = lerp(a[i], b[i], t);
+        out[i] = lerpAny(a[i], b[i], t);
     }
     return out;
+}
+
+export function lerpAny(a, b, t) {
+    if (isPOJO(a))  return lerpObj(a, b, t);
+    if (isArr(a))   return lerpArr(a, b, t);
+    if (!isNaN(a))  return lerp(a, b, t);
+    throw new Error("Cannot lerp");
 }
 
 export const ease        = cubicbezier(0.25, 0.1, 0.25, 1);
