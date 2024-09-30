@@ -1,7 +1,11 @@
 /*
-    CSS-class related
+    CSS built-ins and related extensions
 */
-import { extdProto } from "./common-extension.mjs"
+import { extdProto, extd } from "./common-extension.mjs"
+
+extd(CSSStyleDeclaration.prototype, "parentStyleSheet", {get: function() {
+    return this.parentRule?.parentStyleSheet;
+}});
 
 extdProto(CSSStyleDeclaration, "deleteRule", function() {
     this.parentRule?.delete();
@@ -24,4 +28,24 @@ extdProto(CSSRuleList, "findIndex", function(rule) {
         if (this[i] === rule) return i;
     }
     return -1;
+});
+
+extdProto(Document, "adoptNewCSS", function(cssText) {
+    const ss = new CSSStyleSheet();
+    this.adoptedStyleSheets = [...this.adoptedStyleSheets, ss];
+    ss.replaceSync(cssText);
+    return ss;
+});
+
+extdProto(Document, "unadoptCSS", function(cssStyleSheet) {
+    let newArr = [];
+    let i = 0;
+    const e = this.adoptedStyleSheets.length;
+    while (i < e) {
+        if (this.adoptedStyleSheets[i] !== cssStyleSheet) {
+            newArr.push(this.adoptedStyleSheets[i]);
+        }
+        ++i;
+    }
+    this.adoptedStyleSheets = newArr;
 });
