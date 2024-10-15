@@ -20,11 +20,8 @@ export function extd(builtIn, propName, options) {
 // extd(Foo.prototype, "newKey", {value:0, writeable:true});
 // w/ shortcut:
 // extdProto(Foo, "newKey", 0, true);
-export function extdProto(builtIn, propName, propValue, writeable=false) {
-    extd(builtIn.prototype, propName, {
-        value: propValue,
-        writable: writeable,
-    });
+export function extdProto(builtIn, propName, value, writeable=false) {
+    extd(builtIn.prototype, propName, {value, writable});
 }
 
 // String/TextEncoder ------------------------------------------------------- //
@@ -178,4 +175,3 @@ extdProto(String, "fromBase64", function() {
                 .map(byteStr => byteStr.codePointAt(0));
     return (new Uint8Array(arr)).buffer;
 });
-
