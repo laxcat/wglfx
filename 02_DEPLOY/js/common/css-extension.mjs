@@ -22,12 +22,24 @@ extdProto(CSSStyleSheet, "findRule", function(rule) {
     return this.cssRules.findIndex(rule);
 });
 
+extdProto(CSSStyleSheet, "findRuleBySelector", function(selectorText) {
+    return this.cssRules.findBySelector(selectorText);
+});
+
 extdProto(CSSRuleList, "findIndex", function(rule) {
     let i = this.length;
     while (i--) {
         if (this[i] === rule) return i;
     }
     return -1;
+});
+
+extdProto(CSSRuleList, "findBySelector", function(selectorText) {
+    let i = this.length;
+    while (i--) {
+        if (this[i].selectorText === selectorText) return this[i];
+    }
+    return undefined;
 });
 
 extdProto(Document, "adoptNewCSS", function(cssText) {
@@ -49,3 +61,6 @@ extdProto(Document, "unadoptCSS", function(cssStyleSheet) {
     }
     this.adoptedStyleSheets = newArr;
 });
+
+extdProto(ShadowRoot, "adoptNewCSS", Document.prototype.adoptNewCSS);
+extdProto(ShadowRoot, "unadoptCSS", Document.prototype.unadoptCSS);
