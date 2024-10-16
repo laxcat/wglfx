@@ -6,11 +6,7 @@ class Thing {
 };
 
 
-const thing = Accessor.type("arr");
-thing.push();
-// thing.set({
-//     dingus: 45,
-//     dangus: 32,
-// });
+const thing = Accessor.type(["flt"]);
+thing.push(.1, 1.2, 3.9);
 console.log(thing.val);
 console.log(thing);
