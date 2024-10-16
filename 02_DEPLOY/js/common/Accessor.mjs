@@ -14,17 +14,13 @@ export default class Accessor {
         return new Accessor({
             ...rootType[Accessor.typeKey],
             type: rootType,
-            default: true,
+            init: true,
         });
     }
 
     // create accessor from type and lazy value
     static type(type, initFn=null) {
-        return new Accessor({
-            type,
-            initFn,
-            default: (initFn === null),
-        });
+        return new Accessor({type,initFn});
     }
 
     // create child accessor
@@ -36,22 +32,9 @@ export default class Accessor {
     }
     static #parent = null;
 
-    static val(val, type) {
-        let itemType = null;
-        if (type === undefined) {
-            if (isArr(val) && val.length > 0) {
-                type = "arr";
-                itemType = Accessor.guessType(val[0]);
-            }
-            else {
-                type = Accessor.guessType(val);
-            }
-        }
-        return new Accessor({
-            type,
-            itemType,
-            initFn:()=>val,
-        });
+    // create accessor from already initialized value
+    static val(val, type=null) {
+        return new Accessor({val,type});
     }
 
     constructor(config) {
@@ -59,12 +42,13 @@ export default class Accessor {
             // CONFIG DEFAULTS
 
             // "str" | "int" | "flt" | "arr" | "obj" | TypeFn
-            type: "str",
+            type: null,
 
-            // if set initialize as default
-            default: false,
+            // value already set and passed in.
+            // if type not set will guess from this.
+            val: null,
 
-            // if set initialize with this value
+            // lazy val, return value assigned to val on "init"
             initFn: null,
 
             // OBJ
@@ -73,8 +57,9 @@ export default class Accessor {
             // ARR
             // length of default array
             length: null,
-            // children of array type. CANNOT BE ARRAY.
-            itemType: null,
+            childType: null,
+            // // children of array type. CANNOT BE ARRAY.
+            // itemType: null,
 
             // enables set val, edit*, state
             writable: false,
@@ -103,7 +88,10 @@ export default class Accessor {
         this.#setupDisplay(config);
         this.#setupEditable(config);
         this.#setupReordable(config);
-        this.#init(config);
+
+        if (config.init) {
+            this.init();
+        }
 
         // console.log("-------------------------");
         // console.log("accr");
@@ -117,67 +105,64 @@ export default class Accessor {
     #type = null;
 
     #sanitizeConfig(config) {
+
+        // TYPE RELATED CODE PATHS:
+        // 1) type set (becomes authority)
+        //    a) val set
+        //       gets coerced to type for scalars,
+        //       errors if mismatched for arr/obj/typefn
+        //    b) initFn set, gets coerced when resolved on init
+        //    c) no value set, gets defaulted on init
+        // 2) type not set
+        //    a) val set, is used to guess type
+        //    b) val not set, can't detect type. use default type.
+        //
+        // once above is resolved, if type is "arr", childType can be set to
+        // force type of children. childType is never guessed, only set by
+        // user. if not set, child accessors will guess for themselves.
+        //
+        // val and initFn can't both be set. will throw error.
+
+        if (!config.type) {
+            config.type = Accessor.guessType(config.val);
+        }
+
         // parse type shortcut for arrays
         // ["str"] array of strings
         // [Type]  array of Type
-        // ["arr"] is invalid, no array of arrays
         if (isArr(config.type) && config.type.length === 1) {
-            config.itemType = config.type[0];
+            config.childType = config.type[0];
             config.type = "arr";
         }
-        // check type
-        else if (isFn(config.type) ||
-            config.type === "str" ||
-            config.type === "int" ||
-            config.type === "flt" ||
-            config.type === "arr" ||
-            config.type === "obj"
-        ) {
-            // ok type, move on
-        }
-        else {
-            throw new Error("invalid type");
-        }
+
+        // type should be valid at this point
+        Accessor.checkType(config.type);
+
         // check array things
         if (config.type === "arr") {
-            // check itemType
-            if (config.itemType === null) {
-                config.itemType = "str";
-            }
-            else if (isFn(config.itemType) ||
-                config.itemType === "str" ||
-                config.itemType === "int" ||
-                config.itemType === "flt" ||
-                config.itemType === "arr" ||
-                config.itemType === "obj"
-            ) {
-                // ok itemType, move on
-            }
-            else {
-                throw new Error("invalid itemType");
+            if (config.childType) {
+                Accessor.checkType(config.childType);
             }
             // set array length if not set
             if (config.length === null) {
                 config.length = 0;
             }
         }
+
+        if (config.val && config.initFn) {
+            throw new Error("set val or initFn, not both");
+        }
+
         // check initFn
         if (config.initFn && !isFn(config.initFn)) {
             throw new Error("initFn must be function");
         }
-        // TODO check type of initFn return? check type of val generally?
-        // check default
-        if (!isBool(config.default)) {
-            throw new Error("default must be bool");
-        }
-        // default always sets writable to true. TODO: why?
-        if (config.default || config.initFn) {
+
+        // if val not set, safe to assume NOT read-only
+        if (config.val == null) {
             config.writable = true;
         }
-        // //
-        // if (config.keys) {
-        //     config.type = "obj";
-        // }
+
         return config;
     }
 
@@ -186,7 +171,7 @@ export default class Accessor {
 
         extd(this, "parent", {get:()=>config.parent});
 
-        // if scalar
+        // setup main access functions
         if (this.#isScalar()) {
             this.#setupMainScalar(config);
         }
@@ -195,6 +180,30 @@ export default class Accessor {
         }
         else if (this.#type === "obj") {
             this.#setupMainObj(config);
+        }
+
+        // set value
+        if (config.val) {
+            this.#val = Accessor.coerceValue(config.val, config.type);
+        }
+
+        // if writeable, set an init function for later
+        if (config.writable) {
+            extd(this, "init", {value:function(...args) {
+                if (config.initFn) {
+                    this.val = config.initFn(...args);
+                }
+                else {
+                    switch(config.type) {
+                        case "int":
+                        case "flt": this.val = 0;                    break;
+                        case "str": this.val = "";                   break;
+                        case "arr": this.val = Array(config.length); break;
+                        case "obj": this.val = new Map();            break;
+                        default:    this.val = new config.type(...args);
+                    }
+                }
+            }});
         }
     }
 
@@ -205,21 +214,7 @@ export default class Accessor {
                 return this.#val;
             },
             set: (!config.writable) ? undefined : function(v) {
-                switch(config.type) {
-                case "int":
-                    if (isStr(v))       v = parseInt(v);
-                    else if (isNum(v))  v = Math.floor(v);
-                    else                v = Number(v);
-                    break;
-                case "flt":
-                    if (isStr(v))       v = parseFloat(v);
-                    else                v = Number(v);
-                    break;
-                case "str":
-                    if (!isStr(v))      v = String(v);
-                    break;
-                }
-                this.#val = v;
+                this.#val = Accessor.coerceValue(v, config.type);
             },
         });
     }
@@ -279,7 +274,7 @@ export default class Accessor {
             }
             else {
                 const fn = item=>Accessor.#child(this, {
-                    type: config.itemType,
+                    // type: config.itemType,
                     initFn: ()=>item,
                     writable: config.writable,
                 });
@@ -403,33 +398,35 @@ export default class Accessor {
 
     }
 
-    #init(config) {
-        if (config.default) {
-            switch(config.type) {
-                case "int":
-                case "flt": this.val = 0;                    break;
-                case "str": this.val = "";                   break;
-                case "arr": this.val = Array(config.length); break;
-                case "obj": this.val = new Map();            break;
-                default:    this.val = new config.type();
-            }
-        }
-        else if (config.initFn) {
-            this.val = config.initFn();
-        }
-    }
-
     #isNum      () { return Accessor.isNum(this.#type);    }
     #isScalar   () { return Accessor.isScalar(this.#type); }
     #isMulti    () { return Accessor.isMulti(this.#type);  }
 
-    static isNum = t=>{
+    static coerceValue(v, t) {
+        switch(t) {
+        case "int":
+            if (isStr(v))       return parseInt(v);
+            else if (isNum(v))  return Math.floor(v);
+            else                return Number(v);
+            break;
+        case "flt":
+            if (isStr(v))       return parseFloat(v);
+            else                return Number(v);
+            break;
+        case "str":
+            if (!isStr(v))      return String(v);
+            break;
+        }
+        return v;
+    }
+
+    static isNum(t) {
         return (t === "flt" || t === "int");
     }
-    static isScalar = t=>{
+    static isScalar(t) {
         return (t === "str" || Accessor.isNum(t));
     }
-    static isMulti = t=>{
+    static isMulti(t) {
         return (
             (isArr(t) && t.length === 1) ||
             t === "arr" ||
@@ -437,11 +434,28 @@ export default class Accessor {
             isFn(t)
         );
     }
-    static guessType = val=>{
+
+    static checkType(t) {
+        if (isFn(t) ||
+            t === "str" ||
+            t === "int" ||
+            t === "flt" ||
+            t === "arr" ||
+            t === "obj"
+        ) {
+            return;
+        }
+        throw new Error("invalid type");
+    }
+
+    static guessType(val) {
+        if (val == null) {
+            return "str"; // default type when unknown
+        }
         if      (isNum(val))  return "flt";
         else if (isStr(val))  return "str";
         else if (isArr(val))  return "arr";
         else if (isPOJO(val)) return "obj";
-        return typeof val;
+        return Object.getPrototypeOf(val).constructor;
     }
 };
