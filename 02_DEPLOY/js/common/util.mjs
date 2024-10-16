@@ -33,6 +33,10 @@ export function isNum(arg) {
     return (typeof arg === "number");
 }
 
+export function isBool(arg) {
+    return (typeof arg === "boolean");
+}
+
 export function is(arg, Type) {
     return (arg instanceof Type);
 }

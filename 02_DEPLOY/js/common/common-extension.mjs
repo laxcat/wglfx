@@ -20,7 +20,7 @@ export function extd(builtIn, propName, options) {
 // extd(Foo.prototype, "newKey", {value:0, writeable:true});
 // w/ shortcut:
 // extdProto(Foo, "newKey", 0, true);
-export function extdProto(builtIn, propName, value, writeable=false) {
+export function extdProto(builtIn, propName, value, writable=false) {
     extd(builtIn.prototype, propName, {value, writable});
 }
 
