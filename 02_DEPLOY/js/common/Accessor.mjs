@@ -187,7 +187,7 @@ export default class Accessor {
             config.root = this;
         }
         else {
-            config.root = config.parent;
+            config.root = config.parent?.root ?? null;
         }
         // //
         // if (config.keys) {
@@ -199,8 +199,8 @@ export default class Accessor {
     setupMain: (config)=>{
         this.#internal.type = config.type;
 
-        extd(this.#internal, "parent", {value:config.parent});
-        extd(this.#internal, "root", {value:config.root});
+        extd(this, "parent", {value:config.parent});
+        extd(this, "root", {value:config.root});
 
         // if scalar
         if (this.#internal.isScalar()) {
