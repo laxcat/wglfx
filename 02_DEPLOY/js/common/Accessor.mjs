@@ -14,7 +14,6 @@ export default class Accessor {
         return new Accessor({
             ...rootType[Accessor.typeKey],
             type: rootType,
-            spider: true,
             default: true,
         });
     }
@@ -56,13 +55,13 @@ export default class Accessor {
     }
 
     constructor(config) {
-        config = this.#internal.sanitizeConfig({
+        config = this.#sanitizeConfig({
             // CONFIG DEFAULTS
 
             // "str" | "int" | "flt" | "arr" | "obj" | TypeFn
             type: "str",
 
-            // if set initialize as default (which might spider?)
+            // if set initialize as default
             default: false,
 
             // if set initialize with this value
@@ -100,26 +99,24 @@ export default class Accessor {
             parent: Accessor.#parent,
         });
 
-        this.#internal.setupMain(config);
-        this.#internal.setupDisplay(config);
-        this.#internal.setupEditable(config);
-        this.#internal.setupReordable(config);
-        this.#internal.init(config);
+        this.#setupMain(config);
+        this.#setupDisplay(config);
+        this.#setupEditable(config);
+        this.#setupReordable(config);
+        this.#init(config);
 
         // console.log("-------------------------");
         // console.log("accr");
-        // console.log(this === this.#internal.root);
+        // console.log(this === this.#root);
         // console.log(config);
         // console.log(this);
     }
 
-    // internal values and functions all in this one private object
-    // only like 90% sure this is good structure
-    #internal = {
-    val: null,
-    type: null,
 
-    sanitizeConfig: (config)=>{
+    #val = null;
+    #type = null;
+
+    #sanitizeConfig(config) {
         // parse type shortcut for arrays
         // ["str"] array of strings
         // [Type]  array of Type
@@ -182,30 +179,30 @@ export default class Accessor {
         //     config.type = "obj";
         // }
         return config;
-    },
+    }
 
-    setupMain: (config)=>{
-        this.#internal.type = config.type;
+    #setupMain(config) {
+        this.#type = config.type;
 
         extd(this, "parent", {get:()=>config.parent});
 
         // if scalar
-        if (this.#internal.isScalar()) {
-            this.#internal.setupMainScalar(config);
+        if (this.#isScalar()) {
+            this.#setupMainScalar(config);
         }
-        else if (this.#internal.type === "arr") {
-            this.#internal.setupMainArr(config);
+        else if (this.#type === "arr") {
+            this.#setupMainArr(config);
         }
-        else if (this.#internal.type === "obj") {
-            this.#internal.setupMainObj(config);
+        else if (this.#type === "obj") {
+            this.#setupMainObj(config);
         }
-    },
+    }
 
-    setupMainScalar: (config)=>{
+    #setupMainScalar(config) {
         // set/get val
         extd(this, "val", {
             get: function() {
-                return this.#internal.val;
+                return this.#val;
             },
             set: (!config.writable) ? undefined : function(v) {
                 switch(config.type) {
@@ -222,16 +219,16 @@ export default class Accessor {
                     if (!isStr(v))      v = String(v);
                     break;
                 }
-                this.#internal.val = v;
+                this.#val = v;
             },
         });
-    },
+    }
 
-    setupMainArr: (config)=>{
+    #setupMainArr(config) {
         // set/get val
         extd(this, "val", {
             get: function() {
-                const v = this.#internal.val;
+                const v = this.#val;
                 return (isArr(v)) ? v.map(accr=>accr.val) : v;
             },
             set: (!config.writable) ? undefined : function(v) {
@@ -244,13 +241,12 @@ export default class Accessor {
                 if (!isArr(v)) {
                     throw new Error("value must be array");
                 }
-                const intl = this.#internal;
 
-                if (intl.val === null) {
-                    intl.val = [];
+                if (this.#val === null) {
+                    this.#val = [];
                 }
 
-                const oldLen = intl.val.length;
+                const oldLen = this.#val.length;
                 const newLen = v.length;
                 const minLen = Math.min(oldLen, newLen);
 
@@ -262,7 +258,7 @@ export default class Accessor {
                 // update items
                 let i = 0;
                 while (i < minLen) {
-                    intl.val[i].val = v[i];
+                    this.#val[i].val = v[i];
                     ++i;
                 }
 
@@ -275,11 +271,11 @@ export default class Accessor {
 
         extd(this, "splice", {value:function(start, deleteCount, ...items) {
             // TODO listeners?
-            if (this.#internal.val === null) {
-                this.#internal.val = [];
+            if (this.#val === null) {
+                this.#val = [];
             }
             if (deleteCount === undefined && items.length === 0) {
-                this.#internal.val.splice(start);
+                this.#val.splice(start);
             }
             else {
                 const fn = item=>Accessor.#child(this, {
@@ -287,7 +283,7 @@ export default class Accessor {
                     initFn: ()=>item,
                     writable: config.writable,
                 });
-                this.#internal.val.splice(
+                this.#val.splice(
                     start,
                     deleteCount,
                     ...items.map(fn)
@@ -302,12 +298,12 @@ export default class Accessor {
         extd(this, "clear", {value:function() {
             this.splice(0);
         }})
-    },
+    }
 
-    setupMainObj: (config)=>{
+    #setupMainObj(config) {
         extd(this, "val", {
             get: function() {
-                const v = this.#internal.val;
+                const v = this.#val;
                 if (!is(v, Map)) return v;
                 const ret = Object.fromEntries(v);
                 for (const key in ret) {
@@ -331,16 +327,15 @@ export default class Accessor {
                     throw new Error("value must be POJO or Map");
                 }
 
-                const intl = this.#internal;
 
                 // set if not set.
                 // if new value is already empty map, use it
-                if (intl.val === null) {
-                    intl.val = (v.size === 0) ? v : new Map();
+                if (this.#val === null) {
+                    this.#val = (v.size === 0) ? v : new Map();
                 }
 
                 // clear values not present in new value
-                [...intl.val.keys()].forEach(key=>{
+                [...this.#val.keys()].forEach(key=>{
                     if (!v.has(key)) {
                         this.delete(key);
                     }
@@ -356,11 +351,11 @@ export default class Accessor {
         });
 
         extd(this, "clear", {value:function(){
-            this.#internal.val?.clear();
+            this.#val?.clear();
         }});
 
         extd(this, "delete", {value:function(key){
-            this.#internal.val?.delete(key);
+            this.#val?.delete(key);
         }});
 
         extd(this, "set", {value:function(key, value, type){
@@ -380,36 +375,35 @@ export default class Accessor {
                 }
             }
 
-            const intl = this.#internal;
-            if (!is(intl.val, Map)) {
-                intl.val = new Map();
+            if (!is(this.#val, Map)) {
+                this.#val = new Map();
             }
 
             if (type === undefined) {
                 type = Accessor.guessType(value);
             }
 
-            intl.val.set(key, Accessor.#child(this, {
+            this.#val.set(key, Accessor.#child(this, {
                 type,
                 initFn: ()=>value,
                 writable: config.writable,
             }));
         }});
-    },
+    }
 
-    setupDisplay: (config)=>{
+    #setupDisplay(config) {
 
-    },
+    }
 
-    setupEditable: (config)=>{
+    #setupEditable(config) {
 
-    },
+    }
 
-    setupReordable: (config)=>{
+    #setupReordable(config) {
 
-    },
+    }
 
-    init: (config)=>{
+    #init(config) {
         if (config.default) {
             switch(config.type) {
                 case "int":
@@ -423,20 +417,18 @@ export default class Accessor {
         else if (config.initFn) {
             this.val = config.initFn();
         }
-    },
+    }
 
-    isNum:      ()=>Accessor.isNum(this.#internal.type),
-    isScalar:   ()=>Accessor.isScalar(this.#internal.type),
-    isMulti:    ()=>Accessor.isMulti(this.#internal.type),
-
-    }; // END INTERAL
+    #isNum      () { return Accessor.isNum(this.#type);    }
+    #isScalar   () { return Accessor.isScalar(this.#type); }
+    #isMulti    () { return Accessor.isMulti(this.#type);  }
 
     static isNum = t=>{
         return (t === "flt" || t === "int");
-    };
+    }
     static isScalar = t=>{
         return (t === "str" || Accessor.isNum(t));
-    };
+    }
     static isMulti = t=>{
         return (
             (isArr(t) && t.length === 1) ||
@@ -450,7 +442,6 @@ export default class Accessor {
         else if (isStr(val))  return "str";
         else if (isArr(val))  return "arr";
         else if (isPOJO(val)) return "obj";
-        else if (isFn(val))   return typeof val;
-        return "str";
+        return typeof val;
     }
 };
