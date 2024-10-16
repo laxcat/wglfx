@@ -14,7 +14,7 @@ const wut = {
     },
 };
 
-const thing = Accessor.val(45);
+const thing = Accessor.val([45]);
 console.log(thing.val);
 console.log(thing);
 

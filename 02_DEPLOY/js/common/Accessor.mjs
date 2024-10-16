@@ -184,7 +184,15 @@ export default class Accessor {
 
         // set value
         if (config.val) {
-            this.#val = Accessor.coerceValue(config.val, config.type);
+            if (this.#isScalar()) {
+                this.#setScalar(config.val, config.type);
+            }
+            else if (config.type === "arr") {
+                this.#setArr(config.val);
+            }
+            else if (config.type === "obj") {
+                this.#setObj(config.val);
+            }
         }
 
         // if writeable, set an init function for later
@@ -213,10 +221,32 @@ export default class Accessor {
             get: function() {
                 return this.#val;
             },
-            set: (!config.writable) ? undefined : function(v) {
-                this.#val = Accessor.coerceValue(v, config.type);
+            set: (!config.writable) ?
+            function(v) {
+                throw new Error("scalar accessor is read-only");
+            } :
+            function(v) {
+                this.#setScalar(v, config.type);
             },
         });
+    }
+
+    #setScalar(v, t) {
+        switch(t) {
+        case "int":
+            if (isStr(v))       v = parseInt(v);
+            else if (isNum(v))  v = Math.floor(v);
+            else                v = Number(v);
+            break;
+        case "flt":
+            if (isStr(v))       v = parseFloat(v);
+            else                v = Number(v);
+            break;
+        case "str":
+            if (!isStr(v))      v = String(v);
+            break;
+        }
+        this.#val = v;
     }
 
     #setupMainArr(config) {
@@ -226,41 +256,12 @@ export default class Accessor {
                 const v = this.#val;
                 return (isArr(v)) ? v.map(accr=>accr.val) : v;
             },
-            set: (!config.writable) ? undefined : function(v) {
-                if (v === null) {
-                    this.splice(0);
-                    this.val = null;
-                    return;
-                }
-
-                if (!isArr(v)) {
-                    throw new Error("value must be array");
-                }
-
-                if (this.#val === null) {
-                    this.#val = [];
-                }
-
-                const oldLen = this.#val.length;
-                const newLen = v.length;
-                const minLen = Math.min(oldLen, newLen);
-
-                // remove items if shorter
-                if (newLen < oldLen) {
-                    this.splice(newLen);
-                }
-
-                // update items
-                let i = 0;
-                while (i < minLen) {
-                    this.#val[i].val = v[i];
-                    ++i;
-                }
-
-                // add items if longer
-                if (newLen > oldLen) {
-                    this.splice(oldLen, 0, ...v.slice(oldLen));
-                }
+            set: (!config.writable) ?
+            function(v) {
+                throw new Error("array accessor is read-only");
+            } :
+            function(v) {
+                this.#setArr(v);
             },
         });
 
@@ -275,7 +276,7 @@ export default class Accessor {
             else {
                 const fn = item=>Accessor.#child(this, {
                     // type: config.itemType,
-                    initFn: ()=>item,
+                    val: item,
                     writable: config.writable,
                 });
                 this.#val.splice(
@@ -295,6 +296,43 @@ export default class Accessor {
         }})
     }
 
+    #setArr(v) {
+        if (v === null) {
+            this.splice(0);
+            this.val = null;
+            return;
+        }
+
+        if (!isArr(v)) {
+            throw new Error("value must be array");
+        }
+
+        if (this.#val === null) {
+            this.#val = [];
+        }
+
+        const oldLen = this.#val.length;
+        const newLen = v.length;
+        const minLen = Math.min(oldLen, newLen);
+
+        // remove items if shorter
+        if (newLen < oldLen) {
+            this.splice(newLen);
+        }
+
+        // update items
+        let i = 0;
+        while (i < minLen) {
+            this.#val[i].val = v[i];
+            ++i;
+        }
+
+        // add items if longer
+        if (newLen > oldLen) {
+            this.splice(oldLen, 0, ...v.slice(oldLen));
+        }
+    }
+
     #setupMainObj(config) {
         extd(this, "val", {
             get: function() {
@@ -306,42 +344,12 @@ export default class Accessor {
                 }
                 return ret;
             },
-            set: (!config.writable) ? undefined : function(v) {
-                if (v === null) {
-                    this.clear();
-                    this.val = null;
-                    return;
-                }
-
-                // POJO valid, but converted to map for processing
-                if (isPOJO(v)) {
-                    v = new Map(Object.entries(v));
-                }
-
-                if (!is(v, Map)) {
-                    throw new Error("value must be POJO or Map");
-                }
-
-
-                // set if not set.
-                // if new value is already empty map, use it
-                if (this.#val === null) {
-                    this.#val = (v.size === 0) ? v : new Map();
-                }
-
-                // clear values not present in new value
-                [...this.#val.keys()].forEach(key=>{
-                    if (!v.has(key)) {
-                        this.delete(key);
-                    }
-                });
-
-                // set new keys
-                v.forEach((val,key)=>{
-                    if (key !== "types") {
-                        this.set(key, val, v.get("types")?.[key]);
-                    }
-                });
+            set: (!config.writable) ?
+            function(v) {
+                throw new Error("obj accessor is read-only");
+            } :
+            function(v) {
+                this.#setObj(v);
             },
         });
 
@@ -386,6 +394,43 @@ export default class Accessor {
         }});
     }
 
+    #setObj(v) {
+        if (v === null) {
+            this.clear();
+            this.val = null;
+            return;
+        }
+
+        // POJO valid, but converted to map for processing
+        if (isPOJO(v)) {
+            v = new Map(Object.entries(v));
+        }
+
+        if (!is(v, Map)) {
+            throw new Error("value must be POJO or Map");
+        }
+
+        // set if not set.
+        // if new value is already empty map, use it
+        if (this.#val === null) {
+            this.#val = (v.size === 0) ? v : new Map();
+        }
+
+        // clear values not present in new value
+        [...this.#val.keys()].forEach(key=>{
+            if (!v.has(key)) {
+                this.delete(key);
+            }
+        });
+
+        // set new keys
+        v.forEach((val,key)=>{
+            if (key !== "types") {
+                this.set(key, val, v.get("types")?.[key]);
+            }
+        });
+    }
+
     #setupDisplay(config) {
 
     }
@@ -401,24 +446,6 @@ export default class Accessor {
     #isNum      () { return Accessor.isNum(this.#type);    }
     #isScalar   () { return Accessor.isScalar(this.#type); }
     #isMulti    () { return Accessor.isMulti(this.#type);  }
-
-    static coerceValue(v, t) {
-        switch(t) {
-        case "int":
-            if (isStr(v))       return parseInt(v);
-            else if (isNum(v))  return Math.floor(v);
-            else                return Number(v);
-            break;
-        case "flt":
-            if (isStr(v))       return parseFloat(v);
-            else                return Number(v);
-            break;
-        case "str":
-            if (!isStr(v))      return String(v);
-            break;
-        }
-        return v;
-    }
 
     static isNum(t) {
         return (t === "flt" || t === "int");
