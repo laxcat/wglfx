@@ -14,7 +14,7 @@ export default class Accessor {
         return new Accessor({
             ...rootType[Accessor.typeKey],
             type: rootType,
-            root: rootType,
+            root: true,
             spider: true,
             default: true,
         });
@@ -22,21 +22,23 @@ export default class Accessor {
 
     // create accessor from type and lazy value
     static type(type, initFn=null) {
+        const root = Accessor.isMulti(type);
         return new Accessor({
             type,
             initFn,
             default: (initFn === null),
+            root,
         });
     }
 
     // create child accessor
-    static #parent = null;
     static #child(parent, config) {
         this.#parent = parent;
         const acc = new Accessor(config);
         this.#parent = null;
         return acc;
     }
+    static #parent = null;
 
     // static val(val) {
     //     const v = (isFn(val)) ? val : ()=>val;
@@ -63,8 +65,8 @@ export default class Accessor {
             // "str" | "int" | "flt" | "arr" | "obj" | TypeFn
             type: "str",
 
-            // set to Type where Type["typeKey"] is config object
-            root: null,
+            // this accessor is the root of a tree
+            root: false,
 
             // if set initialize as default (which might spider?)
             default: false,
@@ -98,6 +100,10 @@ export default class Accessor {
 
             // override with user settings
             ...config,
+
+            // some settings can't be configured by calling constructor
+            // parent only set in #child constructor
+            parent: Accessor.#parent,
         });
 
         this.#internal.setupMain(config);
@@ -105,8 +111,16 @@ export default class Accessor {
         this.#internal.setupEditable(config);
         this.#internal.setupReordable(config);
         this.#internal.init(config);
+
+        // console.log("-------------------------");
+        // console.log("accr");
+        // console.log(this === this.#internal.root);
+        // console.log(config);
+        // console.log(this);
     }
 
+    // internal values and functions all in this one private object
+    // only like 90% sure this is good structure
     #internal = {
     val: null,
     type: null,
@@ -169,6 +183,12 @@ export default class Accessor {
         if (config.default) {
             config.writable = true;
         }
+        if (config.root) {
+            config.root = this;
+        }
+        else {
+            config.root = config.parent;
+        }
         // //
         // if (config.keys) {
         //     config.type = "obj";
@@ -179,10 +199,8 @@ export default class Accessor {
     setupMain: (config)=>{
         this.#internal.type = config.type;
 
-        // anything can have a parent
-        if (Accessor.#parent) {
-            extd(this.#internal, "parent", {value:Accessor.#parent});
-        }
+        extd(this.#internal, "parent", {value:config.parent});
+        extd(this.#internal, "root", {value:config.root});
 
         // if scalar
         if (this.#internal.isScalar()) {
@@ -192,7 +210,7 @@ export default class Accessor {
             this.#internal.setupMainArr(config);
         }
         else if (this.#internal.type === "obj") {
-            this.internal.setupMainObj(config);
+            this.#internal.setupMainObj(config);
         }
     },
 
@@ -304,7 +322,11 @@ export default class Accessor {
             get: function() {
                 const v = this.#internal.val;
                 if (!is(v, Map)) return v;
-                return Object.fromEntries(v);
+                const ret = Object.fromEntries(v);
+                for (const key in ret) {
+                    ret[key] = ret[key].val;
+                }
+                return ret;
             },
             set: (!config.writable) ? undefined : function(v) {
                 if (v === null) {
@@ -333,12 +355,16 @@ export default class Accessor {
                 // clear values not present in new value
                 [...intl.val.keys()].forEach(key=>{
                     if (!v.has(key)) {
-                        intl.val.delete(key);
+                        this.delete(key);
                     }
                 });
 
                 // set new keys
-                v.forEach((val,key)=>intl.val.set(key, val));
+                v.forEach((val,key)=>{
+                    if (key !== "types") {
+                        this.set(key, val, v.get("types")?.[key]);
+                    }
+                });
             },
         });
 
@@ -350,7 +376,11 @@ export default class Accessor {
             this.#internal.val?.delete(key);
         }});
 
-        extd(this, "set", {value:function(key, value){
+        extd(this, "set", {value:function(key, value, type){
+            if (key === "types") {
+                throw new Error("types key is reserved");
+            }
+
             // single argument?
             if (value === undefined) {
                 if (isPOJO(key)) {
@@ -367,7 +397,20 @@ export default class Accessor {
             if (!is(intl.val, Map)) {
                 intl.val = new Map();
             }
-            intl.val.set(key, value);
+
+            if (type === undefined) {
+                if      (isNum(value))  type = "flt";
+                else if (isStr(value))  type = "str";
+                else if (isArr(value))  type = "arr";
+                else if (isPOJO(value)) type = "obj";
+                else if (isFn(value))   type = typeof value;
+            }
+
+            intl.val.set(key, Accessor.#child(this, {
+                type,
+                initFn: ()=>value,
+                writable: config.writable,
+            }));
         }});
     },
 
@@ -399,14 +442,24 @@ export default class Accessor {
         }
     },
 
-    isNum: ()=>{
-        const t = this.#internal.type;
-        return (t === "flt" || t === "int");
-    },
-    isScalar: ()=>{
-        const intl = this.#internal;
-        return (intl.type === "str" || intl.isNum());
-    },
+    isNum:      ()=>Accessor.isNum(this.#internal.type),
+    isScalar:   ()=>Accessor.isScalar(this.#internal.type),
+    isMulti:    ()=>Accessor.isMulti(this.#internal.type),
 
     }; // END INTERAL
+
+    static isNum = (t)=>{
+        return (t === "flt" || t === "int");
+    };
+    static isScalar = (t)=>{
+        return (t === "str" || Accessor.isNum(t));
+    };
+    static isMulti = (t)=>{
+        return (
+            (isArr(t) && t.length === 1) ||
+            t === "arr" ||
+            t === "obj" ||
+            isFn(t)
+        );
+    }
 };
