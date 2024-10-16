@@ -4,16 +4,15 @@ import { is, isFn, isStr, isNum, isArr, isBool, isPOJO } from "./util.mjs"
 
 export default class Accessor {
 
-    static typeKey = "define";
+    static typeConfigKey = "define";
 
     // create accessor from tree of types
-    static tree(rootType) {
-        if (rootType[Accessor.typeKey] == null) {
-            throw new Error(`rootType must have "${Accessor.typeKey}" static config object`);
+    static tree(type) {
+        if (type[Accessor.typeConfigKey] == null) {
+            throw new Error(`tree root type must have "${Accessor.typeConfigKey}" static config object`);
         }
         return new Accessor({
-            ...rootType[Accessor.typeKey],
-            type: rootType,
+            type,
             init: true,
         });
     }
@@ -82,12 +81,23 @@ export default class Accessor {
             // some settings can't be configured by calling constructor
             // parent only set in #child constructor
             parent: Accessor.#parent,
+
+            ...(
+                (config?.type?.[Accessor.typeConfigKey]) ?
+                config.type[Accessor.typeConfigKey] :
+                {}
+            ),
         });
+
 
         this.#setupMain(config);
         this.#setupDisplay(config);
         this.#setupEditable(config);
         this.#setupReordable(config);
+
+        // console.log(this.#type);
+        // console.log(config);
+        // console.log("------------------------");
 
         if (config.init) {
             this.init();
@@ -181,18 +191,8 @@ export default class Accessor {
         else if (this.#type === "obj") {
             this.#setupMainObj(config);
         }
-
-        // set value
-        if (config.val) {
-            if (this.#isScalar()) {
-                this.#setScalar(config.val, config.type);
-            }
-            else if (config.type === "arr") {
-                this.#setArr(config.val);
-            }
-            else if (config.type === "obj") {
-                this.#setObj(config.val);
-            }
+        else if (this.#isTypeFn()) {
+            this.#setupMainTypeFn(config);
         }
 
         // if writeable, set an init function for later
@@ -204,11 +204,22 @@ export default class Accessor {
                 else {
                     switch(config.type) {
                         case "int":
-                        case "flt": this.val = 0;                    break;
-                        case "str": this.val = "";                   break;
-                        case "arr": this.val = Array(config.length); break;
-                        case "obj": this.val = new Map();            break;
-                        default:    this.val = new config.type(...args);
+                        case "flt":
+                            this.val = args?.[0] ?? 0;
+                            break;
+                        case "str":
+                            this.val = args?.[0] ?? "";
+                            break;
+                        case "arr":
+                            this.val = (args.length) ?
+                                Array(...args) :
+                                Array(config.length);
+                            break;
+                        case "obj":
+                            this.val = new Map();
+                            break;
+                        default:
+                            this.val = new config.type(...args);
                     }
                 }
             }});
@@ -217,55 +228,43 @@ export default class Accessor {
 
     #setupMainScalar(config) {
         // set/get val
+        const type = config.type;
+        const setter = v=>{
+            switch(type) {
+            case "int":
+                if (isStr(v))       v = parseInt(v);
+                else if (isNum(v))  v = Math.floor(v);
+                else                v = Number(v);
+                break;
+            case "flt":
+                if (isStr(v))       v = parseFloat(v);
+                else                v = Number(v);
+                break;
+            case "str":
+                if (!isStr(v))      v = String(v);
+                break;
+            }
+            this.#val = v;
+        };
+
         extd(this, "val", {
             get: function() {
                 return this.#val;
             },
             set: (!config.writable) ?
-            function(v) {
-                throw new Error("scalar accessor is read-only");
-            } :
-            function(v) {
-                this.#setScalar(v, config.type);
-            },
+                function(v) {
+                    throw new Error("scalar accessor is read-only");
+                } :
+                setter,
         });
-    }
 
-    #setScalar(v, t) {
-        switch(t) {
-        case "int":
-            if (isStr(v))       v = parseInt(v);
-            else if (isNum(v))  v = Math.floor(v);
-            else                v = Number(v);
-            break;
-        case "flt":
-            if (isStr(v))       v = parseFloat(v);
-            else                v = Number(v);
-            break;
-        case "str":
-            if (!isStr(v))      v = String(v);
-            break;
+        if (config.val) {
+            setter(config.val);
         }
-        this.#val = v;
     }
 
     #setupMainArr(config) {
-        // set/get val
-        extd(this, "val", {
-            get: function() {
-                const v = this.#val;
-                return (isArr(v)) ? v.map(accr=>accr.val) : v;
-            },
-            set: (!config.writable) ?
-            function(v) {
-                throw new Error("array accessor is read-only");
-            } :
-            function(v) {
-                this.#setArr(v);
-            },
-        });
-
-        extd(this, "splice", {value:function(start, deleteCount, ...items) {
+        const splice = (start, deleteCount, ...items)=>{
             // TODO listeners?
             if (this.#val === null) {
                 this.#val = [];
@@ -274,100 +273,89 @@ export default class Accessor {
                 this.#val.splice(start);
             }
             else {
-                const fn = item=>Accessor.#child(this, {
-                    // type: config.itemType,
-                    val: item,
-                    writable: config.writable,
-                });
+                const fn = val=>Accessor.#child(this, {val,writable});
                 this.#val.splice(
                     start,
                     deleteCount,
                     ...items.map(fn)
                 );
             }
-        }});
+        }
+        const setter = v=>{
+            if (v === null) {
+                splice(0);
+                this.#val = null;
+                return;
+            }
 
-        extd(this, "push", {value:function(...args) {
-            this.splice(0, 0, ...args);
-        }});
+            if (!isArr(v)) {
+                throw new Error("value must be array");
+            }
 
-        extd(this, "clear", {value:function() {
-            this.splice(0);
-        }})
-    }
+            if (this.#val === null) {
+                this.#val = [];
+            }
 
-    #setArr(v) {
-        if (v === null) {
-            this.splice(0);
-            this.val = null;
-            return;
+            const oldLen = this.#val.length;
+            const newLen = v.length;
+            const minLen = Math.min(oldLen, newLen);
+
+            // remove items if shorter
+            if (newLen < oldLen) {
+                splice(newLen);
+            }
+
+            // update items
+            let i = 0;
+            while (i < minLen) {
+                this.#val[i].val = v[i];
+                ++i;
+            }
+
+            // add items if longer
+            if (newLen > oldLen) {
+                splice(oldLen, 0, ...v.slice(oldLen));
+            }
+        };
+
+        extd(this, "val", {
+            get: function() {
+                const v = this.#val;
+                return (isArr(v)) ? v.map(accr=>accr.val) : v;
+            },
+            set: (config.writable) ?
+                setter :
+                ()=>{ throw new Error("array accessor is read-only") },
+        });
+
+        const writable = config.writable;
+        if (writable) {
+            extd(this, "splice", {value: splice});
+
+            extd(this, "push", {value:function(...args) {
+                this.splice(0, 0, ...args);
+            }});
+
+            extd(this, "clear", {value:function() {
+                this.splice(0);
+            }})
         }
 
-        if (!isArr(v)) {
-            throw new Error("value must be array");
-        }
-
-        if (this.#val === null) {
-            this.#val = [];
-        }
-
-        const oldLen = this.#val.length;
-        const newLen = v.length;
-        const minLen = Math.min(oldLen, newLen);
-
-        // remove items if shorter
-        if (newLen < oldLen) {
-            this.splice(newLen);
-        }
-
-        // update items
-        let i = 0;
-        while (i < minLen) {
-            this.#val[i].val = v[i];
-            ++i;
-        }
-
-        // add items if longer
-        if (newLen > oldLen) {
-            this.splice(oldLen, 0, ...v.slice(oldLen));
+        if (config.val) {
+            setter(config.val);
         }
     }
 
     #setupMainObj(config) {
-        extd(this, "val", {
-            get: function() {
-                const v = this.#val;
-                if (!is(v, Map)) return v;
-                const ret = Object.fromEntries(v);
-                for (const key in ret) {
-                    ret[key] = ret[key].val;
-                }
-                return ret;
-            },
-            set: (!config.writable) ?
-            function(v) {
-                throw new Error("obj accessor is read-only");
-            } :
-            function(v) {
-                this.#setObj(v);
-            },
-        });
+        const writable = config.writable;
 
-        extd(this, "clear", {value:function(){
-            this.#val?.clear();
-        }});
-
-        extd(this, "delete", {value:function(key){
-            this.#val?.delete(key);
-        }});
-
-        extd(this, "set", {value:function(key, value, type){
+        const setItem = (key, val, type)=>{
             if (key === "types") {
                 throw new Error("types key is reserved");
             }
 
             // single argument?
-            if (value === undefined) {
+            if (val === undefined) {
                 if (isPOJO(key)) {
                     key = new Map(Object.entries(key));
                 }
@@ -383,52 +371,84 @@ export default class Accessor {
             }
 
             if (type === undefined) {
-                type = Accessor.guessType(value);
+                type = Accessor.guessType(val);
             }
 
-            this.#val.set(key, Accessor.#child(this, {
-                type,
-                initFn: ()=>value,
-                writable: config.writable,
-            }));
-        }});
+            this.#val.set(key, Accessor.#child(this, {type,val,writable}));
+        };
+
+        const setMap = v=>{
+            if (v === null) {
+                this.#val.clear();
+                return;
+            }
+
+            // POJO valid, but converted to map for processing
+            if (isPOJO(v)) {
+                v = new Map(Object.entries(v));
+            }
+
+            if (!is(v, Map)) {
+                throw new Error("value must be POJO or Map");
+            }
+
+            // set if not set.
+            // if new value is already empty map, use it
+            if (this.#val === null) {
+                this.#val = (v.size === 0) ? v : new Map();
+            }
+
+            // clear values not present in new value
+            [...this.#val.keys()].forEach(key=>{
+                if (!v.has(key)) {
+                    this.#val.delete(key);
+                }
+            });
+
+            // set new keys
+            v.forEach((val,key)=>{
+                if (key !== "types") {
+                    setItem(key, val, v.get("types")?.[key]);
+                }
+            });
+        };
+
+        extd(this, "val", {
+            get: function() {
+                const v = this.#val;
+                if (!is(v, Map)) return v;
+                const ret = Object.fromEntries(v);
+                for (const key in ret) {
+                    ret[key] = ret[key].val;
+                }
+                return ret;
+            },
+            set: (config.writable) ?
+                setMap :
+                ()=>{ throw new Error("obj accessor is read-only"); },
+        });
+
+        if (writable) {
+            extd(this, "clear", {value:function(){
+                this.#val?.clear();
+            }});
+
+            extd(this, "delete", {value:function(key){
+                this.#val?.delete(key);
+            }});
+
+            extd(this, "set", {value:setItem});
+        }
+
+        if (config.val) {
+            setMap(config.val);
+        }
     }
 
-    #setObj(v) {
-        if (v === null) {
-            this.clear();
-            this.val = null;
-            return;
+    #setupMainTypeFn(config) {
+        if (config.val) {
+            this.#val = config.val;
         }
-
-        // POJO valid, but converted to map for processing
-        if (isPOJO(v)) {
-            v = new Map(Object.entries(v));
-        }
-
-        if (!is(v, Map)) {
-            throw new Error("value must be POJO or Map");
-        }
-
-        // set if not set.
-        // if new value is already empty map, use it
-        if (this.#val === null) {
-            this.#val = (v.size === 0) ? v : new Map();
-        }
-
-        // clear values not present in new value
-        [...this.#val.keys()].forEach(key=>{
-            if (!v.has(key)) {
-                this.delete(key);
-            }
-        });
-
-        // set new keys
-        v.forEach((val,key)=>{
-            if (key !== "types") {
-                this.set(key, val, v.get("types")?.[key]);
-            }
-        });
     }
 
     #setupDisplay(config) {
@@ -446,6 +466,7 @@ export default class Accessor {
     #isNum      () { return Accessor.isNum(this.#type);    }
     #isScalar   () { return Accessor.isScalar(this.#type); }
     #isMulti    () { return Accessor.isMulti(this.#type);  }
+    #isTypeFn   () { return Accessor.isTypeFn(this.#type);  }
 
     static isNum(t) {
         return (t === "flt" || t === "int");
@@ -460,6 +481,10 @@ export default class Accessor {
             t === "obj" ||
             isFn(t)
         );
+    }
+
+    static isTypeFn(t) {
+        return (t?.prototype?.constructor === t);
     }
 
     static checkType(t) {

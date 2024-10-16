@@ -1,7 +1,10 @@
 import Accessor from "./js/common/Accessor.mjs"
 
 class Thing {
+    dirty = true;
+    boy = true;
     static define = {
+        reorderable: true,
     };
 };
 
@@ -14,7 +17,7 @@ const wut = {
     },
 };
 
-const thing = Accessor.val([45]);
+const thing = Accessor.tree(Thing);
 console.log(thing.val);
 console.log(thing);
 
