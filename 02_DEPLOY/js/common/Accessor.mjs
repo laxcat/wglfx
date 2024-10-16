@@ -14,7 +14,6 @@ export default class Accessor {
         return new Accessor({
             ...rootType[Accessor.typeKey],
             type: rootType,
-            root: true,
             spider: true,
             default: true,
         });
@@ -22,12 +21,10 @@ export default class Accessor {
 
     // create accessor from type and lazy value
     static type(type, initFn=null) {
-        const root = Accessor.isMulti(type);
         return new Accessor({
             type,
             initFn,
             default: (initFn === null),
-            root,
         });
     }
 
@@ -40,23 +37,23 @@ export default class Accessor {
     }
     static #parent = null;
 
-    // static val(val) {
-    //     const v = (isFn(val)) ? val : ()=>val;
-    //     if      (isStr(val)) return Accessor.type("str", v);
-    //     else if (isNum(val)) return Accessor.type("flt", v);
-    //     else if (isArr(val)) return Accessor.type("arr", v);
-    //     else if (isObj(val)) return Accessor.type("obj", v);
-    //     else                 return Accessor.type(typeof val, );
-    // }
-
-    // static int(val) {
-    //     if (!isNum(val) || val !== Math.round(val)) {
-    //         throw new Error("val must be int");
-    //     }
-    //     const accr = Accessor.type("int");
-    //     accr.val = val;
-    //     return accr;
-    // }
+    static val(val, type) {
+        let itemType = null;
+        if (type === undefined) {
+            if (isArr(val) && val.length > 0) {
+                type = "arr";
+                itemType = Accessor.guessType(val[0]);
+            }
+            else {
+                type = Accessor.guessType(val);
+            }
+        }
+        return new Accessor({
+            type,
+            itemType,
+            initFn:()=>val,
+        });
+    }
 
     constructor(config) {
         config = this.#internal.sanitizeConfig({
@@ -64,9 +61,6 @@ export default class Accessor {
 
             // "str" | "int" | "flt" | "arr" | "obj" | TypeFn
             type: "str",
-
-            // this accessor is the root of a tree
-            root: false,
 
             // if set initialize as default (which might spider?)
             default: false,
@@ -180,14 +174,8 @@ export default class Accessor {
             throw new Error("default must be bool");
         }
         // default always sets writable to true. TODO: why?
-        if (config.default) {
+        if (config.default || config.initFn) {
             config.writable = true;
-        }
-        if (config.root) {
-            config.root = this;
-        }
-        else {
-            config.root = config.parent?.root ?? null;
         }
         // //
         // if (config.keys) {
@@ -199,8 +187,7 @@ export default class Accessor {
     setupMain: (config)=>{
         this.#internal.type = config.type;
 
-        extd(this, "parent", {value:config.parent});
-        extd(this, "root", {value:config.root});
+        extd(this, "parent", {get:()=>config.parent});
 
         // if scalar
         if (this.#internal.isScalar()) {

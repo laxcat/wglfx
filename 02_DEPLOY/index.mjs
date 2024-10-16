@@ -5,8 +5,6 @@ class Thing {
     };
 };
 
-
-const thing = Accessor.type(["obj"]);
-thing.push({fun:47.5});
+const thing = Accessor.val([45], ["int"]);
 console.log(thing.val);
 console.log(thing);
