@@ -399,11 +399,7 @@ export default class Accessor {
             }
 
             if (type === undefined) {
-                if      (isNum(value))  type = "flt";
-                else if (isStr(value))  type = "str";
-                else if (isArr(value))  type = "arr";
-                else if (isPOJO(value)) type = "obj";
-                else if (isFn(value))   type = typeof value;
+                type = Accessor.guessType(value);
             }
 
             intl.val.set(key, Accessor.#child(this, {
@@ -448,18 +444,26 @@ export default class Accessor {
 
     }; // END INTERAL
 
-    static isNum = (t)=>{
+    static isNum = t=>{
         return (t === "flt" || t === "int");
     };
-    static isScalar = (t)=>{
+    static isScalar = t=>{
         return (t === "str" || Accessor.isNum(t));
     };
-    static isMulti = (t)=>{
+    static isMulti = t=>{
         return (
             (isArr(t) && t.length === 1) ||
             t === "arr" ||
             t === "obj" ||
             isFn(t)
         );
+    }
+    static guessType = val=>{
+        if      (isNum(val))  return "flt";
+        else if (isStr(val))  return "str";
+        else if (isArr(val))  return "arr";
+        else if (isPOJO(val)) return "obj";
+        else if (isFn(val))   return typeof val;
+        return "str";
     }
 };
