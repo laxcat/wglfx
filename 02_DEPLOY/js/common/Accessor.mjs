@@ -117,24 +117,32 @@ export default class Accessor {
     #sanitizeConfig(config) {
 
         // TYPE RELATED CODE PATHS:
-        // 1) type set (becomes authority)
-        //    a) val set
+        // 1) config.type IS set (becomes authority)
+        //    a) config.val is set:
         //       gets coerced to type for scalars,
         //       errors if mismatched for arr/obj/typefn
         //    b) initFn set, gets coerced when resolved on init
         //    c) no value set, gets defaulted on init
-        // 2) type not set
-        //    a) val set, is used to guess type
-        //    b) val not set, can't detect type. use default type.
+        // 2) config.type NOT set (guess or use default type)
+        //    a) config.val IS  set, used to guess type
+        //    b) config.val NOT set, can't detect type. use default type.
         //
-        // once above is resolved, if type is "arr", childType can be set to
-        // force type of children. childType is never guessed, only set by
+        // once config.type is resolved, if type is "arr", childType can be set
+        // to force type of children. childType is never guessed, only set by
         // user. if not set, child accessors will guess for themselves.
         //
         // val and initFn can't both be set. will throw error.
 
+        // no type set. let's guess!
         if (!config.type) {
+            // take a guess. will default to "str" if config.val is not set
             config.type = Accessor.guessType(config.val);
+
+            // if keys were set, type should be "obj" or TypeFn...
+            // so if it's not TypeFn already, set it to "obj"
+            if (config.keys && !isFn(config.type)) {
+                config.type = "obj";
+            }
         }
 
         // parse type shortcut for arrays
@@ -197,32 +205,41 @@ export default class Accessor {
 
         // if writeable, set an init function for later
         if (config.writable) {
+            const {initFn,type,length,keys} = config;
             extd(this, "init", {value:function(...args) {
-                if (config.initFn) {
-                    this.val = config.initFn(...args);
+                if (initFn) {
+                    this.val = initFn(...args);
                 }
                 else {
-                    switch(config.type) {
-                        case "bln":
-                            this.val = args?.[0] ?? false;
-                            break;
-                        case "int":
-                        case "flt":
-                            this.val = args?.[0] ?? 0;
-                            break;
-                        case "str":
-                            this.val = args?.[0] ?? "";
-                            break;
-                        case "arr":
-                            this.val = (args.length) ?
-                                Array(...args) :
-                                Array(config.length);
-                            break;
-                        case "obj":
-                            this.val = new Map();
-                            break;
-                        default:
-                            this.val = new config.type(...args);
+                    switch(type) {
+                    case "bln":
+                        this.val = args?.[0] ?? false;
+                        break;
+                    case "int":
+                    case "flt":
+                        this.val = args?.[0] ?? 0;
+                        break;
+                    case "str":
+                        this.val = args?.[0] ?? "";
+                        break;
+                    case "arr":
+                        this.val = (args.length) ?
+                            Array(...args) :
+                            Array(length);
+                        break;
+                    case "obj":
+                        this.val = new Map();
+                        for (const key in keys) {
+                            this.set(key, null, keys[key]?.type);
+                            this.#val.get(key).init();
+                        }
+                        break;
+                    default:
+                        this.val = new type(...args);
+                        for (const key in keys) {
+                            this.set(key, null, keys[key]?.type);
+                            this.#val[key].init();
+                        }
                     }
                 }
             }});
@@ -277,6 +294,8 @@ export default class Accessor {
     }
 
     #setupMainArr(config) {
+        const {writable,childType} = config;
+
         const splice = (start, deleteCount, ...items)=>{
             // TODO listeners?
             if (this.#val === null) {
@@ -286,7 +305,9 @@ export default class Accessor {
                 this.#val.splice(start);
             }
             else {
-                const fn = val=>Accessor.#child(this, {val,writable});
+                const fn = val=>Accessor.#child(
+                    this, {val,writable,type:childType,init:true}
+                );
                 this.#val.splice(
                     start,
                     deleteCount,
@@ -341,7 +362,6 @@ export default class Accessor {
                 ()=>{ throw new Error("array accessor is read-only") },
         });
 
-        const writable = config.writable;
         if (writable) {
             extd(this, "splice", {value: splice});
 
@@ -362,11 +382,15 @@ export default class Accessor {
     #setupMainObj(config) {
         const writable = config.writable;
 
-        const setItem = (key, val, type)=>{
-            if (key === "types") {
-                throw new Error("types key is reserved");
+        const keys = config.keys;
+        const keyTypes = {};
+        for (const key in keys) {
+            if (keys[key].type) {
+                keyTypes[key] = keys[key].type;
             }
+        }
 
+        const setItem = (key, val, type)=>{
             // single argument?
             if (val === undefined) {
                 if (isPOJO(key)) {
@@ -384,10 +408,13 @@ export default class Accessor {
             }
 
             if (type === undefined) {
-                type = Accessor.guessType(val);
+                type = keyTypes[key] ?? Accessor.guessType(val);
             }
 
-            this.#val.set(key, Accessor.#child(this, {type,val,writable}));
+            this.#val.set(
+                key,
+                Accessor.#child(this, {type, val, writable, ...keys[key]})
+            );
         };
 
         const setMap = v=>{
@@ -419,11 +446,7 @@ export default class Accessor {
             });
 
             // set new keys
-            v.forEach((val,key)=>{
-                if (key !== "types") {
-                    setItem(key, val, v.get("types")?.[key]);
-                }
-            });
+            v.forEach((val,key)=>setItem(key, val));
         };
 
         extd(this, "val", {
@@ -442,11 +465,11 @@ export default class Accessor {
         });
 
         if (writable) {
-            extd(this, "clear", {value:function(){
+            extd(this, "clear", {value:function() {
                 this.#val?.clear();
             }});
 
-            extd(this, "delete", {value:function(key){
+            extd(this, "delete", {value:function(key) {
                 this.#val?.delete(key);
             }});
 
@@ -459,6 +482,40 @@ export default class Accessor {
     }
 
     #setupMainTypeFn(config) {
+        const {type,keys,writable} = config;
+        const keyTypes = {};
+        for (const key in keys) {
+            if (keys[key].type) {
+                keyTypes[key] = keys[key].type;
+            }
+        }
+
+        const setKey = (key, val, keyType)=>{
+            if (!is(this.#val, type)) {
+                this.val = new type();
+            }
+
+            if (keyType === undefined) {
+                keyType = keyTypes[key] ?? Accessor.guessType(val);
+            }
+
+            this.#val[key] = Accessor.#child(
+                this,
+                {keyType, val, writable, ...keys[key]}
+            );
+        };
+
+        extd(this, "val", {
+            get: ()=>this.#val,
+            set: (writable) ?
+                v=>{ this.#val = v; } :
+                v=>{ throw new Error(`${type} accessor is read-only`); },
+        });
+
+        if (writable) {
+            extd(this, "set", {value:setKey});
+        }
+
         if (config.val) {
             this.#val = config.val;
         }

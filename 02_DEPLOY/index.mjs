@@ -1,10 +1,23 @@
 import Accessor from "./js/common/Accessor.mjs"
 
+class Foo {
+    wingus = 1;
+    wangus = 2;
+}
+
+class Bar {
+    dingus = 3;
+    dangus = 4;
+}
+
 class Thing {
-    dirty = true;
-    boy = true;
+    dirty;
+    boy;
     static define = {
-        reorderable: true,
+        keys: {
+            dirty: { type:Foo },
+            boy:   { type:[Bar], length:5 }
+        }
     };
 };
 
@@ -17,9 +30,24 @@ const wut = {
     },
 };
 
+// const thing = new Accessor({type:[Foo], length:5, init:true});
+// console.log(thing.val);
+// console.log(thing);
+
 const thing = Accessor.tree(Thing);
 console.log(thing.val);
 console.log(thing);
+
+// const thing = new Accessor({
+//     type:"obj",
+//     keys: {
+//         bing: {type:"int"},
+//         bong: {type:"bln"},
+//     },
+//     init:true,
+// });
+// console.log(thing.val);
+// console.log(thing);
 
 // const i = 45;
 // const f = 37.2;
