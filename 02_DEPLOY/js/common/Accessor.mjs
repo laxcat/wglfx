@@ -40,7 +40,7 @@ export default class Accessor {
         config = this.#sanitizeConfig({
             // CONFIG DEFAULTS
 
-            // "str" | "int" | "flt" | "arr" | "obj" | TypeFn
+            // "bln" | "str" | "int" | "flt" | "arr" | "obj" | TypeFn
             type: null,
 
             // value already set and passed in.
@@ -203,6 +203,9 @@ export default class Accessor {
                 }
                 else {
                     switch(config.type) {
+                        case "bln":
+                            this.val = args?.[0] ?? false;
+                            break;
                         case "int":
                         case "flt":
                             this.val = args?.[0] ?? 0;
@@ -231,6 +234,16 @@ export default class Accessor {
         const type = config.type;
         const setter = v=>{
             switch(type) {
+            case "bln":
+                if (isStr(v)) {
+                    v = v.trim().toLowerCase();
+                    v = (v === "true");
+                }
+                else {
+                    v = Number(v);
+                    v = (v !== 0);
+                }
+                break;
             case "int":
                 if (isStr(v))       v = parseInt(v);
                 else if (isNum(v))  v = Math.floor(v);
@@ -469,7 +482,7 @@ export default class Accessor {
     #isTypeFn   () { return Accessor.isTypeFn(this.#type);  }
 
     static isNum(t) {
-        return (t === "flt" || t === "int");
+        return (t === "bln" || t === "flt" || t === "int");
     }
     static isScalar(t) {
         return (t === "str" || Accessor.isNum(t));
@@ -489,6 +502,7 @@ export default class Accessor {
 
     static checkType(t) {
         if (isFn(t) ||
+            t === "bln" ||
             t === "str" ||
             t === "int" ||
             t === "flt" ||
@@ -504,10 +518,11 @@ export default class Accessor {
         if (val == null) {
             return "str"; // default type when unknown
         }
-        if      (isNum(val))  return "flt";
-        else if (isStr(val))  return "str";
-        else if (isArr(val))  return "arr";
-        else if (isPOJO(val)) return "obj";
+        if      (val === true || val === false) return "bln";
+        else if (isNum(val))                    return "flt";
+        else if (isStr(val))                    return "str";
+        else if (isArr(val))                    return "arr";
+        else if (isPOJO(val))                   return "obj";
         return Object.getPrototypeOf(val).constructor;
     }
 };
