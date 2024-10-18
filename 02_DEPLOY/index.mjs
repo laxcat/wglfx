@@ -35,14 +35,19 @@ const wut = {
 };
 
 const thingEl = document.getElementById("thing");
-const thing = new Accessor({type:["flt"], length:10, el:thingEl, init:true});
+const thing = new Accessor({type:[Thing], length:10, el:thingEl});
 
-// const button = document.createElement("button");
-// button.innerHTML = "fuckme" ;
-// document.body.appendChild(button);
-// button.addEventListener("click", e=>{
-//     thing.init();
-// });
+document.body.insertHTML(`<button>init</button>`)
+.addEventListener("click", e=>{
+    thing.init();
+    console.log(thing);
+});
+
+document.body.insertHTML(`<button>display</button>`)
+.addEventListener("click", e=>{
+    thing.display();
+    console.log(thing);
+});
 
 
 // const thing = Accessor.tree(Thing, thingEl);

@@ -4,6 +4,32 @@ import { is, isFn, isStr, isNum, isArr, isBool, isPOJO, isEl } from "./util.mjs"
 
 export default class Accessor {
 
+    /*
+    ADDED PROGRAMATICALLY
+
+    read-only values/getters
+    ----------------------------------------------------------------------------
+    type
+    parent
+
+    writable values
+    ----------------------------------------------------------------------------
+    val                         // only writable if accessor is writable
+
+    functions
+    ----------------------------------------------------------------------------
+    init()                      // if writable
+    display()                   // if has el
+    clear()                     // if TypeFn or "obj" and writable
+    delete()
+    set()
+    push()                      // if "arr" and writable
+    splice()
+    editStart()                 // if user editable and writable
+
+    */
+
+    // name of static config object defined on TypeFn class
     static typeConfigKey = "define";
 
     // create accessor from tree of types
@@ -62,23 +88,23 @@ export default class Accessor {
 
             // enables display
             el: null,
-
-            // type must be obj or TypeFn, el must be set
+            // type must be TypeFn, el must be set
             html: null,
 
             // user editable. el+html must be set.
             editable: false,
-
             // user can reorder elements. must be arr+editable.
             reorderable: false,
 
             // override with user settings
             ...config,
 
-            // some settings can't be configured by calling constructor
+            // some settings can't be configured by calling constructor:
+
             // parent only set in #child constructor
             parent: Accessor.#parent,
 
+            // TypeFn pulls static config object from class
             ...(
                 (config?.type?.[Accessor.typeConfigKey]) ?
                 config.type[Accessor.typeConfigKey] :
@@ -87,19 +113,31 @@ export default class Accessor {
         });
 
 
-        config.childEls = this.#setupDisplay(config);
+        // setup type, parent
         this.#setupMain(config);
+
+        // setup init
+        this.#setupInit(config);
+
+        // setup display
+        // returns refs to els to be used for children
+        config.childEls = this.#setupDisplay(config);
+
+        // setup access (val, splice, set, etc), children
+        if      (this.#isScalar())      this.#setupAccessScalar(config);
+        else if (this.type === "arr")   this.#setupAccessArr(config);
+        else if (this.type === "obj")   this.#setupAccessObj(config);
+        else if (this.#isTypeFn())      this.#setupAccessTypeFn(config);
+
+        // setup user editable functions
         this.#setupEditable(config);
         this.#setupReordable(config);
 
-        // console.log(this.#type);
-        // console.log(config);
-        // console.log("------------------------");
-
+        // init/display on configure
         if (config.init) {
             this.init();
+            this.display?.();
         }
-        this.display?.();
 
         // console.log("-------------------------");
         // console.log("accr");
@@ -110,7 +148,6 @@ export default class Accessor {
 
 
     #val = null;
-    #type = null;
 
     #sanitizeConfig(config) {
 
@@ -165,9 +202,18 @@ export default class Accessor {
             }
         }
 
+        // check "obj"/TypeFn things
+        if (isPOJO(config.keys)) {
+            // convert keys from POJO to map for easier handling
+            config.keys = new Map(Object.entries(config.keys));
+        }
+
         // el/html checks
         if (config.el && !is(config.el, HTMLElement)) {
             throw new Error("el must be HTMLElement");
+        }
+        if (config.html && !isFn(config.type)) {
+            throw new Error("type must be TypeFn if html is set");
         }
         if (config.html && !isStr(config.html)) {
             throw new Error("html must be string");
@@ -194,65 +240,61 @@ export default class Accessor {
     }
 
     #setupMain(config) {
-        this.#type = config.type;
+        // type is read-only value
+        extd(this, "type", {value:config.type});
 
-        extd(this, "parent", {get:()=>config.parent});
+        // parent is read-only getter
+        // (TODO: think about this. lazy lookup for big object seemed to make
+        // more sense, but if parent is just captured by closure, maybe should
+        // just be read-only value?)
+        const {parent} = config;
+        extd(this, "parent", {get:()=>parent});
+    }
 
-        // setup main access functions
-        if (this.#isScalar()) {
-            this.#setupMainScalar(config);
-        }
-        else if (this.#type === "arr") {
-            this.#setupMainArr(config);
-        }
-        else if (this.#type === "obj") {
-            this.#setupMainObj(config);
-        }
-        else if (this.#isTypeFn()) {
-            this.#setupMainTypeFn(config);
-        }
-
+    #setupInit(config) {
         // if writeable, set an init function for later
-        if (config.writable) {
-            const {initFn,type,length,keys} = config;
-            extd(this, "init", {value:function(...args) {
-                if (initFn) {
-                    this.val = initFn(...args);
-                }
-                else {
-                    switch(type) {
-                    case "bln":
-                        this.val = args?.[0] ?? false;
-                        break;
-                    case "int":
-                    case "flt":
-                        this.val = args?.[0] ?? 0;
-                        break;
-                    case "str":
-                        this.val = args?.[0] ?? "";
-                        break;
-                    case "arr":
-                        this.val = (args.length) ?
-                            Array(...args) :
-                            Array(length);
-                        break;
-                    case "obj":
-                        this.val = new Map();
-                        for (const key in keys) {
-                            this.set(key, null, keys[key]?.type);
-                            this.#val.get(key).init();
-                        }
-                        break;
-                    default:
-                        this.val = new type(...args);
-                        for (const key in keys) {
-                            this.set(key, null, keys[key]?.type);
-                            this.#val[key].init();
-                        }
-                    }
-                }
-            }});
+        if (!config.writable) {
+            return;
         }
+        const {initFn,type,length,keys} = config;
+        extd(this, "init", {value:function(...args) {
+            if (initFn) {
+                this.val = initFn(...args);
+            }
+            else {
+                switch(type) {
+                case "bln":
+                    this.val = args?.[0] ?? false;
+                    break;
+                case "int":
+                case "flt":
+                    this.val = args?.[0] ?? 0;
+                    break;
+                case "str":
+                    this.val = args?.[0] ?? "";
+                    break;
+                case "arr":
+                    this.val = (args.length) ?
+                        Array(...args) :
+                        Array(length);
+                    this.#val.forEach(i=>i.init());
+                    break;
+                case "obj":
+                    this.val = new Map();
+                    break;
+                default:
+                    this.val = new type(...args);
+                    break;
+                }
+                // handle children (keys) for "obj"/TypeFn
+                keys?.forEach((val,key)=>{
+                    const accr = this.set(key, val?.val, val?.type);
+                    if (val?.val == null) {
+                        accr.init();
+                    }
+                });
+            }
+        }});
     }
 
     #setupDisplay(config) {
@@ -260,42 +302,54 @@ export default class Accessor {
             return;
         }
 
+        // TypeFn and potentially "obj"
+        let display;
+        let childEls;
         if (config.html) {
             const {el,html,keys} = config;
 
+            // create temporary element in a template to create els for children
             const temp = document.createElement("template");
             const tempRoot = temp.content;
-            const childEls = {};
+            childEls = {};
             tempRoot.insertHTML(html);
-            for (const key in keys) {
+            keys.forEach((val,key)=>{
                 const childEl = tempRoot.querySelector(`*[data-key="${key}"]`);
                 if (!isEl(childEl)) {
                     throw new Error(`could not find HTMLElement for key: ${key}`);
                 }
                 childEls[key] = childEl;
-            }
+            });
 
-            const display = ()=>{
+            display = ()=>{
+                // move template content to real parent in dom
                 el.appendChild(tempRoot);
-                temp.innerHTML = "";
-            }
-            extd(this, "display", {value:display});
 
-            return childEls;
+                // dipslay children
+                keys.forEach((val,key)=>this.#val[key].display());
+            }
         }
+        // array. simply call down to children
+        else if (config.type === "arr") {
+            display = ()=>this.#val?.forEach(i=>i.display());
+        }
+        // children of array. insert, don't replace, as they share a parent el
+        else if (this.parent?.type === "arr") {
+            console.log("children display");
+            const {el} = config;
+            display = ()=>el.insertHTML(this.val);
+        }
+        // assuming scalar value, or otherwise undhanled
         else {
             const {el} = config;
-            extd(this, "display", {value:
-                (config.type === "arr") ?
-                ()=>{} :
-                function() {
-                    el.insertHTML(this.val);
-                }
-            });
+            display = ()=>{ el.innerHTML = this.val; }
         }
+
+        extd(this, "display", {value:display});
+        return childEls;
     }
 
-    #setupMainScalar(config) {
+    #setupAccessScalar(config) {
         // set/get val
         const type = config.type;
         const setter = v=>{
@@ -342,8 +396,8 @@ export default class Accessor {
         }
     }
 
-    #setupMainArr(config) {
-        const {writable,childType,el} = config;
+    #setupAccessArr(config) {
+        const {writable,childType,el,init} = config;
 
         const splice = (start, deleteCount, ...items)=>{
             // TODO listeners?
@@ -363,8 +417,8 @@ export default class Accessor {
                         el,
                         val,
                         writable,
+                        init,
                         type:childType,
-                        init:true
                     }
                 );
                 this.#val.splice(
@@ -438,16 +492,15 @@ export default class Accessor {
         }
     }
 
-    #setupMainObj(config) {
-        const writable = config.writable;
+    #setupAccessObj(config) {
+        const {writable,keys} = config;
 
-        const keys = config.keys;
         const keyTypes = {};
-        for (const key in keys) {
-            if (keys[key].type) {
-                keyTypes[key] = keys[key].type;
+        keys.forEach((val,key)=> {
+            if (val.type) {
+                keyTypes[key] = val.type;
             }
-        }
+        });
 
         const setItem = (key, val, type)=>{
             // single argument?
@@ -470,10 +523,12 @@ export default class Accessor {
                 type = keyTypes[key] ?? Accessor.guessType(val);
             }
 
-            this.#val.set(
-                key,
-                Accessor.#child(this, {type, val, writable, ...keys[key]})
+            const accr = Accessor.#child(
+                this,
+                {type, val, writable, ...keys.get(key)}
             );
+            this.#val.set(key, accr);
+            return accr;
         };
 
         const setMap = v=>{
@@ -540,14 +595,14 @@ export default class Accessor {
         }
     }
 
-    #setupMainTypeFn(config) {
+    #setupAccessTypeFn(config) {
         const {type,keys,writable,childEls} = config;
         const keyTypes = {};
-        for (const key in keys) {
-            if (keys[key].type) {
-                keyTypes[key] = keys[key].type;
+        keys.forEach((val,key)=>{
+            if (val.type) {
+                keyTypes[key] = val.type;
             }
-        }
+        });
 
         const setKey = (key, val, keyType)=>{
             if (!is(this.#val, type)) {
@@ -560,8 +615,9 @@ export default class Accessor {
 
             this.#val[key] = Accessor.#child(
                 this,
-                {keyType, val, writable, ...keys[key], el:childEls[key]}
+                {type:keyType, val, writable, ...keys.get(key), el:childEls[key]}
             );
+            return this.#val[key];
         };
 
         extd(this, "val", {
@@ -581,6 +637,28 @@ export default class Accessor {
     }
 
     #setupEditable(config) {
+        if (config.type === "arr") {
+            // extd(this, "editStart", {value:function(allDirty=false) {
+            //     this.container.innerHTML = "";
+            //     this.inputEl = this.container.insertHTML(
+            //         `<input
+            //             name="${this.#_.key}"
+            //             type="${inputType}"
+            //             value="${this.val}"
+            //             data-prev-value="${allDirty?"":this.val}"
+            //             required
+            //             ${patternStr}
+            //             ${minMaxStepStr}
+            //         >`
+            //     );
+            //     this.inputEl.addKeyListener("Enter", e=>this.parent?.editSubmit());
+            //     this.inputEl.addKeyListener("Escape", e=>this.parent?.editCancel());
+            //     if (focusOnEdit) {
+            //         this.inputEl.focus();
+            //         this.inputEl.select();
+            //     }
+            // }});
+        }
 
     }
 
@@ -588,10 +666,10 @@ export default class Accessor {
 
     }
 
-    #isNum      () { return Accessor.isNum(this.#type);    }
-    #isScalar   () { return Accessor.isScalar(this.#type); }
-    #isMulti    () { return Accessor.isMulti(this.#type);  }
-    #isTypeFn   () { return Accessor.isTypeFn(this.#type);  }
+    #isNum      () { return Accessor.isNum(this.type);    }
+    #isScalar   () { return Accessor.isScalar(this.type); }
+    #isMulti    () { return Accessor.isMulti(this.type);  }
+    #isTypeFn   () { return Accessor.isTypeFn(this.type);  }
 
     static isNum(t) {
         return (t === "bln" || t === "flt" || t === "int");
