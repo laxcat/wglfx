@@ -14,9 +14,13 @@ class Thing {
     dirty;
     boy;
     static define = {
+        html: `
+        <span data-key="dirty"></span>
+        <span data-key="boy"></span>
+        `,
         keys: {
-            dirty: { type:Foo },
-            boy:   { type:[Bar], length:5 }
+            dirty: { type:"str", val:"good" },
+            boy:   { type:"str", val:"bang" }
         }
     };
 };
@@ -30,13 +34,20 @@ const wut = {
     },
 };
 
-// const thing = new Accessor({type:[Foo], length:5, init:true});
+const thingEl = document.getElementById("thing");
+const thing = new Accessor({type:["flt"], length:10, el:thingEl, init:true});
+
+// const button = document.createElement("button");
+// button.innerHTML = "fuckme" ;
+// document.body.appendChild(button);
+// button.addEventListener("click", e=>{
+//     thing.init();
+// });
+
+
+// const thing = Accessor.tree(Thing, thingEl);
 // console.log(thing.val);
 // console.log(thing);
-
-const thing = Accessor.tree(Thing);
-console.log(thing.val);
-console.log(thing);
 
 // const thing = new Accessor({
 //     type:"obj",

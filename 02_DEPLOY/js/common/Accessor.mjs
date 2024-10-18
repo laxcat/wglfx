@@ -1,20 +1,17 @@
 import { extd } from "./common-extension.mjs"
 import "./html-extension.mjs"
-import { is, isFn, isStr, isNum, isArr, isBool, isPOJO } from "./util.mjs"
+import { is, isFn, isStr, isNum, isArr, isBool, isPOJO, isEl } from "./util.mjs"
 
 export default class Accessor {
 
     static typeConfigKey = "define";
 
     // create accessor from tree of types
-    static tree(type) {
+    static tree(type, el) {
         if (type[Accessor.typeConfigKey] == null) {
             throw new Error(`tree root type must have "${Accessor.typeConfigKey}" static config object`);
         }
-        return new Accessor({
-            type,
-            init: true,
-        });
+        return new Accessor({ type, el, init:true });
     }
 
     // create accessor from type and lazy value
@@ -90,8 +87,8 @@ export default class Accessor {
         });
 
 
+        config.childEls = this.#setupDisplay(config);
         this.#setupMain(config);
-        this.#setupDisplay(config);
         this.#setupEditable(config);
         this.#setupReordable(config);
 
@@ -102,6 +99,7 @@ export default class Accessor {
         if (config.init) {
             this.init();
         }
+        this.display?.();
 
         // console.log("-------------------------");
         // console.log("accr");
@@ -167,16 +165,27 @@ export default class Accessor {
             }
         }
 
+        // el/html checks
+        if (config.el && !is(config.el, HTMLElement)) {
+            throw new Error("el must be HTMLElement");
+        }
+        if (config.html && !isStr(config.html)) {
+            throw new Error("html must be string");
+        }
+        if (config.html && !config.el) {
+            throw new Error("el is required if html is set");
+        }
+
+        // val/initFn checks
         if (config.val && config.initFn) {
             throw new Error("set val or initFn, not both");
         }
-
-        // check initFn
         if (config.initFn && !isFn(config.initFn)) {
             throw new Error("initFn must be function");
         }
 
         // if val not set, safe to assume NOT read-only
+        // (otherwise how would it ever get set?)
         if (config.val == null) {
             config.writable = true;
         }
@@ -246,6 +255,46 @@ export default class Accessor {
         }
     }
 
+    #setupDisplay(config) {
+        if (!config.el) {
+            return;
+        }
+
+        if (config.html) {
+            const {el,html,keys} = config;
+
+            const temp = document.createElement("template");
+            const tempRoot = temp.content;
+            const childEls = {};
+            tempRoot.insertHTML(html);
+            for (const key in keys) {
+                const childEl = tempRoot.querySelector(`*[data-key="${key}"]`);
+                if (!isEl(childEl)) {
+                    throw new Error(`could not find HTMLElement for key: ${key}`);
+                }
+                childEls[key] = childEl;
+            }
+
+            const display = ()=>{
+                el.appendChild(tempRoot);
+                temp.innerHTML = "";
+            }
+            extd(this, "display", {value:display});
+
+            return childEls;
+        }
+        else {
+            const {el} = config;
+            extd(this, "display", {value:
+                (config.type === "arr") ?
+                ()=>{} :
+                function() {
+                    el.insertHTML(this.val);
+                }
+            });
+        }
+    }
+
     #setupMainScalar(config) {
         // set/get val
         const type = config.type;
@@ -294,7 +343,7 @@ export default class Accessor {
     }
 
     #setupMainArr(config) {
-        const {writable,childType} = config;
+        const {writable,childType,el} = config;
 
         const splice = (start, deleteCount, ...items)=>{
             // TODO listeners?
@@ -306,7 +355,17 @@ export default class Accessor {
             }
             else {
                 const fn = val=>Accessor.#child(
-                    this, {val,writable,type:childType,init:true}
+                    // arrays have no html (could change)
+                    // so we pass the array's containing htmlelement (el) to
+                    // the children
+                    this,
+                    {
+                        el,
+                        val,
+                        writable,
+                        type:childType,
+                        init:true
+                    }
                 );
                 this.#val.splice(
                     start,
@@ -482,7 +541,7 @@ export default class Accessor {
     }
 
     #setupMainTypeFn(config) {
-        const {type,keys,writable} = config;
+        const {type,keys,writable,childEls} = config;
         const keyTypes = {};
         for (const key in keys) {
             if (keys[key].type) {
@@ -501,7 +560,7 @@ export default class Accessor {
 
             this.#val[key] = Accessor.#child(
                 this,
-                {keyType, val, writable, ...keys[key]}
+                {keyType, val, writable, ...keys[key], el:childEls[key]}
             );
         };
 
@@ -519,10 +578,6 @@ export default class Accessor {
         if (config.val) {
             this.#val = config.val;
         }
-    }
-
-    #setupDisplay(config) {
-
     }
 
     #setupEditable(config) {
